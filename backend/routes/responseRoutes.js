@@ -2,15 +2,16 @@ const express = require('express');
 const router = express.Router();
 
 // Endpoint POST pour enregistrer une réponse
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   // On récupère les données envoyées dans le corps de la requête
   const responseData = req.body;
-  
-  // Pour l'instant, on affiche la réponse dans la console
-  console.log('Réponse reçue:', responseData);
-  
-  // Et on renvoie un message de succès au client
-  res.json({ message: "Réponse enregistrée avec succès !" });
+  try {
+    const newResponse = new Response(responseData);
+    await newResponse.save();  // Sauvegarde dans la base de données
+    res.json({ message: "Réponse enregistrée avec succès !" });
+  } catch (err) {
+    console.error("Erreur en sauvegardant la réponse:", err);
+    res.status(500).json({ message: "Erreur en sauvegardant la réponse" });
+  }
 });
-
 module.exports = router;
