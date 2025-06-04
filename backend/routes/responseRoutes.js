@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const Response = require('../models/Response');
 
 // Endpoint POST pour enregistrer une réponse
 router.post('/', async (req, res) => {

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Form-a-Friend - Formulaire</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="text"],
+    textarea,
+    input[type="file"] {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    /* Styles pour les boutons radio */
+    .radio-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .radio-group input[type="radio"] {
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Formulaire Mensuel... dis-moi tout</h1>
+  <form id="friendForm">
+    <!-- Champ Nom -->
+    <div class="form-group">
+      <label for="name">Ton nom :</label>
+      <input type="text" id="name" name="name" required>
+    </div>
+
+    <!-- Question 1 : Choix multiples avec mise à jour dynamique de l'option 2 -->
+    <div class="form-group">
+      <label>En rapide, comment ça va ? :</label>
+      
+      <div class="radio-group">
+        <input type="radio" name="question1" id="option1" value="ça va" required>
+        <label for="option1">ça va</label>
+      </div>
+      
+      <div class="radio-group">
+        <input type="radio" name="question1" id="option2" value="a connu meilleur mois de mars">
+        <label for="option2" id="labelOption2">a connu meilleur mois de mars</label>
+      </div>
+      
+      <div class="radio-group">
+        <input type="radio" name="question1" id="option3" value="ITS JOEVER">
+        <label for="option3">ITS JOEVER</label>
+      </div>
+      
+      <div class="radio-group">
+        <input type="radio" name="question1" id="option4" value="WE'RE BARACK">
+        <label for="option4">WE'RE BARACK</label>
+      </div>
+    </div>
+
+    <!-- Question 2 : Texte -->
+    <div class="form-group">
+      <label for="question2">Possibilité d'ajouter un peu plus de détails à la question précédente :</label>
+      <input type="text" id="question2" name="question2" required>
+    </div>
+
+    <!-- Question 3 : Upload d'image pour le pulse check -->
+    <div class="form-group">
+      <label for="question3">Le pulse check mensuel... montre une photo de toi ce mois-ci :</label>
+      <input type="file" id="question3" name="question3" accept="image/*" required>
+    </div>
+
+    <!-- Question 4 : Texte -->
+    <div class="form-group">
+      <label for="question4">Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ? :</label>
+      <textarea id="question4" name="question4" rows="3" required></textarea>
+    </div>
+
+    <!-- Question 5 : Upload d'image pour la réaction pic -->
+    <div class="form-group">
+      <label for="question5">C'est quoi la reaction pic que tu utilises le plus en ce moment ? :</label>
+      <input type="file" id="question5" name="question5" accept="image/*" required>
+    </div>
+
+    <!-- Question 6 : Texte pour la conversation -->
+    <div class="form-group">
+      <label for="question6">Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ? :</label>
+      <textarea id="question6" name="question6" rows="3" required></textarea>
+    </div>
+
+    <!-- Question 7 : Upload d'image pour la découverte culturelle -->
+    <div class="form-group">
+      <label for="question7">Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement) :</label>
+      <input type="file" id="question7" name="question7" accept="image/*" required>
+    </div>
+
+    <!-- Question 8 : Texte pour les habitudes ou routines -->
+    <div class="form-group">
+      <label for="question8">Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ? :</label>
+      <textarea id="question8" name="question8" rows="3" required></textarea>
+    </div>
+
+    <!-- Question 9 : Texte pour l'appel à un AMI -->
+    <div class="form-group">
+      <label for="question9">Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.) :</label>
+      <textarea id="question9" name="question9" rows="3" required></textarea>
+    </div>
+
+    <!-- Question 10 : Upload d'image pour la photo finale -->
+    <div class="form-group">
+      <label for="question10">Pour terminer : une photo de toi qui touche de l'herbe ou un arbre :</label>
+      <input type="file" id="question10" name="question10" accept="image/*" required>
+    </div>
+    
+    <button type="submit">Envoyer</button>
+  </form>
+
+    // Mise à jour dynamique de l'option 2 pour la question 1 selon le mois courant
+    <script>
+  // Mise à jour dynamique de l'option 2 pour la question 1 selon le mois PRÉCÉDENT
+  document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    const previousMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const previousMonth = previousMonthDate.toLocaleString('fr-FR', { month: 'long' });
+
+    const vowels = ["a", "e", "i", "o", "u", "h"];
+    const prefix = vowels.includes(previousMonth[0].toLowerCase())
+      ? "a connu meilleur mois d'"
+      : "a connu meilleur mois de ";
+
+    const option2 = document.getElementById('option2');
+    const labelOption2 = document.getElementById('labelOption2');
+    if (option2 && labelOption2) {
+      option2.value = `${prefix}${previousMonth}`;
+      labelOption2.textContent = `${prefix}${previousMonth}`;
+    }
+  });
+
+    // Gestion de la soumission du formulaire
+    document.getElementById('friendForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('name').value;
+      const question1Radio = document.querySelector('input[name="question1"]:checked');
+      const question1 = question1Radio ? question1Radio.value : "";
+      const question2 = document.getElementById('question2').value;
+
+      // Fonction pour lire un fichier en Base64
+      function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Question 3 : image pulse check
+      const fileInput3 = document.getElementById('question3');
+      const file3 = fileInput3.files[0];
+      let question3Image = "";
+      if (file3) {
+        try {
+          question3Image = await readFileAsBase64(file3);
+        } catch (error) {
+          console.error("Erreur lors de la lecture de l'image pour la question 3 :", error);
+        }
+      }
+
+      // Question 4 : texte
+      const question4 = document.getElementById('question4').value;
+
+      // Question 5 : image réaction pic
+      const fileInput5 = document.getElementById('question5');
+      const file5 = fileInput5.files[0];
+      let question5Image = "";
+      if (file5) {
+        try {
+          question5Image = await readFileAsBase64(file5);
+        } catch (error) {
+          console.error("Erreur lors de la lecture de l'image pour la question 5 :", error);
+        }
+      }
+
+      // Question 6 : texte conversation
+      const question6 = document.getElementById('question6').value;
+
+      // Question 7 : image découverte culturelle
+      const fileInput7 = document.getElementById('question7');
+      const file7 = fileInput7.files[0];
+      let question7Image = "";
+      if (file7) {
+        try {
+          question7Image = await readFileAsBase64(file7);
+        } catch (error) {
+          console.error("Erreur lors de la lecture de l'image pour la question 7 :", error);
+        }
+      }
+
+      // Question 8 : texte habitudes/routines
+      const question8 = document.getElementById('question8').value;
+      // Question 9 : texte appel à un AMI
+      const question9 = document.getElementById('question9').value;
+
+      // Question 10 : image photo finale
+      const fileInput10 = document.getElementById('question10');
+      const file10 = fileInput10.files[0];
+      let question10Image = "";
+      if (file10) {
+        try {
+          question10Image = await readFileAsBase64(file10);
+        } catch (error) {
+          console.error("Erreur lors de la lecture de l'image pour la question 10 :", error);
+        }
+      }
+
+      const data = {
+        name: name,
+        responses: [
+          { question: "En rapide, comment ça va ?", answer: question1 },
+          { question: "Possibilité d'ajouter un peu plus de détails à la question précédente :", answer: question2 },
+          { question: "Le pulse check mensuel... montre une photo de toi ce mois-ci", answer: question3Image },
+          { question: "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ?", answer: question4 },
+          { question: "C'est quoi la reaction pic que tu utilises le plus en ce moment ?", answer: question5Image },
+          { question: "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ?", answer: question6 },
+          { question: "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement)", answer: question7Image },
+          { question: "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ?", answer: question8 },
+          { question: "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.)", answer: question9 },
+          { question: "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre", answer: question10Image }
+        ]
+      };
+
+      try {
+        const res = await fetch('http://localhost:3000/api/response', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        alert(result.message);
+        document.getElementById('friendForm').reset();
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi du formulaire:', error);
+        alert("Une erreur est survenue lors de l'envoi de vos réponses.");
+      }
+    });
+  </script>
+</body>
+</html>
