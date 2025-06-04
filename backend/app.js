@@ -1,17 +1,18 @@
-require('dotenv').config();  // Pour charger les variables d'environnement
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
-
-// Middleware pour parser le JSON des requêtes
+  
+// Middleware pour parser le JSON
 app.use(express.json());
 
-// Exemple d'import de routes
-// Tu devras créer ces fichiers dans le dossier "routes"
+// Import du routeur pour les formulaires
 const formRoutes = require('./routes/formRoutes');
-
-// Utiliser les routes (toutes les routes dans formRoutes seront préfixées par /api/form)
 app.use('/api/form', formRoutes);
+
+// Import du routeur pour les réponses
+const responseRoutes = require('./routes/responseRoutes');
+app.use('/api/response', responseRoutes);
 
 // Démarrer le serveur
 app.listen(port, () => {
