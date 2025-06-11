@@ -3,10 +3,13 @@
 ## Installation 
 ```bash
 npm install
-
-## Lancement 
 npm start
 
-## Structure
 frontend/ : pages HTML, CSS et JS
 backend/ : serveur Express
+
+## API
+Attend un JSON { nom, email, message }.
+Répond { message: "Votre message a été enregistré" }.
+GET /admin
+Renvoie la liste JSON des objets déposés.

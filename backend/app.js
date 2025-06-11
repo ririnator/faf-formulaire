@@ -34,6 +34,12 @@ app.use('/api/response', responseRoutes);
 const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
 
+// Route 404 : envoie frontend/404.html
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
+});
+
+
 // Démarrer le serveur
 app.listen(port, () => {
   console.log(`Serveur lancé sur le port ${port}`);

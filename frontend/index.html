@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Form-a-Friend - Formulaire</title>
   <style>
     body {
@@ -131,8 +132,25 @@
     
     <button type="submit">Envoyer</button>
   </form>
+  <div id="feedback"></div>
 
-    // Mise à jour dynamique de l'option 2 pour la question 1 selon le mois courant
+  <script>
+    // Exemple simple d'affichage de retour
+    document.querySelector('form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch('/', {
+        method: 'POST',
+        body: JSON.stringify(Object.fromEntries(formData)),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const json = await res.json();
+      document.getElementById('feedback').textContent = json.message || 'Succès !';
+    });
+  </script>
+</body>
+</html>
+  
     <script>
   // Mise à jour dynamique de l'option 2 pour la question 1 selon le mois PRÉCÉDENT
   document.addEventListener('DOMContentLoaded', () => {

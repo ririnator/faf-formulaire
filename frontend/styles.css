@@ -1,0 +1,9 @@
+/* Reset simple */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body { font-family: Arial, sans-serif; padding: 20px; }
+form { max-width: 400px; margin: auto; display: flex; flex-direction: column; gap: 10px; }
+input, textarea, button { padding: 8px; font-size: 1rem; }
+button { cursor: pointer; }
+#feedback { margin-top: 15px; font-weight: bold; }
+ul { list-style: none; margin-top: 20px; }
