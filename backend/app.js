@@ -5,7 +5,6 @@ const bodyParser = require('body-parser');
 const app = express();
 const path = require('path');
 app.use(express.static(path.join(__dirname, '../frontend')));
-
 const port = process.env.PORT || 3000;
 
 const cors = require('cors');
