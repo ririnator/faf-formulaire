@@ -26,8 +26,15 @@
 
     async function loadResponses() {
       try {
-        const res = await fetch('http://localhost:3000/api/admin/responses');
-        allResponses = await res.json();
+        const res = await fetch('/api/admin/responses');
+        const payload = await res.json();
+        console.log(">> payload reçu :", payload);
+         // selon ce que tu verras :
+        // - si payload est un tableau => allResponses = payload
+        // - si payload est { responses: [...] } => allResponses = payload.responses
+        // - si payload est { data: [...] } => allResponses = payload.data
+        allResponses = Array.isArray(payload) ? payload : payload.responses || payload.data;
+        
 
         populateMonthOptions(allResponses);
         displayFilteredResponses('all'); // Afficher tout au départ
