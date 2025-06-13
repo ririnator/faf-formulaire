@@ -1,8 +1,10 @@
+console.log('🔌  Chargement de adminRoutes.js');
+
 const express = require('express');
 const router  = express.Router();
 const Response = require('../models/Response');
 
-// Middleware qui va charger la réponse dans req.responseDoc
+// Middleware pour charger la réponse dans req.responseDoc
 router.param('id', async (req, res, next, id) => {
   try {
     const doc = await Response.findById(id);
@@ -14,19 +16,42 @@ router.param('id', async (req, res, next, id) => {
   }
 });
 
-// GET /api/admin/responses
+// GET /api/admin/responses?page=1&limit=10
 router.get('/responses', async (req, res) => {
-  const docs = await Response.find().sort({ createdAt: -1 });
-  res.json({ responses: docs });
+  try {
+    // Récupère et normalise les paramètres
+    const page  = Math.max(1, parseInt(req.query.page, 10)  || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 10);
+    const skip  = (page - 1) * limit;
+
+    // Comptage total pour pagination
+    const totalCount = await Response.countDocuments();
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Requête paginée
+    const data = await Response.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Renvoie dans le shape attendu par ton front
+    res.json({
+      responses: data,
+      pagination: { page, totalPages, totalCount }
+    });
+  } catch (err) {
+    console.error('❌ Erreur serveur pagination :', err);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
-// On passe par /responses/:id pour both GET et DELETE
+
+// GET /api/admin/responses/:id et DELETE /api/admin/responses/:id
 router.route('/responses/:id')
-  // GET /api/admin/responses/:id
   .get((req, res) => {
     res.json(req.responseDoc);
   })
-  // DELETE /api/admin/responses/:id
   .delete(async (req, res) => {
     try {
       await req.responseDoc.deleteOne();

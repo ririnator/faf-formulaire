@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Liste de toutes les réponses</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="icon" href="/favicon.ico" />
+
+</head>
+<body class="bg-gray-50 p-6">
+  <div class="container mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-6">Toutes les réponses reçues</h1>
+
+    <!-- Search et Filter Section -->
+    <div class="mb-6 flex gap-4">
+      <div class="flex-1">
+        <input type="text" id="searchInput" placeholder="Rechercher par nom..."
+               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div>
+        <select id="sortSelect" class="px-4 py-2 border rounded-lg">
+          <option value="newest">Plus récentes</option>
+          <option value="oldest">Plus anciennes</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Conteneur du tableau -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white border table-fixed">
+        <thead>
+          <tr>
+            <th class="w-1/4 py-2 px-4 border-b text-left">Date</th>
+            <th class="w-2/4 py-2 px-4 border-b text-center">Nom</th>
+            <th class="w-1/4 py-2 px-4 border-b text-right">Gérer</th>
+          </tr>
+        </thead>
+        <tbody id="responsesTableBody"></tbody>
+      </table>
+
+       <!-- Pagination Controls -->
+      <div class="mt-4 flex items-center space-x-4">
+        <button id="prevBtn" class="px-3 py-1 border rounded">Précédent</button>
+        <span>Page <strong id="currentPage">1</strong> / <strong id="totalPages">1</strong></span>
+        <button id="nextBtn" class="px-3 py-1 border rounded">Suivant</button>
+      </div>
+      
+
+      <!-- CONTENEUR POUR LES BOUTONS DE PAGINATION -->
+<div id="pagination" class="mt-4 flex space-x-2"></div>
+
+    </div>
+
+    <!-- Modal de détails -->
+    <div id="detailsModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+      <div class="bg-white p-6 rounded-lg w-1/2">
+        <h2 class="text-2xl font-semibold mb-4">Détails de la réponse</h2>
+        <div id="responseDetails"></div>
+        <button id="closeDetails" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Fermer</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentPage = 1;
+    const limit = 10;
+
+    let allResponses = [];
+
+    // Charge une page donnée
+async function loadPage(page = 1) {
+  try {
+    const res = await fetch(`/api/admin/responses?page=${page}&limit=${limit}`);
+    if (!res.ok) throw new Error(`Statut HTTP ${res.status}`);
+    const { responses, pagination } = await res.json();
+
+    // Remplisage et affichage
+    allResponses = responses;
+    renderTable(responses);
+
+    // Mise à jour de l'affichage des infos de pagination
+    currentPage = pagination.page;
+    document.getElementById('currentPage').textContent = pagination.page;
+    document.getElementById('totalPages').textContent = pagination.totalPages;
+
+    // Activer/désactiver les boutons
+    document.getElementById('prevBtn').disabled = pagination.page <= 1;
+    document.getElementById('nextBtn').disabled = pagination.page >= pagination.totalPages;
+  } catch (error) {
+    console.error("Erreur lors du chargement de la page :", error);
+  }
+}
+
+
+    // Crée dynamiquement le <tbody> du tableau
+    function renderTable(docs) {
+      const tbody = document.getElementById('responsesTableBody');
+      tbody.innerHTML = ''; // réinitialise
+
+      docs.forEach(doc => {
+        const tr = document.createElement('tr');
+
+        // Date
+        const dateTd = document.createElement('td');
+        dateTd.className = "py-2 px-4 border-b text-left";
+        const d = new Date(doc.createdAt);
+        dateTd.textContent = d.toLocaleString('fr-FR', {
+            year:   'numeric',
+            month:  '2-digit',
+            day:    '2-digit',
+            hour:   '2-digit',
+            minute: '2-digit'
+            });
+
+        tr.appendChild(dateTd);
+
+        // Nom
+        const nameTd = document.createElement('td');
+        nameTd.className = "py-2 px-4 border-b text-center";
+        nameTd.textContent = doc.name;
+        tr.appendChild(nameTd);
+
+        
+        // Bouton Supprimer
+        // Actions : on crée la cellule
+        const actionTd = document.createElement('td');
+        actionTd.className = "py-2 px-4 border-b text-right";
+
+        const delBtn = document.createElement('button');
+        delBtn.className = "bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600";
+        delBtn.textContent = 'Supprimer';
+        delBtn.addEventListener('click', async () => {
+            if (!confirm(`Supprimer la réponse de ${doc.name} du ${new Date(doc.createdAt).toLocaleDateString('fr-FR')} ?`)) {
+            return;
+             }
+            try {
+                const res = await fetch(`/api/admin/responses/${doc._id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error(`Statut ${res.status}`);
+                // Retirer la ligne du tableau
+                tr.remove();
+
+                if (allResponses.length === 1 && currentPage > 1) {
+            loadPage(currentPage - 1);
+          } else {
+            loadPage(currentPage);
+          }
+                } catch (err) {
+                console.error("Erreur en supprimant :", err);
+                alert("La suppression a échoué.");
+                }
+            });
+            actionTd.appendChild(delBtn);
+            tr.appendChild(actionTd)
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Pagination : gestion des boutons Précédent / Suivant
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (currentPage > 1) loadPage(currentPage - 1);
+      });
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      loadPage(currentPage + 1);
+    });
+
+
+    // Recherche par nom
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      const filtered = allResponses.filter(doc => doc.name.toLowerCase().includes(term));
+      renderTable(filtered);
+    });
+
+    // Tri par date
+    document.getElementById('sortSelect').addEventListener('change', (e) => {
+      const order = e.target.value;
+      const sorted = [...allResponses].sort((a, b) => {
+        const da = new Date(a.createdAt);
+        const db = new Date(b.createdAt);
+        return order === 'newest' ? db - da : da - db;
+      });
+      renderTable(sorted);
+    });
+
+    // Lancement du chargement
+    loadPage(1);
+  </script>
+</body>
+</html>
