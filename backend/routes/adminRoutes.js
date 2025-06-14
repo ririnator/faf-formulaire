@@ -1,5 +1,3 @@
-console.log('🔌  Chargement de adminRoutes.js');
-
 const express = require('express');
 const router  = express.Router();
 const Response = require('../models/Response');

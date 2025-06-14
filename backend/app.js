@@ -4,11 +4,6 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const app = express();
 
-app.use((req, res, next) => {
-  console.log(`⬅️  ${req.method} ${req.originalUrl}`);
-  next();
-});
-
 const path = require('path');
 app.use(express.static(path.join(__dirname, '../frontend')));
 const port = process.env.PORT || 3000;
@@ -38,7 +33,6 @@ app.use('/api/response', responseRoutes);
 
 // Import et utilisation du routeur pour l'admin
 const adminRoutes = require('./routes/adminRoutes');
-console.log('🛡️ Mounting adminRoutes…');
 app.use('/api/admin', adminRoutes);
 
 // Route 404 : envoie frontend/404.html
