@@ -16,7 +16,10 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
   
 // Connexion à MongoDB
-mongoose.connect('mongodb://localhost:27017/FAF')
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
   .then(() => console.log("Connecté à la base de données"))
   .catch(err => console.error("Erreur de connexion à la DB :", err));
 
