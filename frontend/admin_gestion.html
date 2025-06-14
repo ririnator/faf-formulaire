@@ -72,7 +72,7 @@
     // Charge une page donnée
 async function loadPage(page = 1) {
   try {
-    const res = await fetch(`/api/admin/responses?page=${page}&limit=${limit}`);
+    const res = await fetch(`https://faf-jotg.onrender.com/api/admin/responses?page=${page}&limit=${limit}`);
     if (!res.ok) throw new Error(`Statut HTTP ${res.status}`);
     const { responses, pagination } = await res.json();
 
@@ -136,7 +136,7 @@ async function loadPage(page = 1) {
             return;
              }
             try {
-                const res = await fetch(`/api/admin/responses/${doc._id}`, { method: 'DELETE' });
+                const res = await fetch(`https://faf-jotg.onrender.com/api/admin/responses/${doc._id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error(`Statut ${res.status}`);
                 // Retirer la ligne du tableau
                 tr.remove();
