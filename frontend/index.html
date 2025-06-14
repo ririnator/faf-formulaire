@@ -133,21 +133,7 @@
     <button type="submit">Envoyer</button>
   </form>
   <div id="feedback"></div>
-
-  <script>
-    // Exemple simple d'affichage de retour
-    document.querySelector('form').addEventListener('submit', async e => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const res = await fetch('/', {
-        method: 'POST',
-        body: JSON.stringify(Object.fromEntries(formData)),
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const json = await res.json();
-      document.getElementById('feedback').textContent = json.message || 'Succès !';
-    });
-  </script>
+  
 </body>
 </html>
   
@@ -266,7 +252,7 @@
       };
 
       try {
-        const res = await fetch('https://faf-jotg.onrender.com/api/response', {
+        const res = await fetch('https://faf-backend.onrender.com/api/response', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)

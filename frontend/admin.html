@@ -27,7 +27,7 @@
 
     async function loadResponses() {
       try {
-        const res = await fetch('https://faf-jotg.onrender.com/api/admin/responses');
+        const res = await fetch('https://faf-backend.onrender.com/api/admin/responses');
         const payload = await res.json();
         console.log(">> payload reçu :", payload);
          // selon ce que tu verras :
