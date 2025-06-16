@@ -23,6 +23,16 @@ mongoose.connect(process.env.MONGODB_URI)
 // Middleware pour parser le JSON des requêtes
 app.use(express.json());
 
+// Rate limiter : max 5 requêtes POST sur /api/response toutes les 15 minutes par IP
+const formLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,                   // limite à 5 requêtes
+  message: { 
+    message: "Trop de soumissions. Réessaie dans 15 minutes." 
+  }
+});
+app.use('/api/response', formLimiter);
+
 // Import et utilisation du routeur pour les formulaires
 const formRoutes = require('./routes/formRoutes');
 app.use('/api/form', formRoutes);
