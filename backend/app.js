@@ -12,6 +12,10 @@ const MongoStore = require('connect-mongo');
 
 const app = express();
 
+// Faire confiance au proxy de Render pour récupérer la vraie IP client
+app.set('trust proxy', 1);
+
+
 // --- 1. SESSION CONFIGURATION ---
 app.use(session({
   secret: process.env.SESSION_SECRET,

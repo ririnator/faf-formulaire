@@ -26,13 +26,13 @@ router.get('/responses', async (req, res) => {
     const totalCount = await Response.countDocuments();
     const totalPages = Math.ceil(totalCount / limit);
 
-    // Requête paginée
-    const data = await Response.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
+      // Requête paginée avec allowDiskUse pour éviter le dépassement mémoire
+const data = await Response.find()
+ .sort({ createdAt: -1 })
+ .skip(skip)
+ .limit(limit)
+ .setOptions({ allowDiskUse: true })  // ← ici
+ .lean();
     // Renvoie dans le shape attendu par ton front
     res.json({
       responses: data,
