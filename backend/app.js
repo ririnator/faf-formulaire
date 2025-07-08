@@ -42,10 +42,16 @@ app.use(express.json());
 // 3. BASE DE DONNÉES
 // Connexion à MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("Connecté à la base de données"))
+  .then(async () => {
+    console.log("Connecté à la base de données");
+    // Création de l’index si pas déjà présent
+    await mongoose.connection.collection('responses')
+      .createIndex({ createdAt: -1 });
+    console.log("Index créé sur responses.createdAt");
+  })
   .catch(err => console.error("Erreur de connexion à la DB :", err));
 
-  
+
 //4. SERVIR LE FRONT PUBLIC
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 app.use(cors());
