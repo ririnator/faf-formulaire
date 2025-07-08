@@ -8,6 +8,7 @@ const path = require('path');
 const session = require('express-session');
 const cors       = require('cors');
 const port = process.env.PORT || 3000;
+const MongoStore = require('connect-mongo');
 
 const app = express();
 
@@ -16,6 +17,12 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    collectionName: 'sessions',
+    ttl: 14 * 24 * 60 * 60,    // durée de vie : 14 jours en secondes
+    autoRemove: 'native'       // MongoDB supprime automatiquement les sessions expirées
+  }),
   cookie: {
     maxAge: 1000 * 60 * 60  // 1 heure
   }
