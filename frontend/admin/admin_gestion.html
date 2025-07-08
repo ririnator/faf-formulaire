@@ -136,7 +136,7 @@ async function loadPage(page = 1) {
             return;
              }
             try {
-                const res = await fetch(`https://faf-backend.onrender.com/api/admin/responses/${doc._id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/admin/responses/${doc._id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error(`Statut ${res.status}`);
                 // Retirer la ligne du tableau
                 tr.remove();

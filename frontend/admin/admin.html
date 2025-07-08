@@ -8,6 +8,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-50 p-4">
+  <div class="flex justify-end mb-4">
+    <a href="/admin/gestion" class="text-blue-600 hover:underline">Gestion avancée</a>
+    <a href="/logout" class="text-red-600 hover:underline">Déconnexion</a>
+  </div>  
   <div class="container mx-auto">
     <h1 class="text-3xl font-bold text-center mb-4">Résumé des réponses</h1>
 
@@ -27,7 +31,7 @@
 
     async function loadResponses() {
       try {
-        const res = await fetch('https://faf-backend.onrender.com/api/admin/responses');
+        const res = await fetch('/api/admin/responses');
         const payload = await res.json();
         console.log(">> payload reçu :", payload);
          // selon ce que tu verras :
