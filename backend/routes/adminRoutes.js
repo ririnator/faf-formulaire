@@ -1,8 +1,9 @@
-const express = require('express');
-const router  = express.Router();
+// routes/adminRoutes.js
+const express  = require('express');
+const router   = express.Router();
 const Response = require('../models/Response');
 
-// Middleware pour charger la réponse dans req.responseDoc
+// Middleware : charge la réponse dans req.responseDoc
 router.param('id', async (req, res, next, id) => {
   try {
     const doc = await Response.findById(id);
@@ -14,38 +15,65 @@ router.param('id', async (req, res, next, id) => {
   }
 });
 
-// GET /api/admin/responses?page=1&limit=10
+// GET /api/admin/responses?page=1&limit=10&month=YYYY-MM
 router.get('/responses', async (req, res) => {
   try {
-    // Récupère et normalise les paramètres
-    const page  = Math.max(1, parseInt(req.query.page, 10)  || 1);
-    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10)));
+    // Pagination
+    const pageRaw  = parseInt(req.query.page,  10);
+    const limitRaw = parseInt(req.query.limit, 10);
+    const page  = Number.isInteger(pageRaw)  && pageRaw  > 0 ? pageRaw  : 1;
+    const limit = Number.isInteger(limitRaw) && limitRaw > 0 ? Math.min(20, limitRaw) : 10;
     const skip  = (page - 1) * limit;
 
-    // Comptage total pour pagination
-    const totalCount = await Response.countDocuments();
+    // Filtre optionnel par mois (format "2025-06")
+    const filter = {};
+    if (req.query.month) {
+      const [year, month] = req.query.month.split('-').map(n => parseInt(n, 10));
+      if (Number.isInteger(year) && Number.isInteger(month)) {
+        filter.createdAt = {
+          $gte: new Date(year, month - 1, 1),
+          $lt:  new Date(year, month, 1)
+        };
+      }
+    }
+
+    // Comptage et pagination
+    const totalCount = await Response.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / limit);
 
-      // Requête paginée avec allowDiskUse pour éviter le dépassement mémoire
-      const data = await Response.find()
+    // Requête paginée, uniquement name + createdAt pour alléger
+    const data = await Response.find(filter)
       .select('name createdAt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
-    // Renvoie dans le shape attendu par ton front
+
     return res.json({
-      responses: data,
+      responses:  data,
       pagination: { page, totalPages, totalCount }
     });
   } catch (err) {
     console.error('❌ Erreur serveur pagination :', err);
-    res.status(500).json({ message: 'Erreur serveur' });
+    return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
+// GET /api/admin/all-responses
+// Renvoyer tous les documents (avec champ `responses`) pour l’admin summary
+router.get('/all-responses', async (req, res) => {
+  try {
+    const all = await Response.find()
+      .sort({ createdAt: -1 })
+      .lean();
+    return res.json(all);
+  } catch (err) {
+    console.error('❌ Erreur serveur all-responses :', err);
+    return res.status(500).json({ message: 'Erreur serveur all-responses' });
+  }
+});
 
-// GET /api/admin/responses/:id et DELETE /api/admin/responses/:id
+// GET & DELETE /api/admin/responses/:id
 router.route('/responses/:id')
   .get((req, res) => {
     res.json(req.responseDoc);
@@ -55,7 +83,7 @@ router.route('/responses/:id')
       await req.responseDoc.deleteOne();
       res.json({ message: 'Réponse supprimée avec succès' });
     } catch (err) {
-      console.error('Erreur en supprimant la réponse :', err);
+      console.error('❌ Erreur suppression réponse :', err);
       res.status(500).json({ message: 'Erreur lors de la suppression' });
     }
   });

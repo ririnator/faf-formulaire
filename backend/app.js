@@ -9,8 +9,12 @@ const session = require('express-session');
 const cors       = require('cors');
 const port = process.env.PORT || 3000;
 const MongoStore = require('connect-mongo');
+const compression = require ('compression');
 
 const app = express();
+
+// Compression des réponses
+app.use(compression());
 
 // Faire confiance au proxy de Render pour récupérer la vraie IP client
 app.set('trust proxy', 1);

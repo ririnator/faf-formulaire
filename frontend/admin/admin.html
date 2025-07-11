@@ -31,7 +31,7 @@
 
     async function loadResponses() {
       try {
-        const res = await fetch('/api/admin/responses');
+        const res = await fetch('/api/admin/all-responses');
         const payload = await res.json();
         console.log(">> payload reçu :", payload);
          // selon ce que tu verras :
