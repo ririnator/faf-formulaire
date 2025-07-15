@@ -1,9 +1,12 @@
 // routes/adminRoutes.js
-const express  = require('express');
-const router   = express.Router();
-const Response = require('../models/Response');
+const express   = require('express');
+const mongoose  = require('mongoose');
+const router    = express.Router();
+const Response  = require('../models/Response');
 
-// Middleware : charge la réponse dans req.responseDoc
+// ——————————————————————————————
+// Middleware : charger la réponse dans req.responseDoc
+// ——————————————————————————————
 router.param('id', async (req, res, next, id) => {
   try {
     const doc = await Response.findById(id);
@@ -15,8 +18,10 @@ router.param('id', async (req, res, next, id) => {
   }
 });
 
+// ——————————————————————————————
 // GET /api/admin/responses?page=1&limit=10
-// (pour l’UI de gestion paginée)
+// Pour l’UI de gestion paginée
+// ——————————————————————————————
 router.get('/responses', async (req, res) => {
   try {
     const page  = Math.max(1, parseInt(req.query.page, 10)  || 1);
@@ -43,7 +48,9 @@ router.get('/responses', async (req, res) => {
   }
 });
 
+// ——————————————————————————————
 // GET & DELETE /api/admin/responses/:id
+// ——————————————————————————————
 router.route('/responses/:id')
   .get((req, res) => {
     res.json(req.responseDoc);
@@ -58,10 +65,13 @@ router.route('/responses/:id')
     }
   });
 
+// ——————————————————————————————
 // GET /api/admin/summary?month=YYYY-MM
-// Retourne un résumé agrégé par question (pour l’UI graphique)
+// Résumé agrégé par question (UI graphique)
+// ——————————————————————————————
 router.get('/summary', async (req, res) => {
   try {
+    // Construire le filtre sur createdAt
     const match = {};
     if (req.query.month && req.query.month !== 'all') {
       const [y, m] = req.query.month.split('-').map(n => parseInt(n, 10));
@@ -71,40 +81,42 @@ router.get('/summary', async (req, res) => {
       };
     }
 
-    const summary = await Response.aggregate([
+    const pipeline = [
       { $match: match },
       { $unwind: '$responses' },
       { $group: {
           _id: '$responses.question',
-          items: { $push: { user:'$name', answer:'$responses.answer' } }
+          items: { $push: { user: '$name', answer: '$responses.answer' } }
       }},
       { $project: {
           _id:      0,
           question: '$_id',
           items:    1
       }}
-    ]).option({ allowDiskUse: true });
+    ];
+
+    // Utiliser le driver natif pour allowDiskUse
+    const coll   = mongoose.connection.collection('responses');
+    const cursor = coll.aggregate(pipeline, { allowDiskUse: true });
+    const summary = await cursor.toArray();
 
     res.json(summary);
   } catch (err) {
-    console.error('❌ Erreur /summary :', err);
+    console.error('❌ Erreur natif /summary :', err);
     res.status(500).json({ message: 'Erreur serveur summary' });
   }
 });
 
+// ——————————————————————————————
 // GET /api/admin/months
-// Retourne la liste des mois disponibles pour le filtre
+// Liste des mois pour le filtre
+// ——————————————————————————————
 router.get('/months', async (req, res) => {
   try {
-    const months = await Response.aggregate([
-      { $project: {
-          year:  { $year:  '$createdAt' },
-          month: { $month: '$createdAt' }
-      }},
-      { $group: {
-          _id: { y:'$year', m:'$month' }
-      }},
-      { $sort: { '_id.y': -1, '_id.m': -1 }},
+    const pipeline = [
+      { $project: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } } },
+      { $group:   { _id: { y: '$year', m: '$month' } } },
+      { $sort:    { '_id.y': -1, '_id.m': -1 } },
       { $project: {
           _id:   0,
           key:   {
@@ -135,11 +147,15 @@ router.get('/months', async (req, res) => {
             ]
           }
       }}
-    ]).option({ allowDiskUse: true });
-    
+    ];
+
+    const coll   = mongoose.connection.collection('responses');
+    const cursor = coll.aggregate(pipeline, { allowDiskUse: true });
+    const months = await cursor.toArray();
+
     res.json(months);
   } catch (err) {
-    console.error('❌ Erreur /months :', err);
+    console.error('❌ Erreur natif /months :', err);
     res.status(500).json({ message: 'Erreur serveur months' });
   }
 });
