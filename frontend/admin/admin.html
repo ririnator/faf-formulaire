@@ -67,4 +67,90 @@
 
     // 3. Renderer le résumé (camembert + listes)
     function displaySummary(summary) {
-      const
+      const container = document.getElementById('summaryContainer');
+      container.innerHTML = '';
+
+      summary.forEach(({ question, items }) => {
+        // Card wrapper
+        const card = document.createElement('div');
+        card.className = "bg-white shadow rounded p-4 mb-4";
+
+        // Titre
+        const title = document.createElement('h2');
+        title.className = "text-lg font-bold mb-2";
+        title.textContent = question;
+        card.appendChild(title);
+
+        if (question === pieQuestion) {
+          // Pie chart
+          const freq = {}, userMap = {};
+          items.forEach(({ user, answer }) => {
+            freq[answer] = (freq[answer] || 0) + 1;
+            if (!userMap[answer]) userMap[answer] = [];
+            userMap[answer].push(user);
+          });
+
+          const labels = [], data = [], bg = [];
+          Object.entries(freq).forEach(([ans, count]) => {
+            labels.push(`${ans} (${userMap[ans].join(', ')})`);
+            data.push(count);
+            bg.push(`hsla(${Math.random()*360},50%,50%,0.8)`);
+          });
+
+          const chartContainer = document.createElement('div');
+          chartContainer.className = "flex items-center gap-4";
+          card.appendChild(chartContainer);
+
+          const canvas = document.createElement('canvas');
+          canvas.width = 850; canvas.height = 320;
+          chartContainer.appendChild(canvas);
+
+          new Chart(canvas, {
+            type: 'pie',
+            data: {
+              labels,
+              datasets: [{ data, backgroundColor: bg }]
+            },
+            options: {
+              responsive: false,
+              plugins: { legend: { position: 'right' } }
+            }
+          });
+        } else {
+          // Liste des réponses
+          const ul = document.createElement('ul');
+          ul.className = "list-disc pl-5";
+
+          items.forEach(({ user, answer }) => {
+            const li = document.createElement('li');
+            if (typeof answer === 'string' && answer.startsWith('data:image')) {
+              const img = document.createElement('img');
+              img.src = answer;
+              img.alt = `Image de ${user}`;
+              img.className = "w-16 h-16 object-cover inline-block mr-2 border";
+              li.appendChild(img);
+              li.appendChild(document.createTextNode(` ${user}`));
+            } else {
+              li.textContent = `${user} : ${answer}`;
+            }
+            ul.appendChild(li);
+          });
+
+          card.appendChild(ul);
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    // 4. Setup des listeners et démarrage
+    document.getElementById('monthFilter')
+      .addEventListener('change', loadSummary);
+
+    (async () => {
+      await loadMonths();
+      await loadSummary();
+    })();
+  </script>
+</body>
+</html>
