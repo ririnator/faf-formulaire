@@ -59,4 +59,40 @@ router.route('/responses/:id')
     }
   });
 
+// GET /api/admin/summary?month=YYYY-MM
+// Renvoie pour chaque question la liste déjà groupée { user, answer }
+router.get('/summary', async (req, res) => {
+  try {
+    // Filtre sur le mois si fourni
+    const match = {};
+    if (req.query.month) {
+      const [y, m] = req.query.month.split('-').map(n => parseInt(n,10));
+      match.createdAt = {
+        $gte: new Date(y, m-1, 1),
+        $lt:  new Date(y, m,   1)
+      };
+    }
+
+    // Mongo gère le grouping en pipeline
+    const summary = await Response.aggregate([
+      { $match: match },
+      { $unwind: '$responses' },
+      { $group: {
+         _id: '$responses.question',
+         items: { $push: { user:'$name', answer:'$responses.answer' } }
+      }},
+      { $project: {
+         _id:      0,
+         question: '$_id',
+         items:    1
+      }}
+    ]).allowDiskUse(true);
+
+    res.json(summary);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message:'Erreur summary' });
+  }
+});
+
 module.exports = router;

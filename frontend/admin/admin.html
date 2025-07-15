@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="vewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Interface d'administration - Résumé des réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -12,12 +12,13 @@
     <a href="/admin/gestion" class="text-blue-600 hover:underline">Gestion avancée</a>
     <a href="/logout" class="text-red-600 hover:underline">Déconnexion</a>
   </div>  
+
   <div class="container mx-auto">
     <h1 class="text-3xl font-bold text-center mb-4">Résumé des réponses</h1>
 
     <!-- Menu déroulant pour filtrer par mois-sujet -->
     <div class="mb-6 text-center">
-      <label for="monthFilter" class="font-semibold mr-2">Filtrer par mois sujet :</label>
+      <label for="monthFilter" class="font-semibold mr-2">Filtrer par mois sujet :</label>
       <select id="monthFilter" class="p-2 border rounded">
         <option value="all" selected>Toutes les réponses</option>
       </select>
@@ -27,209 +28,43 @@
   </div>
 
   <script>
-    let allResponses = [];
+    const pieQuestion = "En rapide, comment ça va ?";
 
-    async function loadResponses() {
+    // 1. Charger la liste des mois dispos
+    async function loadMonths() {
       try {
-        const res = await fetch('/api/admin/responses');
-        const payload = await res.json();
-        console.log(">> payload reçu :", payload);
-         // selon ce que tu verras :
-        // - si payload est un tableau => allResponses = payload
-        // - si payload est { responses: [...] } => allResponses = payload.responses
-        // - si payload est { data: [...] } => allResponses = payload.data
-        allResponses = Array.isArray(payload) ? payload : payload.responses || payload.data;
-        
-
-        populateMonthOptions(allResponses);
-        displayFilteredResponses('all'); // Afficher tout au départ
-      } catch (error) {
-        console.error("Erreur lors du chargement des réponses :", error);
-      }
-    }
-
-    function populateMonthOptions(responses) {
-      const select = document.getElementById('monthFilter');
-      const monthSet = new Set();
-
-      responses.forEach(doc => {
-        const realDate = new Date(doc.createdAt);
-        // Calculer la date-sujet
-        const subjectDate = new Date(realDate.getFullYear(), realDate.getMonth() - 1, realDate.getDate());
-        
-        const key = `${subjectDate.getFullYear()}-${String(subjectDate.getMonth() + 1).padStart(2, '0')}`;
-        const label = subjectDate.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' });
-        
-        monthSet.add(`${key}||${label}`);
-      });
-
-      // tri ordre décroissant
-      const monthArray = Array.from(monthSet).sort((a,b) => b.localeCompare(a));
-
-      monthArray.forEach(val => {
-        const [key, label] = val.split('||');
-        const option = document.createElement('option');
-        option.value = key;   // ex: "2025-03"
-        option.textContent = label; 
-        select.appendChild(option);
-      });
-
-      select.addEventListener('change', () => {
-        const selectedValue = select.value; 
-        displayFilteredResponses(selectedValue);
-      });
-    }
-
-    function displayFilteredResponses(monthValue) {
-      let filtered;
-      if (monthValue === 'all') {
-        filtered = allResponses;
-      } else {
-        filtered = allResponses.filter(doc => {
-          const d = new Date(doc.createdAt);
-          const subjectDate = new Date(d.getFullYear(), d.getMonth() - 1, d.getDate());
-          const key = `${subjectDate.getFullYear()}-${String(subjectDate.getMonth() + 1).padStart(2, '0')}`;
-          return (key === monthValue);
+        const res = await fetch('/api/admin/months', { credentials: 'same-origin' });
+        if (!res.ok) throw new Error(res.status);
+        const months = await res.json();
+        const select = document.getElementById('monthFilter');
+        months.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.key;       // "2025-06"
+          opt.textContent = m.label; // "juin 2025"
+          select.appendChild(opt);
         });
-      }
-      const grouped = groupAnswersByQuestion(filtered);
-      displaySummary(grouped);
-    }
-
-    function groupAnswersByQuestion(responses) {
-      const grouped = {};
-      responses.forEach(doc => {
-        if (Array.isArray(doc.responses)) {
-          doc.responses.forEach(item => {
-            const q = item.question;
-            if (!grouped[q]) grouped[q] = [];
-            grouped[q].push({ user: doc.name, answer: item.answer });
-          });
-        }
-      });
-      return grouped;
-    }
-
-    // Liste des questions à afficher en bullet points
-    const textQuestions = [
-      "En rapide, comment ça va ?",
-      "Possibilité d'ajouter un peu plus de détails à la question précédente :",
-      "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ?",
-      "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ?",
-      "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ?",
-      "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.)"
-    ];
-
-    function displaySummary(grouped) {
-      const container = document.getElementById("summaryContainer");
-      container.innerHTML = "";
-
-      for (const question in grouped) {
-        const answers = grouped[question];
-        const card = document.createElement("div");
-        card.className = "bg-white shadow rounded p-4 mb-4";
-
-        const title = document.createElement("h2");
-        title.className = "text-lg font-bold mb-2";
-        title.textContent = question;
-        card.appendChild(title);
-
-        if (question === "En rapide, comment ça va ?") {
-          const freq = {}, userMap = {};
-          answers.forEach(({ user, answer }) => {
-            freq[answer] = (freq[answer] || 0) + 1;
-            if (!userMap[answer]) userMap[answer] = [];
-            userMap[answer].push(user);
-          });
-
-          const chartData = Object.keys(freq).map(answer => {
-            let color = "rgba(254, 153, 0, 255)";
-            if (answer === "WE'RE BARACK") color = "rgba(13, 150, 24, 255)";
-            else if (answer === "ITS JOEVER") color = "rgba(220, 55, 17, 255)";
-            else if (answer === "ça va") color = "rgba(50, 101, 204, 255)";
-            else if (answer.startsWith("a connu meilleur mois")) color = "rgba(254, 153, 0, 255)";
-            return { answer, freq: freq[answer], users: userMap[answer], color };
-          });
-
-          const labels = chartData.map(d => `${d.answer} (${d.users.join(", ")})`);
-          const data = chartData.map(d => d.freq);
-          const backgroundColors = chartData.map(d => d.color);
-
-          const chartContainer = document.createElement("div");
-          chartContainer.className = "flex items-center gap-4";
-          card.appendChild(chartContainer);
-
-          const canvas = document.createElement("canvas");
-          canvas.width = 850;
-          canvas.height = 320;
-          canvas.style.width = "850px";
-          canvas.style.height = "320px";
-          chartContainer.appendChild(canvas);
-
-          new Chart(canvas, {
-            type: 'pie',
-            data: {
-              labels: labels,
-              datasets: [{
-                data: data,
-                backgroundColor: backgroundColors
-              }]
-            },
-            options: {
-              responsive: false,
-              plugins: {
-                legend: { position: 'right' }
-              }
-            }
-          });
-
-        } else {
-          const ul = document.createElement("ul");
-          ul.className = "list-disc pl-5";
-
-          if (textQuestions.includes(question)) {
-            answers.forEach(item => {
-              const li = document.createElement("li");
-              li.textContent = `${item.user} : ${item.answer}`;
-              ul.appendChild(li);
-            });
-          } else {
-            const avgLength = answers.reduce((sum, a) => sum + a.answer.length, 0) / answers.length;
-            if (avgLength < 20) {
-              const freq = {};
-              answers.forEach(({ answer }) => freq[answer] = (freq[answer] || 0) + 1);
-              for (const option in freq) {
-                const li = document.createElement("li");
-                li.textContent = `${option} : ${freq[option]} réponse(s)`;
-                ul.appendChild(li);
-              }
-            } else {
-              answers.forEach(({ user, answer }) => {
-                const li = document.createElement("li");
-                if (answer.startsWith("data:image")) {
-                  const img = document.createElement("img");
-                  img.src = answer;
-                  img.alt = `Image de ${user}`;
-                  img.className = "w-16 h-16 object-cover inline-block mr-2 border";
-                  li.appendChild(img);
-                  const span = document.createElement("span");
-                  span.textContent = ` ${user}`;
-                  li.appendChild(span);
-                } else {
-                  li.textContent = `${user} : ${answer}`;
-                }
-                ul.appendChild(li);
-              });
-            }
-          }
-          card.appendChild(ul);
-        }
-
-        container.appendChild(card);
+      } catch (err) {
+        console.error("Erreur loadMonths :", err);
       }
     }
 
-    loadResponses();
-  </script>
-</body>
-</html>
+    // 2. Charger et afficher le résumé pour le mois sélectionné
+    async function loadSummary() {
+      try {
+        const month = document.getElementById('monthFilter').value;
+        let url = '/api/admin/summary';
+        if (month && month !== 'all') url += `?month=${month}`;
+
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error(`Statut HTTP ${res.status}`);
+        const summary = await res.json();  // [{ question, items:[{user,answer},…] },…]
+
+        displaySummary(summary);
+      } catch (err) {
+        console.error("Erreur loadSummary :", err);
+      }
+    }
+
+    // 3. Renderer le résumé (camembert + listes)
+    function displaySummary(summary) {
+      const
