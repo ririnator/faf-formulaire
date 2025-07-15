@@ -83,7 +83,7 @@ router.get('/summary', async (req, res) => {
           question: '$_id',
           items:    1
       }}
-    ]).allowDiskUse(true);
+    ]).option({ allowDiskUse: true });
 
     res.json(summary);
   } catch (err) {
@@ -135,8 +135,8 @@ router.get('/months', async (req, res) => {
             ]
           }
       }}
-    ]).allowDiskUse(true);
-
+    ]).option({ allowDiskUse: true });
+    
     res.json(months);
   } catch (err) {
     console.error('❌ Erreur /months :', err);
