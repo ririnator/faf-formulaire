@@ -1,8 +1,9 @@
-const express = require('express');
-const router  = express.Router();
+// routes/adminRoutes.js
+const express  = require('express');
+const router   = express.Router();
 const Response = require('../models/Response');
 
-// Middleware pour charger la réponse dans req.responseDoc
+// Middleware : charge la réponse dans req.responseDoc
 router.param('id', async (req, res, next, id) => {
   try {
     const doc = await Response.findById(id);
@@ -15,36 +16,34 @@ router.param('id', async (req, res, next, id) => {
 });
 
 // GET /api/admin/responses?page=1&limit=10
+// (pour l’UI de gestion paginée)
 router.get('/responses', async (req, res) => {
   try {
-    // Récupère et normalise les paramètres
     const page  = Math.max(1, parseInt(req.query.page, 10)  || 1);
-    const limit = Math.max(1, parseInt(req.query.limit, 10) || 10);
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const skip  = (page - 1) * limit;
 
-    // Comptage total pour pagination
     const totalCount = await Response.countDocuments();
     const totalPages = Math.ceil(totalCount / limit);
 
-      // Requête paginée avec allowDiskUse pour éviter le dépassement mémoire
-      const data = await Response.find()
+    const data = await Response.find()
+      .select('name createdAt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
-    // Renvoie dans le shape attendu par ton front
+
     res.json({
-      responses: data,
+      responses:  data,
       pagination: { page, totalPages, totalCount }
     });
   } catch (err) {
-    console.error('❌ Erreur serveur pagination :', err);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('❌ Erreur pagination /responses :', err);
+    res.status(500).json({ message: 'Erreur serveur pagination' });
   }
 });
 
-
-// GET /api/admin/responses/:id et DELETE /api/admin/responses/:id
+// GET & DELETE /api/admin/responses/:id
 router.route('/responses/:id')
   .get((req, res) => {
     res.json(req.responseDoc);
@@ -54,44 +53,94 @@ router.route('/responses/:id')
       await req.responseDoc.deleteOne();
       res.json({ message: 'Réponse supprimée avec succès' });
     } catch (err) {
-      console.error('Erreur en supprimant la réponse :', err);
-      res.status(500).json({ message: 'Erreur lors de la suppression' });
+      console.error('❌ Erreur suppression /responses/:id :', err);
+      res.status(500).json({ message: 'Erreur serveur suppression' });
     }
   });
 
 // GET /api/admin/summary?month=YYYY-MM
-// Renvoie pour chaque question la liste déjà groupée { user, answer }
+// Retourne un résumé agrégé par question (pour l’UI graphique)
 router.get('/summary', async (req, res) => {
   try {
-    // Filtre sur le mois si fourni
     const match = {};
-    if (req.query.month) {
-      const [y, m] = req.query.month.split('-').map(n => parseInt(n,10));
+    if (req.query.month && req.query.month !== 'all') {
+      const [y, m] = req.query.month.split('-').map(n => parseInt(n, 10));
       match.createdAt = {
-        $gte: new Date(y, m-1, 1),
-        $lt:  new Date(y, m,   1)
+        $gte: new Date(y, m - 1, 1),
+        $lt:  new Date(y, m,     1)
       };
     }
 
-    // Mongo gère le grouping en pipeline
     const summary = await Response.aggregate([
       { $match: match },
       { $unwind: '$responses' },
       { $group: {
-         _id: '$responses.question',
-         items: { $push: { user:'$name', answer:'$responses.answer' } }
+          _id: '$responses.question',
+          items: { $push: { user:'$name', answer:'$responses.answer' } }
       }},
       { $project: {
-         _id:      0,
-         question: '$_id',
-         items:    1
+          _id:      0,
+          question: '$_id',
+          items:    1
       }}
     ]).allowDiskUse(true);
 
     res.json(summary);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message:'Erreur summary' });
+    console.error('❌ Erreur /summary :', err);
+    res.status(500).json({ message: 'Erreur serveur summary' });
+  }
+});
+
+// GET /api/admin/months
+// Retourne la liste des mois disponibles pour le filtre
+router.get('/months', async (req, res) => {
+  try {
+    const months = await Response.aggregate([
+      { $project: {
+          year:  { $year:  '$createdAt' },
+          month: { $month: '$createdAt' }
+      }},
+      { $group: {
+          _id: { y:'$year', m:'$month' }
+      }},
+      { $sort: { '_id.y': -1, '_id.m': -1 }},
+      { $project: {
+          _id:   0,
+          key:   {
+            $concat: [
+              { $toString: '$_id.y' }, '-',
+              {
+                $cond: [
+                  { $lt: ['$_id.m', 10] },
+                  { $concat: ['0', { $toString: '$_id.m' }] },
+                  { $toString: '$_id.m' }
+                ]
+              }
+            ]
+          },
+          label: {
+            $concat: [
+              {
+                $arrayElemAt: [
+                  [
+                    "janvier","février","mars","avril","mai","juin",
+                    "juillet","août","septembre","octobre","novembre","décembre"
+                  ],
+                  { $subtract: ['$_id.m', 1] }
+                ]
+              },
+              " ",
+              { $toString: '$_id.y' }
+            ]
+          }
+      }}
+    ]).allowDiskUse(true);
+
+    res.json(months);
+  } catch (err) {
+    console.error('❌ Erreur /months :', err);
+    res.status(500).json({ message: 'Erreur serveur months' });
   }
 });
 
