@@ -9,6 +9,7 @@ const session = require('express-session');
 const cors       = require('cors');
 const port = process.env.PORT || 3000;
 const MongoStore = require('connect-mongo');
+const uploadRoutes = require('./routes/upload');
 
 const app = express();
 
@@ -127,6 +128,8 @@ const formLimiter = rateLimit({
 });
 app.use('/api/response', formLimiter);
 
+
+
 // Import et utilisation du routeur pour les formulaires
 const formRoutes = require('./routes/formRoutes');
 app.use('/api/form', formRoutes);
@@ -134,6 +137,8 @@ app.use('/api/form', formRoutes);
 // Import et utilisation du routeur pour les réponses
 const responseRoutes = require('./routes/responseRoutes');
 app.use('/api/response', responseRoutes);
+
+app.use('/api/upload', uploadRoutes);
 
 // Sert les JS/CSS/images du back-office UNIQUEMENT si connecté
 app.use('/admin/assets', ensureAdmin,
@@ -144,7 +149,6 @@ app.use('/admin/assets', ensureAdmin,
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
 });
-
 
 // Démarrer le serveur
 app.listen(port, () => {
