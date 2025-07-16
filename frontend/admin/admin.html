@@ -109,15 +109,22 @@
 
           items.forEach(({ user, answer }) => {
             const li = document.createElement('li');
-            if (typeof answer === 'string' && answer.startsWith('data:image')) {
-              const img = document.createElement('img');
-              img.src   = answer;
-              img.alt   = `Image de ${user}`;
-              img.className = "w-16 h-16 object-cover inline-block mr-2 border";
-              li.appendChild(img);
-              li.appendChild(document.createTextNode(` ${user}`));
-            } else {
-              li.textContent = `${user} : ${answer}`;
+            if (
+                  typeof answer === 'string' &&
+                  (
+                    answer.startsWith('data:image') ||
+                    /^https?:\/\/.+\.(png|jpe?g|gif|webp)(\?.*)?$/.test(answer)
+                  )
+                ) {
+                  const img = document.createElement('img');
+                  img.src = answer;
+                  img.alt = `Image de ${user}`;
+                  img.className = "w-16 h-16 object-cover inline-block mr-2 border";
+                  li.appendChild(img);
+                  li.appendChild(document.createTextNode(` ${user}`));
+                } else {
+                  li.textContent = `${user} : ${answer}`;
+                }
             }
             ul.appendChild(li);
           });
