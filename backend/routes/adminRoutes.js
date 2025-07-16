@@ -1,5 +1,6 @@
 // routes/adminRoutes.js
 const express  = require('express');
+const mongoose = require('mongoose');
 const router   = express.Router();
 const Response = require('../models/Response');
 
