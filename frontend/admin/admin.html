@@ -10,7 +10,7 @@
 <body class="bg-gray-50 p-4">
   <div class="flex justify-end mb-4">
     <a href="/admin/gestion" class="text-blue-600 hover:underline">Gestion avancée</a>
-    <a href="/logout" class="text-red-600 hover:underline ml-4">Déconnexion</a>
+    <a href="/logout"       class="text-red-600 hover:underline ml-4">Déconnexion</a>
   </div>
 
   <div class="container mx-auto">
@@ -31,7 +31,7 @@
   <script>
     const pieQuestion = "En rapide, comment ça va ?";
 
-    // 1) Charge les mois dispos
+    // 1. Charger la liste des mois
     async function loadMonths() {
       const res = await fetch('/api/admin/months', {
         credentials: 'include',
@@ -39,17 +39,17 @@
       });
       if (!res.ok) throw new Error(`Months ${res.status}`);
       const months = await res.json();
-      const sel = document.getElementById('monthFilter');
+      const sel    = document.getElementById('monthFilter');
       months.forEach(m => {
         const opt = document.createElement('option');
-        opt.value = m.key;
-        opt.textContent = m.label;
+        opt.value       = m.key;   // ex. "2025-06"
+        opt.textContent = m.label; // ex. "juin 2025"
         sel.appendChild(opt);
       });
       return months;
     }
 
-    // 2) Charge le résumé pour le mois sélectionné
+    // 2. Charger et afficher le résumé
     async function loadSummary() {
       const month = document.getElementById('monthFilter').value;
       if (!month) return;
@@ -62,7 +62,7 @@
       displaySummary(summary);
     }
 
-    // 3) Affiche les cartes
+    // 3. Rendu des cartes
     function displaySummary(summary) {
       const container = document.getElementById('summaryContainer');
       container.innerHTML = '';
@@ -77,11 +77,11 @@
         card.appendChild(h2);
 
         if (question === pieQuestion) {
-          // Pie-chart
+          // PIE CHART (inchangé)
           const freq = {}, userMap = {};
           items.forEach(({ user, answer }) => {
             freq[answer] = (freq[answer] || 0) + 1;
-            (userMap[answer] = userMap[answer]||[]).push(user);
+            (userMap[answer] = userMap[answer] || []).push(user);
           });
 
           const labels = [], data = [], bg = [];
@@ -101,29 +101,36 @@
           new Chart(canvas, {
             type: 'pie',
             data: { labels, datasets:[{ data, backgroundColor: bg }] },
-            options: { responsive: false, plugins:{ legend:{ position:'right' } } }
+            options: { responsive: false, plugins: { legend:{position:'right'} } }
           });
 
         } else {
-          // Liste
+          // LISTE TEXTUELLE OU IMAGES  
           const ul = document.createElement('ul');
           ul.className = "list-disc pl-5";
 
           items.forEach(({ user, answer }) => {
             const li = document.createElement('li');
 
-            // Si c'est une URL d'image ou base64
-            const isImgUrl = typeof answer === 'string' &&
-              (/^data:image/.test(answer) ||
-               /^https?:\/\/.*\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(answer));
+            const isImage = (
+              typeof answer === 'string' &&
+              (
+                answer.startsWith('data:image') ||
+                /\.(jpe?g|png|gif|webp)(?:\?.*)?$/i.test(answer)
+              )
+            );
 
-            if (isImgUrl) {
+            if (isImage) {
               const img = document.createElement('img');
-              img.src = answer;
-              img.alt = `Image de ${user}`;
+              img.src       = answer;
+              img.alt       = `Image de ${user}`;
               img.className = "w-16 h-16 object-cover inline-block mr-2 border";
               li.appendChild(img);
-              li.appendChild(document.createTextNode(` ${user}`));
+
+              const span = document.createElement('span');
+              span.textContent = ` ${user}`;
+              li.appendChild(span);
+
             } else {
               li.textContent = `${user} : ${answer}`;
             }
@@ -138,9 +145,9 @@
       });
     }
 
-    // 4) Listeners & initialisation
+    // 4. Listeners + initialisation
     document.getElementById('monthFilter')
-            .addEventListener('change', loadSummary);
+      .addEventListener('change', loadSummary);
 
     (async () => {
       try {
@@ -153,6 +160,7 @@
         console.error('Initialisation admin.html :', err);
       }
     })();
+
   </script>
 </body>
 </html>
