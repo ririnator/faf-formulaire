@@ -1,73 +1,79 @@
 // scripts/migrate-images.js
 require('dotenv').config();
-const mongoose   = require('mongoose');
+const mongoose  = require('mongoose');
 const cloudinary = require('cloudinary').v2;
-const Response   = require('../models/Response'); // ajuste le chemin si besoin
+const Response  = require('../models/Response');
 
-// 1. Configuration Cloudinary
+// Configuration Cloudinary
 cloudinary.config({
-  cloud_name:  process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:     process.env.CLOUDINARY_API_KEY,
-  api_secret:  process.env.CLOUDINARY_API_SECRET,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 2. Connexion à MongoDB
-async function connectDB() {
-  await mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser:    true,
-    useUnifiedTopology: true,
-  });
-  console.log('✅ MongoDB connecté');
-}
-
-// 3. Migration
+// Fonction principale
 async function migrate() {
-  await connectDB();
+  try {
+    // 1) connexion à MongoDB
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('✅ MongoDB connecté');
 
-  // Utilise un curseur pour éviter de tout charger en mémoire
-  const cursor = Response.find().cursor();
+    const cursor = Response.find().cursor();
+    let totalImages = 0;
+    let migratedImages = 0;
 
-  let countTotal = 0;
-  let countMigrated = 0;
+    for await (const doc of cursor) {
+      let docMigrated = false;
 
-  for await (const doc of cursor) {
-    let modified = false;
+      // 2) on parcourt chaque réponse du document
+      for (const resp of doc.responses) {
+        const { answer, question } = resp;
+        // on ne traite que les chaînes base64 data:image
+        if (typeof answer === 'string' && answer.startsWith('data:image')) {
+          totalImages++;
+          try {
+            // on génère un public_id safe à partir de l'ID + question
+            const publicId = `faf/${doc._id}_${question
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '_')
+              .replace(/_+/g, '_')
+              .replace(/^_|_$/g, '')}`;
 
-    // Parcours chaque réponse
-    for (const item of doc.responses) {
-      const ans = item.answer;
-      // Détecte le Base64 (data:image...)
-      if (typeof ans === 'string' && ans.startsWith('data:image')) {
-        countTotal++;
-        try {
-          // upload vers Cloudinary
-          const uploadRes = await cloudinary.uploader.upload(ans, {
-            folder: 'faf-images',
-            overwrite: false,
-            resource_type: 'auto'
-          });
-          item.answer = uploadRes.secure_url;
-          modified = true;
-          countMigrated++;
-          console.log(`→ Migré doc ${doc._id} / question "${item.question}"`);
-        } catch (err) {
-          console.error(`✖ Erreur upload doc ${doc._id}:`, err.message);
+            const result = await cloudinary.uploader.upload(answer, {
+              folder:    'faf-images',
+              public_id: publicId,
+            });
+
+            // on remplace la réponse base64 par l'URL sécurisée
+            resp.answer = result.secure_url;
+            migratedImages++;
+            docMigrated = true;
+          } catch (err) {
+            console.error(
+              `✖ Erreur upload doc ${doc._id} (“${question}”):`,
+              err.message || JSON.stringify(err)
+            );
+          }
         }
+      }
+
+      // 3) si on a modifié au moins une réponse, on sauve le document
+      if (docMigrated) {
+        await doc.save();
+        console.log(`💾 Document ${doc._id} mis à jour`);
       }
     }
 
-    if (modified) {
-      await doc.save();
-      console.log(`✔ Document ${doc._id} mis à jour`);
-    }
-  }
+    console.log(
+      `🎉 Migration terminée : ${migratedImages}/${totalImages} images migrées.`
+    );
+    process.exit(0);
 
-  console.log(`\n🎉 Migration terminée : ${countMigrated}/${countTotal} images migrées.`);
-  process.exit(0);
+  } catch (err) {
+    console.error('❌ Migration échouée :', err);
+    process.exit(1);
+  }
 }
 
-// 4. Lancer la migration
-migrate().catch(err => {
-  console.error('❌ Migration échouée :', err);
-  process.exit(1);
-});
+// Lancement
+migrate();
