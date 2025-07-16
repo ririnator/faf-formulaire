@@ -10,7 +10,7 @@
 <body class="bg-gray-50 p-4">
   <div class="flex justify-end mb-4">
     <a href="/admin/gestion" class="text-blue-600 hover:underline">Gestion avancée</a>
-    <a href="/logout"       class="text-red-600 hover:underline ml-4">Déconnexion</a>
+    <a href="/logout" class="text-red-600 hover:underline ml-4">Déconnexion</a>
   </div>
 
   <div class="container mx-auto">
@@ -18,7 +18,7 @@
 
     <!-- Filtre par mois -->
     <div class="mb-6 text-center">
-      <label for="monthFilter" class="font-semibold mr-2">Filtrer par mois :</label>
+      <label for="monthFilter" class="font-semibold mr-2">Filtrer par mois :</label>
       <select id="monthFilter" class="p-2 border rounded">
         <option value="" disabled selected>Choisissez un mois</option>
       </select>
@@ -29,37 +29,40 @@
   </div>
 
   <script>
-    const pieQuestion = "En rapide, comment ça va ?";
+    const pieQuestion = "En rapide, comment ça va ?";
 
-    // Récupère et affiche la liste des mois, retourne le tableau
+    // 1) Charge les mois dispos
     async function loadMonths() {
-      const res = await fetch('/api/admin/months', { credentials: 'include',  headers: { 'Content-Type': 'application/json'}});
+      const res = await fetch('/api/admin/months', {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
       if (!res.ok) throw new Error(`Months ${res.status}`);
       const months = await res.json();
-      const sel    = document.getElementById('monthFilter');
+      const sel = document.getElementById('monthFilter');
       months.forEach(m => {
         const opt = document.createElement('option');
-        opt.value       = m.key;   // ex. "2025-06"
-        opt.textContent = m.label; // ex. "juin 2025"
+        opt.value = m.key;
+        opt.textContent = m.label;
         sel.appendChild(opt);
       });
       return months;
     }
 
-    // Charge et affiche le résumé pour le mois sélectionné
+    // 2) Charge le résumé pour le mois sélectionné
     async function loadSummary() {
       const month = document.getElementById('monthFilter').value;
-      if (!month) return;              // pas de mois choisi → on ne fait rien
-      const res = await fetch(
-        `/api/admin/summary?month=${month}`,
-        { credentials: 'include',  headers: { 'Content-Type': 'application/json'}}
-      );
+      if (!month) return;
+      const res = await fetch(`/api/admin/summary?month=${month}`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
       if (!res.ok) throw new Error(`Summary ${res.status}`);
       const summary = await res.json();
       displaySummary(summary);
     }
 
-    // Affiche les cards (camembert + listes) dans #summaryContainer
+    // 3) Affiche les cartes
     function displaySummary(summary) {
       const container = document.getElementById('summaryContainer');
       container.innerHTML = '';
@@ -68,18 +71,17 @@
         const card = document.createElement('div');
         card.className = "bg-white shadow rounded p-4 mb-4";
 
-        // Titre
         const h2 = document.createElement('h2');
         h2.className = "text-lg font-bold mb-2";
         h2.textContent = question;
         card.appendChild(h2);
 
         if (question === pieQuestion) {
-          // Préparer données pour le camembert
+          // Pie-chart
           const freq = {}, userMap = {};
           items.forEach(({ user, answer }) => {
             freq[answer] = (freq[answer] || 0) + 1;
-            (userMap[answer] = userMap[answer] || []).push(user);
+            (userMap[answer] = userMap[answer]||[]).push(user);
           });
 
           const labels = [], data = [], bg = [];
@@ -99,33 +101,33 @@
           new Chart(canvas, {
             type: 'pie',
             data: { labels, datasets:[{ data, backgroundColor: bg }] },
-            options: { responsive: false, plugins: { legend:{position:'right'} } }
+            options: { responsive: false, plugins:{ legend:{ position:'right' } } }
           });
 
         } else {
-          // Liste textuelle
+          // Liste
           const ul = document.createElement('ul');
           ul.className = "list-disc pl-5";
 
           items.forEach(({ user, answer }) => {
             const li = document.createElement('li');
-            if (
-                  typeof answer === 'string' &&
-                  (
-                    answer.startsWith('data:image') ||
-                    /^https?:\/\/.+\.(png|jpe?g|gif|webp)(\?.*)?$/.test(answer)
-                  )
-                ) {
-                  const img = document.createElement('img');
-                  img.src = answer;
-                  img.alt = `Image de ${user}`;
-                  img.className = "w-16 h-16 object-cover inline-block mr-2 border";
-                  li.appendChild(img);
-                  li.appendChild(document.createTextNode(` ${user}`));
-                } else {
-                  li.textContent = `${user} : ${answer}`;
-                }
+
+            // Si c'est une URL d'image ou base64
+            const isImgUrl = typeof answer === 'string' &&
+              (/^data:image/.test(answer) ||
+               /^https?:\/\/.*\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(answer));
+
+            if (isImgUrl) {
+              const img = document.createElement('img');
+              img.src = answer;
+              img.alt = `Image de ${user}`;
+              img.className = "w-16 h-16 object-cover inline-block mr-2 border";
+              li.appendChild(img);
+              li.appendChild(document.createTextNode(` ${user}`));
+            } else {
+              li.textContent = `${user} : ${answer}`;
             }
+
             ul.appendChild(li);
           });
 
@@ -136,12 +138,10 @@
       });
     }
 
-    // Au changement de mois, recharger le résumé
-    document
-      .getElementById('monthFilter')
-      .addEventListener('change', loadSummary);
+    // 4) Listeners & initialisation
+    document.getElementById('monthFilter')
+            .addEventListener('change', loadSummary);
 
-    // Au chargement initial : remplir les mois puis sélectionner le premier et afficher
     (async () => {
       try {
         const months = await loadMonths();
@@ -150,7 +150,7 @@
           await loadSummary();
         }
       } catch (err) {
-        console.error('Initialisation admin.html :', err);
+        console.error('Initialisation admin.html :', err);
       }
     })();
   </script>
