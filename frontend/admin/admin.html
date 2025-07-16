@@ -3,121 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Interface d'administration - Résumé des réponses</title>
+  <title>Interface d'administration – Résumé des réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-50 p-4">
   <div class="flex justify-end mb-4">
     <a href="/admin/gestion" class="text-blue-600 hover:underline">Gestion avancée</a>
-    <a href="/logout" class="text-red-600 hover:underline">Déconnexion</a>
-  </div>  
+    <a href="/logout"       class="text-red-600 hover:underline ml-4">Déconnexion</a>
+  </div>
 
   <div class="container mx-auto">
     <h1 class="text-3xl font-bold text-center mb-4">Résumé des réponses</h1>
 
-    <!-- Menu déroulant pour filtrer par mois-sujet -->
+    <!-- Filtre par mois -->
     <div class="mb-6 text-center">
-      <label for="monthFilter" class="font-semibold mr-2">Filtrer par mois sujet :</label>
+      <label for="monthFilter" class="font-semibold mr-2">Filtrer par mois :</label>
       <select id="monthFilter" class="p-2 border rounded">
-        <option value="all" selected>Toutes les réponses</option>
+        <option value="" disabled selected>Choisissez un mois</option>
       </select>
     </div>
 
+    <!-- Conteneur des cards -->
     <div id="summaryContainer"></div>
   </div>
 
   <script>
     const pieQuestion = "En rapide, comment ça va ?";
 
-    // 1. Charger la liste des mois dispos
+    // Récupère et affiche la liste des mois, retourne le tableau
     async function loadMonths() {
-      try {
-        const res = await fetch('/api/admin/months', { credentials: 'same-origin' });
-        if (!res.ok) throw new Error(res.status);
-        const months = await res.json();
-        const select = document.getElementById('monthFilter');
-        months.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m.key;       // "2025-06"
-          opt.textContent = m.label; // "juin 2025"
-          select.appendChild(opt);
-        });
-      } catch (err) {
-        console.error("Erreur loadMonths :", err);
-      }
+      const res = await fetch('/api/admin/months', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error(`Months ${res.status}`);
+      const months = await res.json();
+      const sel    = document.getElementById('monthFilter');
+      months.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value       = m.key;   // ex. "2025-06"
+        opt.textContent = m.label; // ex. "juin 2025"
+        sel.appendChild(opt);
+      });
+      return months;
     }
 
-    // 2. Charger et afficher le résumé pour le mois sélectionné
+    // Charge et affiche le résumé pour le mois sélectionné
     async function loadSummary() {
-      try {
-        const month = document.getElementById('monthFilter').value;
-        let url = '/api/admin/summary';
-        if (month && month !== 'all') url += `?month=${month}`;
-
-        const res = await fetch(url, { credentials: 'same-origin' });
-        if (!res.ok) throw new Error(`Statut HTTP ${res.status}`);
-        const summary = await res.json();  // [{ question, items:[{user,answer},…] },…]
-
-        displaySummary(summary);
-      } catch (err) {
-        console.error("Erreur loadSummary :", err);
-      }
+      const month = document.getElementById('monthFilter').value;
+      if (!month) return;              // pas de mois choisi → on ne fait rien
+      const res = await fetch(
+        `/api/admin/summary?month=${month}`,
+        { credentials: 'same-origin' }
+      );
+      if (!res.ok) throw new Error(`Summary ${res.status}`);
+      const summary = await res.json();
+      displaySummary(summary);
     }
 
-    // 3. Renderer le résumé (camembert + listes)
+    // Affiche les cards (camembert + listes) dans #summaryContainer
     function displaySummary(summary) {
       const container = document.getElementById('summaryContainer');
       container.innerHTML = '';
 
       summary.forEach(({ question, items }) => {
-        // Card wrapper
         const card = document.createElement('div');
         card.className = "bg-white shadow rounded p-4 mb-4";
 
         // Titre
-        const title = document.createElement('h2');
-        title.className = "text-lg font-bold mb-2";
-        title.textContent = question;
-        card.appendChild(title);
+        const h2 = document.createElement('h2');
+        h2.className = "text-lg font-bold mb-2";
+        h2.textContent = question;
+        card.appendChild(h2);
 
         if (question === pieQuestion) {
-          // Pie chart
+          // Préparer données pour le camembert
           const freq = {}, userMap = {};
           items.forEach(({ user, answer }) => {
             freq[answer] = (freq[answer] || 0) + 1;
-            if (!userMap[answer]) userMap[answer] = [];
-            userMap[answer].push(user);
+            (userMap[answer] = userMap[answer] || []).push(user);
           });
 
           const labels = [], data = [], bg = [];
-          Object.entries(freq).forEach(([ans, count]) => {
+          Object.entries(freq).forEach(([ans, cnt]) => {
             labels.push(`${ans} (${userMap[ans].join(', ')})`);
-            data.push(count);
+            data.push(cnt);
             bg.push(`hsla(${Math.random()*360},50%,50%,0.8)`);
           });
 
-          const chartContainer = document.createElement('div');
-          chartContainer.className = "flex items-center gap-4";
-          card.appendChild(chartContainer);
-
+          const wrapper = document.createElement('div');
+          wrapper.className = "flex items-center gap-4";
           const canvas = document.createElement('canvas');
           canvas.width = 850; canvas.height = 320;
-          chartContainer.appendChild(canvas);
+          wrapper.appendChild(canvas);
+          card.appendChild(wrapper);
 
           new Chart(canvas, {
             type: 'pie',
-            data: {
-              labels,
-              datasets: [{ data, backgroundColor: bg }]
-            },
-            options: {
-              responsive: false,
-              plugins: { legend: { position: 'right' } }
-            }
+            data: { labels, datasets:[{ data, backgroundColor: bg }] },
+            options: { responsive: false, plugins: { legend:{position:'right'} } }
           });
+
         } else {
-          // Liste des réponses
+          // Liste textuelle
           const ul = document.createElement('ul');
           ul.className = "list-disc pl-5";
 
@@ -125,8 +111,8 @@
             const li = document.createElement('li');
             if (typeof answer === 'string' && answer.startsWith('data:image')) {
               const img = document.createElement('img');
-              img.src = answer;
-              img.alt = `Image de ${user}`;
+              img.src   = answer;
+              img.alt   = `Image de ${user}`;
               img.className = "w-16 h-16 object-cover inline-block mr-2 border";
               li.appendChild(img);
               li.appendChild(document.createTextNode(` ${user}`));
@@ -143,13 +129,22 @@
       });
     }
 
-    // 4. Setup des listeners et démarrage
-    document.getElementById('monthFilter')
+    // Au changement de mois, recharger le résumé
+    document
+      .getElementById('monthFilter')
       .addEventListener('change', loadSummary);
 
+    // Au chargement initial : remplir les mois puis sélectionner le premier et afficher
     (async () => {
-      await loadMonths();
-      await loadSummary();
+      try {
+        const months = await loadMonths();
+        if (months.length) {
+          document.getElementById('monthFilter').value = months[0].key;
+          await loadSummary();
+        }
+      } catch (err) {
+        console.error('Initialisation admin.html :', err);
+      }
     })();
   </script>
 </body>
