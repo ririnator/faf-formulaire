@@ -12,6 +12,11 @@ const MongoStore = require('connect-mongo');
 
 const app = express();
 
+app.use(cors({
+  origin: 'https://faf-jotg.onrender.com',  // ton front
+  credentials: true                        // <— autorise l’envoi du cookie
+}));
+
 // Faire confiance au proxy de Render pour récupérer la vraie IP client
 app.set('trust proxy', 1);
 
@@ -28,7 +33,9 @@ app.use(session({
     autoRemove: 'native'       // MongoDB supprime automatiquement les sessions expirées
   }),
   cookie: {
-    maxAge: 1000 * 60 * 60  // 1 heure
+    maxAge: 1000 * 60 * 60, // 1 heure
+    sameSite: 'none',       // obligatoire pour cross-site
+    secure:   true          // en production HTTPS
   }
 }));
 
@@ -54,7 +61,6 @@ mongoose.connect(process.env.MONGODB_URI)
 
 //4. SERVIR LE FRONT PUBLIC
 app.use(express.static(path.join(__dirname, '../frontend/public')));
-app.use(cors());
 
 
 // 5. Outils d'Authentification

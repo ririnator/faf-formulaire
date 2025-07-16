@@ -33,7 +33,7 @@
 
     // Récupère et affiche la liste des mois, retourne le tableau
     async function loadMonths() {
-      const res = await fetch('/api/admin/months', { credentials: 'same-origin' });
+      const res = await fetch('/api/admin/months', { credentials: 'include',  headers: { 'Content-Type': 'application/json'}});
       if (!res.ok) throw new Error(`Months ${res.status}`);
       const months = await res.json();
       const sel    = document.getElementById('monthFilter');
@@ -52,7 +52,7 @@
       if (!month) return;              // pas de mois choisi → on ne fait rien
       const res = await fetch(
         `/api/admin/summary?month=${month}`,
-        { credentials: 'same-origin' }
+        { credentials: 'include',  headers: { 'Content-Type': 'application/json'}}
       );
       if (!res.ok) throw new Error(`Summary ${res.status}`);
       const summary = await res.json();

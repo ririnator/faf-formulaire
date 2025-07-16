@@ -62,13 +62,12 @@ router.route('/responses/:id')
 // Résumé pour l’UI graphique (camembert + listes)
 router.get('/summary', async (req, res) => {
   try {
-    // Filtre optionnel par mois (format "YYYY-MM")
     const match = {};
     if (req.query.month && req.query.month !== 'all') {
-      const [year, month] = req.query.month.split('-').map(n => parseInt(n, 10));
+      const [y, m] = req.query.month.split('-').map(n => parseInt(n,10));
       match.createdAt = {
-        $gte: new Date(year, month - 1, 1),
-        $lt:  new Date(year, month,     1)
+        $gte: new Date(y, m-1, 1),
+        $lt:  new Date(y, m,   1),
       };
     }
 
@@ -77,7 +76,7 @@ router.get('/summary', async (req, res) => {
       { $unwind: '$responses' },
       { $group: {
           _id: '$responses.question',
-          items: { $push: { user: '$name', answer: '$responses.answer' } }
+          items: { $push: { user:'$name', answer:'$responses.answer' } }
       }},
       { $project: {
           _id:      0,
@@ -86,15 +85,15 @@ router.get('/summary', async (req, res) => {
       }}
     ];
 
-    // Ajout de allowDiskUse pour éviter l’erreur mémoire
-    const summary = await Response.aggregate(pipeline)
-                                 .allowDiskUse(true)
-                                 .exec();
+    // Utilise le driver natif pour activer vraiment allowDiskUse
+    const coll   = mongoose.connection.db.collection('responses');
+    const cursor = coll.aggregate(pipeline, { allowDiskUse: true });
+    const summary = await cursor.toArray();
 
-    res.json(summary);
+    return res.json(summary);
   } catch (err) {
     console.error('❌ Erreur summary :', err);
-    res.status(500).json({ message: 'Erreur serveur summary' });
+    return res.status(500).json({ message: 'Erreur serveur summary' });
   }
 });
 
@@ -102,42 +101,65 @@ router.get('/summary', async (req, res) => {
 // Liste des mois disponibles pour le filtre
 router.get('/months', async (req, res) => {
   try {
+    // Pipeline qui extrait l'année et le mois, les regroupe, les trie, et formate key+label
     const pipeline = [
-      { $project: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } } },
-      { $group:   { _id: { y: '$year', m: '$month' } } },
-      { $sort:    { '_id.y': -1, '_id.m': -1 } },
-      { $project: {
-          _id:   0,
-          key:   {
+      { 
+        $project: { 
+          year:  { $year:  '$createdAt' },
+          month: { $month: '$createdAt' }
+        } 
+      },
+      { 
+        $group: {
+          _id: { y: '$year', m: '$month' }
+        } 
+      },
+      { 
+        $sort: { '_id.y': -1, '_id.m': -1 } 
+      },
+      { 
+        $project: {
+          _id: 0,
+          key: {
             $concat: [
               { $toString: '$_id.y' }, '-',
-              { $cond: [ { $lt: ['$_id.m', 10] },
-                        { $concat: ['0', { $toString: '$_id.m' }] },
-                        { $toString: '$_id.m' } ] }
+              {
+                $cond: [
+                  { $lt: ['$_id.m', 10] },
+                  { $concat: ['0', { $toString: '$_id.m' }] },
+                  { $toString: '$_id.m' }
+                ]
+              }
             ]
           },
           label: {
             $concat: [
-              { $arrayElemAt: [ [
-                "janvier","février","mars","avril","mai","juin",
-                "juillet","août","septembre","octobre","novembre","décembre"
-              ], { $subtract: ['$_id.m', 1] } ] },
-              ' ',
+              {
+                $arrayElemAt: [
+                  [
+                    "janvier","février","mars","avril","mai","juin",
+                    "juillet","août","septembre","octobre","novembre","décembre"
+                  ],
+                  { $subtract: ['$_id.m', 1] }
+                ]
+              },
+              " ",
               { $toString: '$_id.y' }
             ]
           }
-      }}
+        }
+      }
     ];
 
-    // allowDiskUse pour ce gros pipeline
-    const months = await Response.aggregate(pipeline)
-                                 .allowDiskUse(true)
-                                 .exec();
+    // On récupère la collection native et on exécute l'agrégation avec allowDiskUse
+    const coll   = mongoose.connection.db.collection('responses');
+    const cursor = coll.aggregate(pipeline, { allowDiskUse: true });
+    const months = await cursor.toArray();
 
-    res.json(months);
+    return res.json(months);
   } catch (err) {
     console.error('❌ Erreur months :', err);
-    res.status(500).json({ message: 'Erreur serveur months' });
+    return res.status(500).json({ message: 'Erreur serveur months' });
   }
 });
 
