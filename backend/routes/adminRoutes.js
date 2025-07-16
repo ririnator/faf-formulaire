@@ -1,12 +1,9 @@
 // routes/adminRoutes.js
-const express   = require('express');
-const mongoose  = require('mongoose');
-const router    = express.Router();
-const Response  = require('../models/Response');
+const express  = require('express');
+const router   = express.Router();
+const Response = require('../models/Response');
 
-// ——————————————————————————————
-// Middleware : charger la réponse dans req.responseDoc
-// ——————————————————————————————
+// Middleware : charge la réponse dans req.responseDoc
 router.param('id', async (req, res, next, id) => {
   try {
     const doc = await Response.findById(id);
@@ -18,10 +15,8 @@ router.param('id', async (req, res, next, id) => {
   }
 });
 
-// ——————————————————————————————
 // GET /api/admin/responses?page=1&limit=10
 // Pour l’UI de gestion paginée
-// ——————————————————————————————
 router.get('/responses', async (req, res) => {
   try {
     const page  = Math.max(1, parseInt(req.query.page, 10)  || 1);
@@ -48,9 +43,7 @@ router.get('/responses', async (req, res) => {
   }
 });
 
-// ——————————————————————————————
 // GET & DELETE /api/admin/responses/:id
-// ——————————————————————————————
 router.route('/responses/:id')
   .get((req, res) => {
     res.json(req.responseDoc);
@@ -65,19 +58,17 @@ router.route('/responses/:id')
     }
   });
 
-// ——————————————————————————————
 // GET /api/admin/summary?month=YYYY-MM
-// Résumé agrégé par question (UI graphique)
-// ——————————————————————————————
+// Résumé pour l’UI graphique (camembert + listes)
 router.get('/summary', async (req, res) => {
   try {
-    // Construire le filtre sur createdAt
+    // Filtre optionnel par mois (format "YYYY-MM")
     const match = {};
     if (req.query.month && req.query.month !== 'all') {
-      const [y, m] = req.query.month.split('-').map(n => parseInt(n, 10));
+      const [year, month] = req.query.month.split('-').map(n => parseInt(n, 10));
       match.createdAt = {
-        $gte: new Date(y, m - 1, 1),
-        $lt:  new Date(y, m,     1)
+        $gte: new Date(year, month - 1, 1),
+        $lt:  new Date(year, month,     1)
       };
     }
 
@@ -95,22 +86,20 @@ router.get('/summary', async (req, res) => {
       }}
     ];
 
-    // Utiliser le driver natif pour allowDiskUse
-    const coll   = mongoose.connection.collection('responses');
-    const cursor = coll.aggregate(pipeline, { allowDiskUse: true });
-    const summary = await cursor.toArray();
+    // Ajout de allowDiskUse pour éviter l’erreur mémoire
+    const summary = await Response.aggregate(pipeline)
+                                 .allowDiskUse(true)
+                                 .exec();
 
     res.json(summary);
   } catch (err) {
-    console.error('❌ Erreur natif /summary :', err);
+    console.error('❌ Erreur summary :', err);
     res.status(500).json({ message: 'Erreur serveur summary' });
   }
 });
 
-// ——————————————————————————————
 // GET /api/admin/months
-// Liste des mois pour le filtre
-// ——————————————————————————————
+// Liste des mois disponibles pour le filtre
 router.get('/months', async (req, res) => {
   try {
     const pipeline = [
@@ -122,40 +111,32 @@ router.get('/months', async (req, res) => {
           key:   {
             $concat: [
               { $toString: '$_id.y' }, '-',
-              {
-                $cond: [
-                  { $lt: ['$_id.m', 10] },
-                  { $concat: ['0', { $toString: '$_id.m' }] },
-                  { $toString: '$_id.m' }
-                ]
-              }
+              { $cond: [ { $lt: ['$_id.m', 10] },
+                        { $concat: ['0', { $toString: '$_id.m' }] },
+                        { $toString: '$_id.m' } ] }
             ]
           },
           label: {
             $concat: [
-              {
-                $arrayElemAt: [
-                  [
-                    "janvier","février","mars","avril","mai","juin",
-                    "juillet","août","septembre","octobre","novembre","décembre"
-                  ],
-                  { $subtract: ['$_id.m', 1] }
-                ]
-              },
-              " ",
+              { $arrayElemAt: [ [
+                "janvier","février","mars","avril","mai","juin",
+                "juillet","août","septembre","octobre","novembre","décembre"
+              ], { $subtract: ['$_id.m', 1] } ] },
+              ' ',
               { $toString: '$_id.y' }
             ]
           }
       }}
     ];
 
-    const coll   = mongoose.connection.collection('responses');
-    const cursor = coll.aggregate(pipeline, { allowDiskUse: true });
-    const months = await cursor.toArray();
+    // allowDiskUse pour ce gros pipeline
+    const months = await Response.aggregate(pipeline)
+                                 .allowDiskUse(true)
+                                 .exec();
 
     res.json(months);
   } catch (err) {
-    console.error('❌ Erreur natif /months :', err);
+    console.error('❌ Erreur months :', err);
     res.status(500).json({ message: 'Erreur serveur months' });
   }
 });
