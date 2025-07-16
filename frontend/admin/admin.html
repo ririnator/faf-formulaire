@@ -10,7 +10,7 @@
 <body class="bg-gray-50 p-4">
   <div class="flex justify-end mb-4">
     <a href="/admin/gestion" class="text-blue-600 hover:underline">Gestion avancée</a>
-    <a href="/logout"       class="text-red-600 hover:underline ml-4">Déconnexion</a>
+    <a href="/logout" class="text-red-600 hover:underline ml-4">Déconnexion</a>
   </div>
 
   <div class="container mx-auto">
@@ -24,7 +24,7 @@
       </select>
     </div>
 
-    <!-- Conteneur des cards -->
+    <!-- Conteneur des cartes -->
     <div id="summaryContainer"></div>
   </div>
 
@@ -39,11 +39,11 @@
       });
       if (!res.ok) throw new Error(`Months ${res.status}`);
       const months = await res.json();
-      const sel    = document.getElementById('monthFilter');
+      const sel = document.getElementById('monthFilter');
       months.forEach(m => {
         const opt = document.createElement('option');
-        opt.value       = m.key;   // ex. "2025-06"
-        opt.textContent = m.label; // ex. "juin 2025"
+        opt.value = m.key;
+        opt.textContent = m.label;
         sel.appendChild(opt);
       });
       return months;
@@ -77,28 +77,35 @@
         card.appendChild(h2);
 
         if (question === pieQuestion) {
-          // PIE CHART (inchangé)
+          // --- PIE CHART ---
+          // Calcul des fréquences et mapping users
           const freq = {}, userMap = {};
           items.forEach(({ user, answer }) => {
             freq[answer] = (freq[answer] || 0) + 1;
             (userMap[answer] = userMap[answer] || []).push(user);
           });
 
-          const labels = [], data = [], bg = [];
+          // Préparation des labels, data et couleurs fixes
+          const labels = [];
+          const data   = [];
+          const bg     = [];
+
           Object.entries(freq).forEach(([ans, cnt]) => {
             labels.push(`${ans} (${userMap[ans].join(', ')})`);
             data.push(cnt);
 
-             // guide des couleurs
-          let color = "rgba(254, 153, 0, 1)";
-          if (ans === "WE'RE BARACK")         color = "rgba(13, 150, 24, 1)";
-          else if (ans === "ITS JOEVER")      color = "rgba(220, 55, 17, 1)";
-          else if (ans === "ça va")           color = "rgba(50, 101, 204, 1)";
-          else if (ans.startsWith("a connu meilleur mois")) 
-                                              color = "rgba(254, 153, 0, 1)";
-          bg.push(color);
+            // Mapping fixe des couleurs RGBA
+            let color = "rgba(254, 153,   0, 1)"; // orange vif par défaut
+            if (ans === "ça va")             color = "rgba( 50, 101, 204, 1)"; // bleu roi
+            else if (ans === "WE'RE BARACK") color = "rgba( 13, 150,  24, 1)"; // vert forêt
+            else if (ans === "ITS JOEVER")   color = "rgba(220,  55,  17, 1)"; // rouge tomate
+            else if (ans.startsWith("a connu meilleur mois")) 
+                                            color = "rgba(254, 153,   0, 1)"; // orange vif
+
+            bg.push(color);
           });
 
+          // Création du canvas et du chart
           const wrapper = document.createElement('div');
           wrapper.className = "flex items-center gap-4";
           const canvas = document.createElement('canvas');
@@ -108,18 +115,23 @@
 
           new Chart(canvas, {
             type: 'pie',
-            data: { labels, datasets:[{ data, backgroundColor: bg }] },
-            options: { responsive: false, plugins: { legend:{position:'right'} } }
+            data: {
+              labels,
+              datasets: [{ data, backgroundColor: bg }]
+            },
+            options: {
+              responsive: false,
+              plugins: { legend: { position: 'right' } }
+            }
           });
 
         } else {
-          // LISTE TEXTUELLE OU IMAGES  
+          // --- LISTE TEXTUELLE OU IMAGES ---
           const ul = document.createElement('ul');
           ul.className = "list-disc pl-5";
 
           items.forEach(({ user, answer }) => {
             const li = document.createElement('li');
-
             const isImage = (
               typeof answer === 'string' &&
               (
@@ -130,19 +142,14 @@
 
             if (isImage) {
               const img = document.createElement('img');
-              img.src       = answer;
-              img.alt       = `Image de ${user}`;
+              img.src = answer;
+              img.alt = `Image de ${user}`;
               img.className = "w-16 h-16 object-cover inline-block mr-2 border";
               li.appendChild(img);
-
-              const span = document.createElement('span');
-              span.textContent = ` ${user}`;
-              li.appendChild(span);
-
+              li.appendChild(document.createTextNode(` ${user}`));
             } else {
               li.textContent = `${user} : ${answer}`;
             }
-
             ul.appendChild(li);
           });
 
@@ -168,7 +175,6 @@
         console.error('Initialisation admin.html :', err);
       }
     })();
-
   </script>
 </body>
 </html>
