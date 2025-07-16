@@ -1,6 +1,5 @@
 // routes/adminRoutes.js
 const express  = require('express');
-const mongoose = require('mongoose')
 const router   = express.Router();
 const Response = require('../models/Response');
 
@@ -60,24 +59,29 @@ router.route('/responses/:id')
   });
 
 // GET /api/admin/summary?month=YYYY-MM
-// Résumé pour l’UI graphique (camembert + listes)
+// Renvoie d'abord le camembert (petit grouping), puis regroupe le reste en JS
 router.get('/summary', async (req, res) => {
   try {
+    // Filtre optionnel par mois
     const match = {};
     if (req.query.month && req.query.month !== 'all') {
-      const [y, m] = req.query.month.split('-').map(n => parseInt(n,10));
+      const [y, m] = req.query.month.split('-').map(n => parseInt(n, 10));
       match.createdAt = {
-        $gte: new Date(y, m-1, 1),
-        $lt:  new Date(y, m,   1),
+        $gte: new Date(y, m - 1, 1),
+        $lt:  new Date(y, m,     1)
       };
     }
 
-    const pipeline = [
+    const PIE_Q = "En rapide, comment ça va ?";
+
+    // 1) Pipeline Mongo pour la question camembert
+    const piePipeline = [
       { $match: match },
       { $unwind: '$responses' },
+      { $match: { 'responses.question': PIE_Q } },
       { $group: {
           _id: '$responses.question',
-          items: { $push: { user:'$name', answer:'$responses.answer' } }
+          items: { $push: { user: '$name', answer: '$responses.answer' } }
       }},
       { $project: {
           _id:      0,
@@ -85,13 +89,29 @@ router.get('/summary', async (req, res) => {
           items:    1
       }}
     ];
+    const pieCursor = mongoose.connection.db
+      .collection('responses')
+      .aggregate(piePipeline, { allowDiskUse: true });
+    const pieSummary = await pieCursor.toArray();
 
-    // Utilise le driver natif pour activer vraiment allowDiskUse
-    const coll   = mongoose.connection.db.collection('responses');
-    const cursor = coll.aggregate(pipeline, { allowDiskUse: true });
-    const summary = await cursor.toArray();
+    // 2) Récupérer toutes les réponses du mois pour les autres questions
+    const docs = await Response.find(match)
+      .select('name responses.question responses.answer')
+      .lean();
 
-    return res.json(summary);
+    // 3) Regrouper en JS les réponses hors camembert
+    const textMap = {};
+    docs.forEach(doc => {
+      doc.responses.forEach(r => {
+        if (r.question === PIE_Q) return;
+        textMap[r.question] = textMap[r.question] || [];
+        textMap[r.question].push({ user: doc.name, answer: r.answer });
+      });
+    });
+    const textSummary = Object.entries(textMap).map(([question, items]) => ({ question, items }));
+
+    // 4) Concaténer pie + textes
+    return res.json([ ...pieSummary, ...textSummary ]);
   } catch (err) {
     console.error('❌ Erreur summary :', err);
     return res.status(500).json({ message: 'Erreur serveur summary' });
@@ -102,60 +122,38 @@ router.get('/summary', async (req, res) => {
 // Liste des mois disponibles pour le filtre
 router.get('/months', async (req, res) => {
   try {
-    // Pipeline qui extrait l'année et le mois, les regroupe, les trie, et formate key+label
     const pipeline = [
-      { 
-        $project: { 
-          year:  { $year:  '$createdAt' },
-          month: { $month: '$createdAt' }
-        } 
-      },
-      { 
-        $group: {
-          _id: { y: '$year', m: '$month' }
-        } 
-      },
-      { 
-        $sort: { '_id.y': -1, '_id.m': -1 } 
-      },
-      { 
-        $project: {
+      { $project: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } } },
+      { $group:   { _id: { y: '$year', m: '$month' } } },
+      { $sort:    { '_id.y': -1, '_id.m': -1 } },
+      { $project: {
           _id: 0,
           key: {
             $concat: [
               { $toString: '$_id.y' }, '-',
-              {
-                $cond: [
-                  { $lt: ['$_id.m', 10] },
-                  { $concat: ['0', { $toString: '$_id.m' }] },
-                  { $toString: '$_id.m' }
-                ]
-              }
+              { $cond: [ { $lt: ['$_id.m', 10] },
+                          { $concat: ['0', { $toString: '$_id.m' }] },
+                          { $toString: '$_id.m' } ] }
             ]
           },
           label: {
             $concat: [
-              {
-                $arrayElemAt: [
-                  [
-                    "janvier","février","mars","avril","mai","juin",
-                    "juillet","août","septembre","octobre","novembre","décembre"
-                  ],
-                  { $subtract: ['$_id.m', 1] }
-                ]
-              },
-              " ",
+              { $arrayElemAt: [ [
+                'janvier','février','mars','avril','mai','juin',
+                'juillet','août','septembre','octobre','novembre','décembre'
+              ], { $subtract: ['$_id.m', 1] } ] },
+              ' ',
               { $toString: '$_id.y' }
             ]
           }
-        }
-      }
+      }}
     ];
 
-    // On récupère la collection native et on exécute l'agrégation avec allowDiskUse
-    const coll   = mongoose.connection.db.collection('responses');
-    const cursor = coll.aggregate(pipeline, { allowDiskUse: true });
-    const months = await cursor.toArray();
+    // Aggregation native avec spill to disk
+    const monthsCursor = mongoose.connection.db
+      .collection('responses')
+      .aggregate(pipeline, { allowDiskUse: true });
+    const months = await monthsCursor.toArray();
 
     return res.json(months);
   } catch (err) {
