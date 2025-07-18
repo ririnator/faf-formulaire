@@ -164,22 +164,35 @@
               img.alt       = `Image de ${user}`;
               img.className = "w-16 h-16 object-cover inline-block mr-2 border cursor-pointer";
 
-              // lightbox au clic
+              // Ouverture de la lightbox quand on clique
               img.onclick = () => {
                 const overlay = document.createElement('div');
                 overlay.className = 'lightbox-overlay';
 
+                // Bouton "Fermer"
                 const close = document.createElement('div');
                 close.className = 'close-btn';
                 close.textContent = '×';
                 close.onclick = () => document.body.removeChild(overlay);
                 overlay.appendChild(close);
 
+                //Agrandissement de l'image
                 const bigImg = document.createElement('img');
                 bigImg.src = answer;
                 bigImg.alt = img.alt;
                 overlay.appendChild(bigImg);
 
+
+                //Nom de la personne qui a envoyé l'image
+                const caption = document.createElement('div');
+                caption.style.color           = '#fff';
+                caption.style.marginTop       = '0.5rem';
+                caption.style.fontSize        = '1.1rem';
+                caption.style.textAlign       = 'center';
+                caption.textContent           = user; //Injection du nom
+
+
+                //Fermeture de la lightbox aussi si on clique en dehors de l'image
                 overlay.addEventListener('click', e => {
                   if (e.target === overlay) document.body.removeChild(overlay);
                 });
