@@ -141,12 +141,23 @@
             );
 
             if (isImage) {
-              const img = document.createElement('img');
-              img.src = answer;
-              img.alt = `Image de ${user}`;
-              img.className = "w-16 h-16 object-cover inline-block mr-2 border";
-              li.appendChild(img);
-              li.appendChild(document.createTextNode(` ${user}`));
+                // wrappez l'<img> dans un <a> cliquable
+                const link = document.createElement('a');
+                link.href   = answer;
+                link.target = '_blank';       // ouvre dans un nouvel onglet
+                link.title  = `Voir en grand : ${user}`;
+
+                const img = document.createElement('img');
+                img.src       = answer;
+                img.alt       = `Image de ${user}`;
+                img.className = "w-16 h-16 object-cover inline-block mr-2 border cursor-pointer";
+
+                link.appendChild(img);
+                li.appendChild(link);
+
+                // puis le nom
+                li.appendChild(document.createTextNode(` ${user}`));
+              }
             } else {
               li.textContent = `${user} : ${answer}`;
             }
