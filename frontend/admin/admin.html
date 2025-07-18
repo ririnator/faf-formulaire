@@ -6,6 +6,36 @@
   <title>Interface d'administration – Résumé des réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* overlay full‐screen */
+    .lightbox-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    /* image agrandie */
+    .lightbox-overlay img {
+      max-width: 90%;
+      max-height: 90%;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      border-radius: 4px;
+    }
+    /* bouton fermer */
+    .lightbox-overlay .close-btn {
+      position: absolute;
+      top: 1rem; right: 1rem;
+      color: white;
+      font-size: 2rem;
+      cursor: pointer;
+      user-select: none;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 p-4">
   <div class="flex justify-end mb-4">
@@ -24,7 +54,7 @@
       </select>
     </div>
 
-    <!-- Conteneur des cartes -->
+    <!-- Conteneur des cards -->
     <div id="summaryContainer"></div>
   </div>
 
@@ -42,7 +72,7 @@
       const sel = document.getElementById('monthFilter');
       months.forEach(m => {
         const opt = document.createElement('option');
-        opt.value = m.key;
+        opt.value       = m.key;
         opt.textContent = m.label;
         sel.appendChild(opt);
       });
@@ -71,6 +101,7 @@
         const card = document.createElement('div');
         card.className = "bg-white shadow rounded p-4 mb-4";
 
+        // Titre
         const h2 = document.createElement('h2');
         h2.className = "text-lg font-bold mb-2";
         h2.textContent = question;
@@ -78,51 +109,40 @@
 
         if (question === pieQuestion) {
           // --- PIE CHART ---
-          // Calcul des fréquences et mapping users
           const freq = {}, userMap = {};
           items.forEach(({ user, answer }) => {
             freq[answer] = (freq[answer] || 0) + 1;
             (userMap[answer] = userMap[answer] || []).push(user);
           });
 
-          // Préparation des labels, data et couleurs fixes
-          const labels = [];
-          const data   = [];
-          const bg     = [];
-
+          const labels = [], data = [], bg = [];
           Object.entries(freq).forEach(([ans, cnt]) => {
             labels.push(`${ans} (${userMap[ans].join(', ')})`);
             data.push(cnt);
 
-            // Mapping fixe des couleurs RGBA
-            let color = "rgba(254, 153,   0, 1)"; // orange vif par défaut
-            if (ans === "ça va")             color = "rgba( 50, 101, 204, 1)"; // bleu roi
-            else if (ans === "WE'RE BARACK") color = "rgba( 13, 150,  24, 1)"; // vert forêt
-            else if (ans === "ITS JOEVER")   color = "rgba(220,  55,  17, 1)"; // rouge tomate
+            // Couleurs fixes
+            let color = "rgba(254, 153,   0, 1)"; // orange
+            if (ans === "ça va")             color = "rgba( 50, 101, 204, 1)";
+            else if (ans === "WE'RE BARACK") color = "rgba( 13, 150,  24, 1)";
+            else if (ans === "ITS JOEVER")   color = "rgba(220,  55,  17, 1)";
             else if (ans.startsWith("a connu meilleur mois")) 
-                                            color = "rgba(254, 153,   0, 1)"; // orange vif
-
+                                            color = "rgba(254, 153,   0, 1)";
             bg.push(color);
           });
 
-          // Création du canvas et du chart
+          // Canvas + chart
           const wrapper = document.createElement('div');
-          wrapper.className = "flex items-center gap-1";
+          wrapper.className = "flex items-center gap-4";
           const canvas = document.createElement('canvas');
-          canvas.width = 1100; canvas.height = 320;
+          canvas.width  = 1100;
+          canvas.height = 320;
           wrapper.appendChild(canvas);
           card.appendChild(wrapper);
 
           new Chart(canvas, {
             type: 'pie',
-            data: {
-              labels,
-              datasets: [{ data, backgroundColor: bg }]
-            },
-            options: {
-              responsive: false,
-              plugins: { legend: { position: 'right' } }
-            }
+            data: { labels, datasets: [{ data, backgroundColor: bg }] },
+            options: { responsive: false, plugins: { legend: { position: 'right' } } }
           });
 
         } else {
@@ -134,32 +154,46 @@
             const li = document.createElement('li');
             const isImage = (
               typeof answer === 'string' &&
-              (
-                answer.startsWith('data:image') ||
-                /\.(jpe?g|png|gif|webp|heic)(?:\?.*)?$/i.test(answer)
-              )
+              /\.(jpe?g|png|gif|webp|heic)(?:\?.*)?$/i.test(answer)
             );
 
             if (isImage) {
-                // wrappez l'<img> dans un <a> cliquable
-                const link = document.createElement('a');
-                link.href   = answer;
-                link.target = '_blank';       // ouvre dans un nouvel onglet
-                link.title  = `Voir en grand : ${user}`;
+              // miniature cliquable
+              const img = document.createElement('img');
+              img.src       = answer;
+              img.alt       = `Image de ${user}`;
+              img.className = "w-16 h-16 object-cover inline-block mr-2 border cursor-pointer";
 
-                const img = document.createElement('img');
-                img.src       = answer;
-                img.alt       = `Image de ${user}`;
-                img.className = "w-16 h-16 object-cover inline-block mr-2 border cursor-pointer";
+              // lightbox au clic
+              img.onclick = () => {
+                const overlay = document.createElement('div');
+                overlay.className = 'lightbox-overlay';
 
-                link.appendChild(img);
-                li.appendChild(link);
+                const close = document.createElement('div');
+                close.className = 'close-btn';
+                close.textContent = '×';
+                close.onclick = () => document.body.removeChild(overlay);
+                overlay.appendChild(close);
 
-                // puis le nom
-                li.appendChild(document.createTextNode(` ${user}`));
+                const bigImg = document.createElement('img');
+                bigImg.src = answer;
+                bigImg.alt = img.alt;
+                overlay.appendChild(bigImg);
+
+                overlay.addEventListener('click', e => {
+                  if (e.target === overlay) document.body.removeChild(overlay);
+                });
+
+                document.body.appendChild(overlay);
+              };
+
+              li.appendChild(img);
+              li.appendChild(document.createTextNode(` ${user}`));
+
             } else {
-                li.textContent = `${user} : ${answer}`;
+              li.textContent = `${user} : ${answer}`;
             }
+
             ul.appendChild(li);
           });
 
