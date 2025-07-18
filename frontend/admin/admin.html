@@ -19,6 +19,19 @@
       justify-content: center;
       z-index: 9999;
     }
+    /*légende sur l'image*/
+    .lightbox-caption {
+      position: absolute;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 0.25rem;
+      font-size: 1.1rem;
+      pointer-events: none;
+    }
     /* image agrandie */
     .lightbox-overlay img {
       max-width: 90%;
@@ -180,17 +193,17 @@
                 const bigImg = document.createElement('img');
                 bigImg.src = answer;
                 bigImg.alt = img.alt;
+                bigImg.style.maxWidth = '90%';
+                bigImg.style.maxHeight = '90%';
                 overlay.appendChild(bigImg);
 
 
-                //Nom de la personne qui a envoyé l'image
+                //Légende centrée en bas sur l'image
                 const caption = document.createElement('div');
-                caption.style.color           = '#fff';
-                caption.style.marginTop       = '0.5rem';
-                caption.style.fontSize        = '1.1rem';
+                caption.className = 'lightbox-caption';
                 caption.style.textAlign       = 'center';
                 caption.textContent           = user; //Injection du nom
-
+                overlay.appendChild(caption);
 
                 //Fermeture de la lightbox aussi si on clique en dehors de l'image
                 overlay.addEventListener('click', e => {
