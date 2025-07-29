@@ -167,7 +167,10 @@
             const li = document.createElement('li');
             const isImage = (
               typeof answer === 'string' &&
+              (
+              /^data:image\/[a-z]+;base64,/.test(answer) ||
               /\.(jpe?g|png|gif|webp|heic)(?:\?.*)?$/i.test(answer)
+          )
             );
 
             if (isImage) {
