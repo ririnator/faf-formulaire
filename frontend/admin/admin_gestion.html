@@ -6,7 +6,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link rel="icon" href="/favicon.ico" />
-
 </head>
 <body class="bg-gray-50 p-6">
   <div class="container mx-auto">
@@ -33,23 +32,18 @@
           <tr>
             <th class="w-1/4 py-2 px-4 border-b text-left">Date</th>
             <th class="w-2/4 py-2 px-4 border-b text-center">Nom</th>
-            <th class="w-1/4 py-2 px-4 border-b text-right">Gérer</th>
+            <th class="w-1/4 py-2 px-4 border-b text-right">Actions</th>
           </tr>
         </thead>
         <tbody id="responsesTableBody"></tbody>
       </table>
 
-       <!-- Pagination Controls -->
+      <!-- Pagination Controls -->
       <div class="mt-4 flex items-center space-x-4">
         <button id="prevBtn" class="px-3 py-1 border rounded">Précédent</button>
         <span>Page <strong id="currentPage">1</strong> / <strong id="totalPages">1</strong></span>
         <button id="nextBtn" class="px-3 py-1 border rounded">Suivant</button>
       </div>
-      
-
-      <!-- CONTENEUR POUR LES BOUTONS DE PAGINATION -->
-<div id="pagination" class="mt-4 flex space-x-2"></div>
-
     </div>
 
     <!-- Modal de détails -->
@@ -66,33 +60,28 @@
   <script>
     let currentPage = 1;
     const limit = 10;
-
     let allResponses = [];
 
     // Charge une page donnée
-async function loadPage(page = 1) {
-  try {
-    const res = await fetch(`https://faf-backend.onrender.com/api/admin/responses?page=${page}&limit=${limit}`);
-    if (!res.ok) throw new Error(`Statut HTTP ${res.status}`);
-    const { responses, pagination } = await res.json();
+    async function loadPage(page = 1) {
+      try {
+        const res = await fetch(`/api/admin/responses?page=${page}&limit=${limit}`);
+        if (!res.ok) throw new Error(`Statut HTTP ${res.status}`);
+        const { responses, pagination } = await res.json();
 
-    // Remplisage et affichage
-    allResponses = responses;
-    renderTable(responses);
+        allResponses = responses;
+        renderTable(responses);
 
-    // Mise à jour de l'affichage des infos de pagination
-    currentPage = pagination.page;
-    document.getElementById('currentPage').textContent = pagination.page;
-    document.getElementById('totalPages').textContent = pagination.totalPages;
+        currentPage = pagination.page;
+        document.getElementById('currentPage').textContent = pagination.page;
+        document.getElementById('totalPages').textContent = pagination.totalPages;
 
-    // Activer/désactiver les boutons
-    document.getElementById('prevBtn').disabled = pagination.page <= 1;
-    document.getElementById('nextBtn').disabled = pagination.page >= pagination.totalPages;
-  } catch (error) {
-    console.error("Erreur lors du chargement de la page :", error);
-  }
-}
-
+        document.getElementById('prevBtn').disabled = pagination.page <= 1;
+        document.getElementById('nextBtn').disabled = pagination.page >= pagination.totalPages;
+      } catch (error) {
+        console.error("Erreur lors du chargement de la page :", error);
+      }
+    }
 
     // Crée dynamiquement le <tbody> du tableau
     function renderTable(docs) {
@@ -102,70 +91,81 @@ async function loadPage(page = 1) {
       docs.forEach(doc => {
         const tr = document.createElement('tr');
 
+        // Si c'est la réponse admin, on la surligne
+        if (doc.isAdmin) {
+          tr.classList.add('bg-red-100', 'border-l-4', 'border-red-500');
+        }
+
         // Date
         const dateTd = document.createElement('td');
         dateTd.className = "py-2 px-4 border-b text-left";
         const d = new Date(doc.createdAt);
         dateTd.textContent = d.toLocaleString('fr-FR', {
-            year:   'numeric',
-            month:  '2-digit',
-            day:    '2-digit',
-            hour:   '2-digit',
-            minute: '2-digit'
-            });
-
+          year:   'numeric',
+          month:  '2-digit',
+          day:    '2-digit',
+          hour:   '2-digit',
+          minute: '2-digit'
+        });
         tr.appendChild(dateTd);
 
-        // Nom
+        // Nom (on ajoute "(Admin)" si nécessaire)
         const nameTd = document.createElement('td');
         nameTd.className = "py-2 px-4 border-b text-center";
-        nameTd.textContent = doc.name;
+        nameTd.textContent = doc.name + (doc.isAdmin ? ' (Admin)' : '');
         tr.appendChild(nameTd);
 
-        
-        // Bouton Supprimer
-        // Actions : on crée la cellule
+        // Actions : bouton Supprimer et (éventuellement) Voir
         const actionTd = document.createElement('td');
-        actionTd.className = "py-2 px-4 border-b text-right";
+        actionTd.className = "py-2 px-4 border-b text-right flex justify-end space-x-2";
 
+        // Bouton Voir (si token présent)
+        if (doc.token) {
+          const viewBtn = document.createElement('a');
+          viewBtn.href = `/view/${doc.token}`;
+          viewBtn.target = '_blank';
+          viewBtn.className = "bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600";
+          viewBtn.textContent = 'Voir';
+          actionTd.appendChild(viewBtn);
+        }
+
+        // Bouton Supprimer
         const delBtn = document.createElement('button');
         delBtn.className = "bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600";
         delBtn.textContent = 'Supprimer';
         delBtn.addEventListener('click', async () => {
-            if (!confirm(`Supprimer la réponse de ${doc.name} du ${new Date(doc.createdAt).toLocaleDateString('fr-FR')} ?`)) {
+          if (!confirm(`Supprimer la réponse de ${doc.name} du ${new Date(doc.createdAt).toLocaleDateString('fr-FR')} ?`)) {
             return;
-             }
-            try {
-                const res = await fetch(`/api/admin/responses/${doc._id}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error(`Statut ${res.status}`);
-                // Retirer la ligne du tableau
-                tr.remove();
-
-                if (allResponses.length === 1 && currentPage > 1) {
-            loadPage(currentPage - 1);
-          } else {
-            loadPage(currentPage);
           }
-                } catch (err) {
-                console.error("Erreur en supprimant :", err);
-                alert("La suppression a échoué.");
-                }
-            });
-            actionTd.appendChild(delBtn);
-            tr.appendChild(actionTd)
+          try {
+            const res = await fetch(`/api/admin/responses/${doc._id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(`Statut ${res.status}`);
+            tr.remove();
+            // Recharger si la page est vide
+            if (allResponses.length === 1 && currentPage > 1) {
+              loadPage(currentPage - 1);
+            } else {
+              loadPage(currentPage);
+            }
+          } catch (err) {
+            console.error("Erreur en supprimant :", err);
+            alert("La suppression a échoué.");
+          }
+        });
+        actionTd.appendChild(delBtn);
 
+        tr.appendChild(actionTd);
         tbody.appendChild(tr);
       });
     }
 
-    // Pagination : gestion des boutons Précédent / Suivant
+    // Pagination
     document.getElementById('prevBtn').addEventListener('click', () => {
       if (currentPage > 1) loadPage(currentPage - 1);
-      });
+    });
     document.getElementById('nextBtn').addEventListener('click', () => {
       loadPage(currentPage + 1);
     });
-
 
     // Recherche par nom
     document.getElementById('searchInput').addEventListener('input', (e) => {
@@ -185,7 +185,7 @@ async function loadPage(page = 1) {
       renderTable(sorted);
     });
 
-    // Lancement du chargement
+    // Initialisation
     loadPage(1);
   </script>
 </body>

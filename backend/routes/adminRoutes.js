@@ -17,7 +17,7 @@ router.param('id', async (req, res, next, id) => {
 });
 
 // GET /api/admin/responses?page=1&limit=10
-// Pour l’UI de gestion paginée
+// Pour l’UI de gestion paginée, incluant maintenant isAdmin et token
 router.get('/responses', async (req, res) => {
   try {
     const page  = Math.max(1, parseInt(req.query.page, 10)  || 1);
@@ -28,7 +28,7 @@ router.get('/responses', async (req, res) => {
     const totalPages = Math.ceil(totalCount / limit);
 
     const data = await Response.find()
-      .select('name createdAt')
+      .select('name email month createdAt isAdmin token')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -60,10 +60,9 @@ router.route('/responses/:id')
   });
 
 // GET /api/admin/summary?month=YYYY-MM
-// Renvoie d'abord le camembert (petit grouping), puis regroupe le reste en JS
+// inchangé
 router.get('/summary', async (req, res) => {
   try {
-    // Filtre optionnel par mois
     const match = {};
     if (req.query.month && req.query.month !== 'all') {
       const [y, m] = req.query.month.split('-').map(n => parseInt(n, 10));
@@ -74,8 +73,6 @@ router.get('/summary', async (req, res) => {
     }
 
     const PIE_Q = "En rapide, comment ça va ?";
-
-    // 1) Pipeline Mongo pour la question camembert
     const piePipeline = [
       { $match: match },
       { $unwind: '$responses' },
@@ -90,17 +87,15 @@ router.get('/summary', async (req, res) => {
           items:    1
       }}
     ];
-    const pieCursor = mongoose.connection.db
+    const pieSummary = await mongoose.connection.db
       .collection('responses')
-      .aggregate(piePipeline, { allowDiskUse: true });
-    const pieSummary = await pieCursor.toArray();
+      .aggregate(piePipeline, { allowDiskUse: true })
+      .toArray();
 
-    // 2) Récupérer toutes les réponses du mois pour les autres questions
     const docs = await Response.find(match)
       .select('name responses.question responses.answer')
       .lean();
 
-    // 3) Regrouper en JS les réponses hors camembert
     const textMap = {};
     docs.forEach(doc => {
       doc.responses.forEach(r => {
@@ -109,18 +104,18 @@ router.get('/summary', async (req, res) => {
         textMap[r.question].push({ user: doc.name, answer: r.answer });
       });
     });
-    const textSummary = Object.entries(textMap).map(([question, items]) => ({ question, items }));
+    const textSummary = Object.entries(textMap)
+      .map(([question, items]) => ({ question, items }));
 
-    // 4) Concaténer pie + textes
-    return res.json([ ...pieSummary, ...textSummary ]);
+    res.json([ ...pieSummary, ...textSummary ]);
   } catch (err) {
     console.error('❌ Erreur summary :', err);
-    return res.status(500).json({ message: 'Erreur serveur summary' });
+    res.status(500).json({ message: 'Erreur serveur summary' });
   }
 });
 
 // GET /api/admin/months
-// Liste des mois disponibles pour le filtre
+// inchangé
 router.get('/months', async (req, res) => {
   try {
     const pipeline = [
@@ -132,17 +127,19 @@ router.get('/months', async (req, res) => {
           key: {
             $concat: [
               { $toString: '$_id.y' }, '-',
-              { $cond: [ { $lt: ['$_id.m', 10] },
-                          { $concat: ['0', { $toString: '$_id.m' }] },
-                          { $toString: '$_id.m' } ] }
+              { $cond: [
+                { $lt: ['$_id.m', 10] },
+                { $concat: ['0', { $toString: '$_id.m' }] },
+                { $toString: '$_id.m' }
+              ] }
             ]
           },
           label: {
             $concat: [
-              { $arrayElemAt: [ [
+              { $arrayElemAt: [[
                 'janvier','février','mars','avril','mai','juin',
                 'juillet','août','septembre','octobre','novembre','décembre'
-              ], { $subtract: ['$_id.m', 1] } ] },
+              ], { $subtract: ['$_id.m', 1] }] },
               ' ',
               { $toString: '$_id.y' }
             ]
@@ -150,16 +147,15 @@ router.get('/months', async (req, res) => {
       }}
     ];
 
-    // Aggregation native avec spill to disk
-    const monthsCursor = mongoose.connection.db
+    const months = await mongoose.connection.db
       .collection('responses')
-      .aggregate(pipeline, { allowDiskUse: true });
-    const months = await monthsCursor.toArray();
+      .aggregate(pipeline, { allowDiskUse: true })
+      .toArray();
 
-    return res.json(months);
+    res.json(months);
   } catch (err) {
     console.error('❌ Erreur months :', err);
-    return res.status(500).json({ message: 'Erreur serveur months' });
+    res.status(500).json({ message: 'Erreur serveur months' });
   }
 });
 

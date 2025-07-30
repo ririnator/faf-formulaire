@@ -1,50 +1,78 @@
+// backend/routes/responseRoutes.js
+
 const express = require('express');
-const router = express.Router();
-const Response = require('../models/Response');
+const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
+const router = express.Router();
 
-// Endpoint POST pour enregistrer une réponse
-router.post('/', 
- // 1) règles de validation
- [
-  body('name')
-    .trim()
-    .isLength({ min: 2 })
-    .withMessage('Le nom doit contenir au moins 2 caractères'),
-  body('responses')
-    .isArray({ min: 1 })
-    .withMessage('Il faut au moins une réponse'),
-  body('responses.*.question')
-    .notEmpty()
-    .withMessage('Chaque question doit être précisée'),
-  body('responses.*.answer')
-    .notEmpty()
-    .withMessage('Chaque réponse ne peut pas être vide'),
-  // honeypot (champ invisible) — facultatif ici
-  body('website')
-    .optional()
-    .isEmpty()
-    .withMessage('Spam détecté')
-],
+const Response = require('../models/Response');
+const mailer = require('../utils/mailer');  // <-- correction du chemin
 
+// POST /api/response
+router.post(
+  '/',
+  [
+    // 1) règles de validation
+    body('name')
+      .trim()
+      .isLength({ min: 2 })
+      .withMessage('Le nom doit contenir au moins 2 caractères'),
+    body('email')
+      .isEmail()
+      .withMessage('L’email doit être valide'),
+    body('responses')
+      .isArray({ min: 1 })
+      .withMessage('Il faut au moins une réponse'),
+    body('responses.*.question')
+      .notEmpty()
+      .withMessage('Chaque question doit être précisée'),
+    body('responses.*.answer')
+      .notEmpty()
+      .withMessage('Chaque réponse ne peut pas être vide'),
+    // honeypot (champ invisible) — facultatif ici
+    body('website')
+      .optional()
+      .isEmpty()
+      .withMessage('Spam détecté')
+  ],
   async (req, res) => {
-    // 2) gestion des erreurs de validation 
+    // 2) gestion des erreurs de validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-  // 3) traitement normal : On récupère les données envoyées dans le corps de la requête
-  const responseData = req.body;
-  try {
-    const newResponse = new Response(responseData);
-    await newResponse.save();  // Sauvegarde dans la base de données
-    res.json({ message: "Réponse enregistrée avec succès !" });
-  } catch (err) {
-    console.error("Erreur en sauvegardant la réponse:", err);
-    res.status(500).json({ message: "Erreur en sauvegardant la réponse" });
+
+    // 3) normalisation des données
+    const { name, email, responses } = req.body;
+    const month = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+    const isAdmin = name.trim().toLowerCase() === 'riri';
+    // seul l’ami reçoit un token et pourra consulter
+    const token = isAdmin ? null : crypto.randomBytes(32).toString('hex');
+
+    try {
+      // 4) création et sauvegarde
+      const newResponse = new Response({
+        name,
+        email,
+        responses,
+        month,
+        isAdmin,
+        token
+      });
+      await newResponse.save();
+
+      // 5) envoi de l’email de lien unique (uniquement pour les non-admins)
+      if (!isAdmin) {
+        const link = `${process.env.APP_BASE_URL}/view/${token}`;
+        await mailer.sendResponseLink(email, link);
+      }
+
+      return res.status(201).json({ message: 'Réponse enregistrée avec succès !' });
+    } catch (err) {
+      console.error('Erreur en sauvegardant la réponse :', err);
+      return res.status(500).json({ message: 'Erreur en sauvegardant la réponse' });
+    }
   }
-});
-
-
+);
 
 module.exports = router;

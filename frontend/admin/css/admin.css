@@ -1,0 +1,6 @@
+.admin-row {
+    background-color: rgba(255, 0, 0, 0.1);
+  }
+  .admin-row td {
+    border-left: 4px solid #e74c3c;
+  }

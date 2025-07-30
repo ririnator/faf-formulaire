@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Vos réponses</title>
+  <link rel="stylesheet" href="/css/view.css">
+</head>
+<body>
+  <h1>Vos réponses – <span id="month"></span></h1>
+  <div id="qa-container"></div>
+
+  <script>
+    (async () => {
+      const token = location.pathname.split('/').pop();
+      const res = await fetch(`/api/view/${token}`);
+      if (!res.ok) {
+        document.body.innerHTML = '<p>Lien invalide ou expiré.</p>';
+        return;
+      }
+      const { user, admin } = await res.json();
+      document.getElementById('month').textContent = user.month;
+
+      user.responses.forEach((q, i) => {
+        const block = document.createElement('div');
+        block.innerHTML = `
+          <h2>Q${i+1} : ${q.question}</h2>
+          <p><strong>Vous :</strong> ${q.answer}</p>
+          <p class="admin-answer"><strong>Moi (Admin) :</strong> ${admin && admin.responses[i] ? admin.responses[i].answer : '<em>Pas encore répondu</em>'}</p>
+        `;
+        document.getElementById('qa-container').append(block);
+      });
+    })();
+  </script>
+</body>
+</html>
