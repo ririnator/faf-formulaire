@@ -159,27 +159,4 @@ router.get('/months', async (req, res) => {
   }
 });
 
-/**
- * PATCH /api/admin/flag-riri
- * Retro-actively mark every “riri” response as admin
- * (only accessible to a logged-in admin)
- */
-router.patch('/flag-riri', async (req, res) => {
-  try {
-    const result = await Response.updateMany(
-      { name: { $regex: /^riri$/i } },
-      { $set: { isAdmin: true, token: null } }
-    );
-    return res.json({
-      message:  'Toutes les réponses “riri” ont été flaggées comme admin.',
-      matched:   result.matchedCount,
-      modified:  result.modifiedCount
-    });
-  } catch (err) {
-    console.error('Error in flag-riri:', err);
-    return res.status(500).json({ message: 'Erreur serveur lors du flag admin.' });
-  }
-});
-
-
 module.exports = router;
