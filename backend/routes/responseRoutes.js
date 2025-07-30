@@ -16,9 +16,6 @@ router.post(
       .trim()
       .isLength({ min: 2 })
       .withMessage('Le nom doit contenir au moins 2 caractères'),
-    body('email')
-      .isEmail()
-      .withMessage('L’email doit être valide'),
     body('responses')
       .isArray({ min: 1 })
       .withMessage('Il faut au moins une réponse'),
@@ -42,7 +39,7 @@ router.post(
     }
 
     // 3) normalisation des données
-    const { name, email, responses } = req.body;
+    const { name, responses } = req.body;
     const month = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const isAdmin = name.trim().toLowerCase() === 'riri';
     // seul l’ami reçoit un token et pourra consulter
@@ -52,7 +49,6 @@ router.post(
       // 4) création et sauvegarde
       const newResponse = new Response({
         name,
-        email,
         responses,
         month,
         isAdmin,

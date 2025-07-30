@@ -28,7 +28,7 @@ router.get('/responses', async (req, res) => {
     const totalPages = Math.ceil(totalCount / limit);
 
     const data = await Response.find()
-      .select('name email month createdAt isAdmin token')
+      .select('name month createdAt isAdmin token')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

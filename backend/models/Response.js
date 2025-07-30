@@ -3,7 +3,6 @@ const Schema = mongoose.Schema;
 
 const ResponseSchema = new Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true },
   responses: [
     {
       question: String,
