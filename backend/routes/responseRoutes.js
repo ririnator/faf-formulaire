@@ -6,7 +6,6 @@ const { body, validationResult } = require('express-validator');
 const router = express.Router();
 
 const Response = require('../models/Response');
-const mailer = require('../utils/mailer');  // <-- correction du chemin
 
 // POST /api/response
 router.post(
@@ -61,13 +60,15 @@ router.post(
       });
       await newResponse.save();
 
-      // 5) envoi de l’email de lien unique (uniquement pour les non-admins)
-      if (!isAdmin) {
-        const link = `${process.env.APP_BASE_URL}/view/${token}`;
-        await mailer.sendResponseLink(email, link);
-      }
+      // 5) on renvoie le lien privé dans la réponse JSON
+      const link = token
+        ? `${process.env.APP_BASE_URL}/view/${token}`
+        : null;
 
-      return res.status(201).json({ message: 'Réponse enregistrée avec succès !' });
+      return res.status(201).json({
+        message: 'Réponse enregistrée avec succès !',
+        link
+      });
     } catch (err) {
       console.error('Erreur en sauvegardant la réponse :', err);
       return res.status(500).json({ message: 'Erreur en sauvegardant la réponse' });

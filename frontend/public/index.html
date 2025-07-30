@@ -9,10 +9,14 @@
     form { max-width: 600px; margin: 0 auto; }
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; }
-    input[type="text"], textarea, input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; }
+    input[type="text"], textarea, input[type="file"] {
+      width: 100%; padding: 8px; box-sizing: border-box;
+    }
     button { padding: 10px 20px; font-size: 16px; }
     .radio-group { display: flex; align-items: center; margin-bottom: 8px; }
     .radio-group input[type="radio"] { margin-right: 8px; }
+    #feedback { margin-top: 20px; font-size: 16px; }
+    #feedback a { color: blue; text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -103,6 +107,7 @@
 
     <button type="submit">Envoyer</button>
   </form>
+
   <div id="feedback"></div>
 
   <script>
@@ -112,15 +117,23 @@
       const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const month = prev.toLocaleString('fr-FR',{ month:'long' });
       const vowels = ['a','e','i','o','u','h'];
-      const prefix = vowels.includes(month[0].toLowerCase()) ? "a connu meilleur mois d'" : 'a connu meilleur mois de ';
+      const prefix = vowels.includes(month[0].toLowerCase())
+        ? "a connu meilleur mois d'"
+        : 'a connu meilleur mois de ';
       const opt2 = document.getElementById('option2');
       const lbl2 = document.getElementById('labelOption2');
-      if(opt2&&lbl2){ opt2.value = `${prefix}${month}`; lbl2.textContent = `${prefix}${month}`; }
+      if (opt2 && lbl2) {
+        opt2.value = `${prefix}${month}`;
+        lbl2.textContent = `${prefix}${month}`;
+      }
     });
 
     // Upload et soumission
     document.getElementById('friendForm').addEventListener('submit', async e => {
       e.preventDefault();
+      const feedback = document.getElementById('feedback');
+      feedback.textContent = ''; // efface les anciens messages
+
       const name  = document.getElementById('name').value;
       const q1    = document.querySelector('input[name="question1"]:checked').value;
       const q2    = document.getElementById('question2').value;
@@ -131,11 +144,18 @@
 
       async function uploadFile(id) {
         const inp = document.getElementById(id);
-        const f = inp.files[0]; if(!f) return null;
-        const fd = new FormData(); fd.append('image', f);
-        const r = await fetch('/api/upload',{ method:'POST', credentials:'include', body:fd });
-        if(!r.ok) throw new Error(`Upload ${id} ${r.status}`);
-        const j = await r.json(); return j.url;
+        const f = inp.files[0];
+        if (!f) return null;
+        const fd = new FormData();
+        fd.append('image', f);
+        const r = await fetch('/api/upload', {
+          method: 'POST',
+          credentials:'include',
+          body: fd
+        });
+        if (!r.ok) throw new Error(`Upload ${id} ${r.status}`);
+        const j = await r.json();
+        return j.url;
       }
 
       try {
@@ -144,25 +164,49 @@
         const q7  = await uploadFile('question7');
         const q10 = await uploadFile('question10');
 
-        const data = { name, responses: [
-          { question: 'En rapide, comment ça va ?', answer: q1 },
-          { question: 'Possibilité d\'ajouter un peu plus de détails à la question précédente :', answer: q2 },
-          { question: 'Le pulse check mensuel... montre une photo de toi ce mois-ci', answer: q3 },
-          { question: "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ?", answer: q4 },
-          { question: "C'est quoi la reaction pic que tu utilises le plus en ce moment ?", answer: q5 },
-          { question: "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ?", answer: q6 },
-          { question: "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement)", answer: q7 },
-          { question: "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ?", answer: q8 },
-          { question: "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.)", answer: q9 },
-          { question: "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre", answer: q10 }
-        ]};
+        const data = {
+          name,
+          email: document.getElementById('name').value + '@example.com', // ou récupère un champ email si tu l’ajoutes
+          responses: [
+            { question: 'En rapide, comment ça va ?', answer: q1 },
+            { question: 'Possibilité d\'ajouter un peu plus de détails à la question précédente :', answer: q2 },
+            { question: 'Le pulse check mensuel... montre une photo de toi ce mois-ci', answer: q3 },
+            { question: "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ?", answer: q4 },
+            { question: "C'est quoi la reaction pic que tu utilises le plus en ce moment ?", answer: q5 },
+            { question: "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ?", answer: q6 },
+            { question: "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement)", answer: q7 },
+            { question: "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ?", answer: q8 },
+            { question: "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.)", answer: q9 },
+            { question: "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre", answer: q10 }
+          ]
+        };
 
-        const resp = await fetch('/api/response',{ method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+        // Envoi des réponses
+        const resp = await fetch('/api/response', {
+          method: 'POST',
+          credentials:'include',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify(data)
+        });
+
         const resJ = await resp.json();
-        alert(resJ.message || 'Envoyé !');
-      } catch(err) {
+
+        if (!resp.ok) {
+          throw new Error(resJ.message || 'Erreur lors de l’envoi');
+        }
+
+        // Affiche le message et le lien
+        feedback.innerHTML = `
+          ✅ ${resJ.message}<br/>
+          ${resJ.link
+            ? `Votre lien privé : <a href="${resJ.link}" target="_blank">${resJ.link}</a>`
+            : ''}
+        `;
+        // Optionnel : reset du formulaire
+        document.getElementById('friendForm').reset();
+      } catch (err) {
         console.error(err);
-        alert('Erreur : '+err.message);
+        feedback.textContent = '❌ ' + err.message;
       }
     });
   </script>
