@@ -45,6 +45,16 @@ router.post(
     // seul l’ami reçoit un token et pourra consulter
     const token = isAdmin ? null : crypto.randomBytes(32).toString('hex');
 
+// ⚠️ Empêcher plus d'une réponse admin par mois
+  if (isAdmin) {
+      const already = await Response.exists({ month, isAdmin: true });
+      if (already) {
+        return res.status(409).json({
+          message: 'Une réponse admin existe déjà pour ce mois.'
+        });
+      }
+  }
+  
     try {
       // 4) création et sauvegarde
       const newResponse = new Response({

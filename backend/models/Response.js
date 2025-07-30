@@ -15,4 +15,12 @@ const ResponseSchema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+ResponseSchema.index(
+  { month: 1, isAdmin: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isAdmin: true }
+  }
+);
+
 module.exports = mongoose.model('Response', ResponseSchema);
