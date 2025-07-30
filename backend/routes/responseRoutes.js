@@ -43,9 +43,11 @@ router.post(
     const month = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const isAdmin = name.trim().toLowerCase() === 'riri';
     // seul l’ami reçoit un token et pourra consulter
-    const token = isAdmin ? null : crypto.randomBytes(32).toString('hex');
+    const token = isAdmin 
+    ? undefined 
+    : crypto.randomBytes(32).toString('hex');
 
-// ⚠️ Empêcher plus d'une réponse admin par mois
+// → **NE PAS CRÉER** si un admin pour ce mois existe déjà
   if (isAdmin) {
       const already = await Response.exists({ month, isAdmin: true });
       if (already) {
@@ -54,7 +56,7 @@ router.post(
         });
       }
   }
-  
+
     try {
       // 4) création et sauvegarde
       const newResponse = new Response({
