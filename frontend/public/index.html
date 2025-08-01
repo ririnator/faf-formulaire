@@ -196,10 +196,28 @@
 
         // Affiche le message et le lien
         feedback.innerHTML = `
-          ✅ ${resJ.message}<br/>
-          ${resJ.link
-            ? `Votre lien privé : <a href="${resJ.link}" target="_blank">${resJ.link}</a>`
-            : ''}
+          <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+            <div style="font-size: 18px; color: #155724; margin-bottom: 15px;">
+              ✅ ${resJ.message}
+            </div>
+            ${resJ.link
+              ? `<div style="margin-top: 15px;">
+                   <div style="font-weight: bold; color: #155724; margin-bottom: 8px;">Votre lien privé :</div>
+                   <a href="${resJ.link}" target="_blank" style="
+                     display: inline-block;
+                     background: #007bff;
+                     color: white;
+                     padding: 10px 20px;
+                     text-decoration: none;
+                     border-radius: 5px;
+                     font-weight: bold;
+                     transition: background-color 0.3s;
+                   " onmouseover="this.style.backgroundColor='#0056b3'" onmouseout="this.style.backgroundColor='#007bff'">
+                     👁️ Voir mes réponses
+                   </a>
+                 </div>`
+              : ''}
+          </div>
         `;
         // Optionnel : reset du formulaire
         document.getElementById('friendForm').reset();
