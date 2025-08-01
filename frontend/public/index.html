@@ -195,30 +195,37 @@
         }
 
         // Affiche le message et le lien
-        feedback.innerHTML = `
-          <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
-            <div style="font-size: 18px; color: #155724; margin-bottom: 15px;">
-              ✅ ${resJ.message}
-            </div>
-            ${resJ.link
-              ? `<div style="margin-top: 15px;">
-                   <div style="font-weight: bold; color: #155724; margin-bottom: 8px;">Votre lien privé :</div>
-                   <a href="${resJ.link}" target="_blank" style="
-                     display: inline-block;
-                     background: #007bff;
-                     color: white;
-                     padding: 10px 20px;
-                     text-decoration: none;
-                     border-radius: 5px;
-                     font-weight: bold;
-                     transition: background-color 0.3s;
-                   " onmouseover="this.style.backgroundColor='#0056b3'" onmouseout="this.style.backgroundColor='#007bff'">
-                     👁️ Voir mes réponses
-                   </a>
-                 </div>`
-              : ''}
-          </div>
-        `;
+        const successDiv = document.createElement('div');
+        successDiv.style.cssText = 'background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;';
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.style.cssText = 'font-size: 18px; color: #155724; margin-bottom: 15px;';
+        messageDiv.textContent = '✅ ' + resJ.message;
+        successDiv.appendChild(messageDiv);
+        
+        if (resJ.link) {
+          const linkContainer = document.createElement('div');
+          linkContainer.style.cssText = 'margin-top: 15px;';
+          
+          const linkLabel = document.createElement('div');
+          linkLabel.style.cssText = 'font-weight: bold; color: #155724; margin-bottom: 8px;';
+          linkLabel.textContent = 'Votre lien privé :';
+          linkContainer.appendChild(linkLabel);
+          
+          const linkBtn = document.createElement('a');
+          linkBtn.href = resJ.link;
+          linkBtn.target = '_blank';
+          linkBtn.style.cssText = 'display: inline-block; background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s;';
+          linkBtn.textContent = '👁️ Voir mes réponses';
+          linkBtn.onmouseover = function() { this.style.backgroundColor = '#0056b3'; };
+          linkBtn.onmouseout = function() { this.style.backgroundColor = '#007bff'; };
+          linkContainer.appendChild(linkBtn);
+          
+          successDiv.appendChild(linkContainer);
+        }
+        
+        feedback.innerHTML = '';
+        feedback.appendChild(successDiv);
         // Optionnel : reset du formulaire
         document.getElementById('friendForm').reset();
       } catch (err) {
