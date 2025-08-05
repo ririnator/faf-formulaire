@@ -21,7 +21,7 @@ const port = process.env.PORT || 3000;
 
 // 1) CORS – n’autorise que votre front
 app.use(cors({
-  origin: process.env.APP_BASE_URL, 
+  origin: [process.env.APP_BASE_URL, 'https://faf-jotg.onrender.com'], 
   credentials: true
 }));
 app.set('trust proxy', 1);
