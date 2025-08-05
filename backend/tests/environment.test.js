@@ -41,7 +41,7 @@ describe('Environment Variables', () => {
         'SESSION_SECRET': 'test-secret-key-minimum-32-chars-long',
         'LOGIN_ADMIN_USER': 'testadmin',
         'LOGIN_ADMIN_PASS': 'testpassword123',
-        'FORM_ADMIN_NAME': 'riri',
+        'FORM_ADMIN_NAME': 'testadmin',
         'APP_BASE_URL': 'http://localhost:3000'
       };
       return testValues[envVar];
