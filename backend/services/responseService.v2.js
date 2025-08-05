@@ -1,26 +1,28 @@
 const crypto = require('crypto');
 const Response = require('../models/Response');
-const EnvironmentConfig = require('../config/environment');
 
 class ResponseService {
-  static generateToken() {
+  constructor(config) {
+    this.config = config;
+  }
+
+  generateToken() {
     return crypto.randomBytes(32).toString('hex');
   }
 
-  static getCurrentMonth() {
+  getCurrentMonth() {
     return new Date().toISOString().slice(0, 7); // "YYYY-MM"
   }
 
-  static isAdminUser(name) {
-    const config = EnvironmentConfig.getConfig();
-    return name.trim().toLowerCase() === config.admin.formName?.toLowerCase();
+  isAdminUser(name) {
+    return name.trim().toLowerCase() === this.config.admin.formName?.toLowerCase();
   }
 
-  static async checkAdminExists(month) {
+  async checkAdminExists(month) {
     return await Response.exists({ month, isAdmin: true });
   }
 
-  static async createResponse(data) {
+  async createResponse(data) {
     const { name, responses } = data;
     const month = this.getCurrentMonth();
     const isAdmin = this.isAdminUser(name);
@@ -45,8 +47,7 @@ class ResponseService {
 
     await newResponse.save();
 
-    const config = EnvironmentConfig.getConfig();
-    const link = token ? `${config.urls.appBase}/view/${token}` : null;
+    const link = token ? `${this.config.urls.appBase}/view/${token}` : null;
 
     return {
       response: newResponse,
@@ -54,7 +55,7 @@ class ResponseService {
     };
   }
 
-  static async getResponseByToken(token) {
+  async getResponseByToken(token) {
     const userResp = await Response.findOne({ token, isAdmin: false }).lean();
     if (!userResp) {
       return null;
@@ -71,7 +72,7 @@ class ResponseService {
     };
   }
 
-  static async getAllResponses(page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc') {
+  async getAllResponses(page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc') {
     const skip = (page - 1) * limit;
     const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
@@ -96,7 +97,7 @@ class ResponseService {
     };
   }
 
-  static async getResponsesSummary() {
+  async getResponsesSummary() {
     const pipeline = [
       {
         $group: {
@@ -139,16 +140,16 @@ class ResponseService {
     return await Response.aggregate(pipeline);
   }
 
-  static async getResponseById(id) {
+  async getResponseById(id) {
     return await Response.findById(id).lean();
   }
 
-  static async deleteResponse(id) {
+  async deleteResponse(id) {
     const deleted = await Response.findByIdAndDelete(id);
     return deleted;
   }
 
-  static async getAvailableMonths() {
+  async getAvailableMonths() {
     const mongoose = require('mongoose');
     
     const pipeline = [

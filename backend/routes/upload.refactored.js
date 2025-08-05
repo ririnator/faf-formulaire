@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 
-const uploadService = require('../services/uploadService');
+const UploadService = require('../services/uploadService.static');
 
 // POST /api/upload
 router.post('/', async (req, res) => {
   try {
-    const result = await uploadService.uploadSingle(req, res);
+    const result = await UploadService.uploadSingle(req, res);
     res.json({ 
       url: result.url,
       meta: {

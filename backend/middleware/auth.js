@@ -1,7 +1,5 @@
 const bcrypt = require('bcrypt');
-
-const LOGIN_ADMIN_USER = process.env.LOGIN_ADMIN_USER;
-const LOGIN_ADMIN_PASS = process.env.LOGIN_ADMIN_PASS;
+const EnvironmentConfig = require('../config/environment');
 
 function ensureAdmin(req, res, next) {
   if (req.session?.isAdmin) return next();
@@ -10,8 +8,10 @@ function ensureAdmin(req, res, next) {
 
 async function authenticateAdmin(req, res, next) {
   const { username, password } = req.body;
+  const config = EnvironmentConfig.getConfig();
+  const { user: adminUser, password: adminPass } = config.admin;
   
-  if (username === LOGIN_ADMIN_USER && await bcrypt.compare(password, LOGIN_ADMIN_PASS)) {
+  if (username === adminUser && await bcrypt.compare(password, adminPass)) {
     req.session.isAdmin = true;
     return res.redirect('/admin');
   }
