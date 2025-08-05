@@ -64,7 +64,7 @@ app.use(express.static(path.join(__dirname, '../frontend/public')));
 
 // 6) Authentification Admin
 const ADMIN_USER      = process.env.ADMIN_USER;
-const ADMIN_PASS_HASH = bcrypt.hashSync(process.env.ADMIN_PASS, 10);
+const ADMIN_PASS_HASH = process.env.ADMIN_PASS;
 function ensureAdmin(req, res, next) {
   if (req.session?.isAdmin) return next();
   return res.redirect('/login');
