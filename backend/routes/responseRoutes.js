@@ -42,7 +42,7 @@ router.post(
     // 3) normalisation des données
     const { name, responses } = req.body;
     const month = new Date().toISOString().slice(0, 7); // "YYYY-MM"
-    const isAdmin = name.trim().toLowerCase() === 'riri';
+    const isAdmin = name.trim().toLowerCase() === process.env.FORM_ADMIN_NAME?.toLowerCase();
     // seul l’ami reçoit un token et pourra consulter
     const token = isAdmin 
     ? undefined 
