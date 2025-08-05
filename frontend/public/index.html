@@ -134,13 +134,73 @@
       const feedback = document.getElementById('feedback');
       feedback.textContent = ''; // efface les anciens messages
 
-      const name  = document.getElementById('name').value;
-      const q1    = document.querySelector('input[name="question1"]:checked').value;
-      const q2    = document.getElementById('question2').value;
-      const q4    = document.getElementById('question4').value;
-      const q6    = document.getElementById('question6').value;
-      const q8    = document.getElementById('question8').value;
-      const q9    = document.getElementById('question9').value;
+      // Validation de tous les champs requis
+      const name = document.getElementById('name').value.trim();
+      if (!name) {
+        feedback.textContent = '❌ Veuillez renseigner votre nom';
+        return;
+      }
+
+      const q1Radio = document.querySelector('input[name="question1"]:checked');
+      if (!q1Radio) {
+        feedback.textContent = '❌ Veuillez sélectionner une réponse à la première question';
+        return;
+      }
+      const q1 = q1Radio.value;
+
+      const q2 = document.getElementById('question2').value.trim();
+      if (!q2) {
+        feedback.textContent = '❌ Veuillez répondre à la question 2';
+        return;
+      }
+
+      const q3File = document.getElementById('question3').files[0];
+      if (!q3File) {
+        feedback.textContent = '❌ Veuillez ajouter une photo pour la question 3';
+        return;
+      }
+
+      const q4 = document.getElementById('question4').value.trim();
+      if (!q4) {
+        feedback.textContent = '❌ Veuillez répondre à la question 4';
+        return;
+      }
+
+      const q5File = document.getElementById('question5').files[0];
+      if (!q5File) {
+        feedback.textContent = '❌ Veuillez ajouter une image pour la question 5';
+        return;
+      }
+
+      const q6 = document.getElementById('question6').value.trim();
+      if (!q6) {
+        feedback.textContent = '❌ Veuillez répondre à la question 6';
+        return;
+      }
+
+      const q7File = document.getElementById('question7').files[0];
+      if (!q7File) {
+        feedback.textContent = '❌ Veuillez ajouter une image pour la question 7';
+        return;
+      }
+
+      const q8 = document.getElementById('question8').value.trim();
+      if (!q8) {
+        feedback.textContent = '❌ Veuillez répondre à la question 8';
+        return;
+      }
+
+      const q9 = document.getElementById('question9').value.trim();
+      if (!q9) {
+        feedback.textContent = '❌ Veuillez répondre à la question 9';
+        return;
+      }
+
+      const q10File = document.getElementById('question10').files[0];
+      if (!q10File) {
+        feedback.textContent = '❌ Veuillez ajouter une photo pour la question 10';
+        return;
+      }
 
       async function uploadFile(id) {
         const inp = document.getElementById(id);
