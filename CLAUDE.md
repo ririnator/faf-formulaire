@@ -22,14 +22,6 @@ npm run test:watch  # Run tests in watch mode
 npm run test:coverage # Run tests with coverage report
 ```
 
-### Frontend Development
-```bash
-cd frontend
-npm install         # Install test dependencies
-npm test           # Run frontend validation tests
-npm run test:watch # Run tests in watch mode
-npm run test:coverage # Run tests with coverage report
-```
 
 ### No Frontend Build Process
 The frontend consists of static files served directly by Express from `frontend/public/` and `frontend/admin/`.
@@ -92,6 +84,5 @@ The `Response` model contains:
 
 ### Testing Infrastructure
 - **Backend**: Jest + Supertest + MongoDB Memory Server for API and integration tests
-- **Frontend**: Jest + jsdom for validation logic testing
-- **Coverage**: Response validation, spam detection, admin logic, form validation
+- **Coverage**: Response validation, spam detection, admin logic, rate limiting, file uploads
 - **Test Commands**: `npm test`, `npm run test:watch`, `npm run test:coverage`
