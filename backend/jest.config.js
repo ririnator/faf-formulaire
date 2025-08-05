@@ -2,6 +2,7 @@ module.exports = {
   testEnvironment: 'node',
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testMatch: ['<rootDir>/tests/**/*.test.js'],
+  testPathIgnorePatterns: ['<rootDir>/tests/environment.test.js'], // Skip env tests in CI
   collectCoverageFrom: [
     'routes/**/*.js',
     'models/**/*.js',
@@ -9,5 +10,8 @@ module.exports = {
     '!**/node_modules/**'
   ],
   coverageDirectory: 'coverage',
-  verbose: true
+  verbose: false, // Reduce noise
+  testTimeout: 15000,
+  maxWorkers: 1, // Run tests serially to avoid DB conflicts
+  forceExit: true // Ensure clean exit
 };

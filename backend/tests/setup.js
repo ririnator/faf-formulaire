@@ -9,20 +9,27 @@ beforeAll(async () => {
   const mongoUri = mongoServer.getUri();
   
   await mongoose.connect(mongoUri);
-});
+}, 30000); // Increased timeout for DB setup
 
 afterAll(async () => {
-  // Clean up
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongoServer.stop();
-});
+  // Clean up database and connections
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+  }
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
+}, 30000);
 
 afterEach(async () => {
-  // Clean up after each test
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
+  // Quick cleanup after each test
+  if (mongoose.connection.readyState === 1) {
+    const collections = mongoose.connection.collections;
+    const promises = [];
+    for (const key in collections) {
+      promises.push(collections[key].deleteMany({}));
+    }
+    await Promise.all(promises);
   }
-});
+}, 10000);
