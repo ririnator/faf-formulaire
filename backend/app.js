@@ -21,7 +21,10 @@ const port = process.env.PORT || 3000;
 
 // 1) CORS – n’autorise que votre front
 app.use(cors({
-  origin: process.env.APP_BASE_URL, 
+  origin: [
+    process.env.APP_BASE_URL, 
+    process.env.FRONTEND_URL
+  ].filter(Boolean), // Removes any undefined values
   credentials: true
 }));
 app.set('trust proxy', 1);
