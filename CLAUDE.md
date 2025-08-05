@@ -17,6 +17,18 @@ cd backend
 npm install          # Install dependencies
 npm start           # Start production server (node app.js)
 npm run dev         # Start development server with nodemon
+npm test            # Run all tests
+npm run test:watch  # Run tests in watch mode
+npm run test:coverage # Run tests with coverage report
+```
+
+### Frontend Development
+```bash
+cd frontend
+npm install         # Install test dependencies
+npm test           # Run frontend validation tests
+npm run test:watch # Run tests in watch mode
+npm run test:coverage # Run tests with coverage report
 ```
 
 ### No Frontend Build Process
@@ -71,8 +83,15 @@ The `Response` model contains:
 - `createdAt` - Timestamp with index
 
 ### Security Features
-- CORS configuration restricting to `APP_BASE_URL`
+- CORS configuration supporting multiple origins (`APP_BASE_URL` and `FRONTEND_URL`)
 - Admin middleware protecting all admin routes
 - Input validation using express-validator
-- Rate limiting on form submissions
+- Rate limiting on form submissions (3 per 15 minutes)
+- Honeypot spam protection with hidden 'website' field
 - Secure session configuration with MongoDB store
+
+### Testing Infrastructure
+- **Backend**: Jest + Supertest + MongoDB Memory Server for API and integration tests
+- **Frontend**: Jest + jsdom for validation logic testing
+- **Coverage**: Response validation, spam detection, admin logic, form validation
+- **Test Commands**: `npm test`, `npm run test:watch`, `npm run test:coverage`

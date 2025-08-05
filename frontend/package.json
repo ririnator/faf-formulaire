@@ -1,0 +1,23 @@
+{
+  "name": "faf-frontend",
+  "version": "1.0.0",
+  "description": "Frontend tests for FAF application",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testMatch": ["<rootDir>/tests/**/*.test.js"],
+    "collectCoverageFrom": [
+      "public/**/*.js",
+      "admin/**/*.js",
+      "!**/node_modules/**"
+    ]
+  }
+}
