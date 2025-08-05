@@ -64,18 +64,21 @@ describe('Response API', () => {
     });
 
     test('should prevent duplicate admin responses', async () => {
-      const adminName = process.env.ADMIN_USER || 'riri';
+      if (!process.env.FORM_ADMIN_NAME) {
+        throw new Error('FORM_ADMIN_NAME environment variable is required for testing');
+      }
+      const formAdminName = process.env.FORM_ADMIN_NAME;
       
       // Create first admin response
       await request(app)
         .post('/api/response')
-        .send({ ...validResponseData, name: adminName })
+        .send({ ...validResponseData, name: formAdminName })
         .expect(201);
 
       // Try to create second admin response
       const response = await request(app)
         .post('/api/response')
-        .send({ ...validResponseData, name: adminName })
+        .send({ ...validResponseData, name: formAdminName })
         .expect(409);
 
       expect(response.body.message).toBe('Une réponse admin existe déjà pour ce mois.');

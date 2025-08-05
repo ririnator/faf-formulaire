@@ -59,15 +59,16 @@ The frontend consists of static files served directly by Express from `frontend/
 ### Environment Variables Required
 - `MONGODB_URI` - MongoDB connection string
 - `SESSION_SECRET` - Session encryption key
-- `ADMIN_USER` - Admin username
-- `ADMIN_PASS` - Admin password (hashed with bcrypt)
+- `LOGIN_ADMIN_USER` - Admin username for web interface login
+- `LOGIN_ADMIN_PASS` - Admin password for web interface (hashed with bcrypt)
+- `FORM_ADMIN_NAME` - Name of the person who fills forms as admin (e.g., "riri")
 - `APP_BASE_URL` - Base URL for generating private links
 - `FRONTEND_URL` - Frontend domain URL for CORS configuration
 - `CLOUDINARY_*` - Cloudinary configuration for file uploads
 
 ### Database Schema
 The `Response` model contains:
-- `name` - User's name (admin detection via 'riri')
+- `name` - User's name (admin detection via `FORM_ADMIN_NAME` env var)
 - `responses[]` - Array of question/answer pairs
 - `month` - YYYY-MM format for monthly grouping
 - `isAdmin` - Boolean flag for admin responses
