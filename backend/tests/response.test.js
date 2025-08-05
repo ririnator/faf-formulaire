@@ -64,16 +64,18 @@ describe('Response API', () => {
     });
 
     test('should prevent duplicate admin responses', async () => {
+      const adminName = process.env.ADMIN_USER || 'riri';
+      
       // Create first admin response
       await request(app)
         .post('/api/response')
-        .send({ ...validResponseData, name: 'riri' })
+        .send({ ...validResponseData, name: adminName })
         .expect(201);
 
       // Try to create second admin response
       const response = await request(app)
         .post('/api/response')
-        .send({ ...validResponseData, name: 'riri' })
+        .send({ ...validResponseData, name: adminName })
         .expect(409);
 
       expect(response.body.message).toBe('Une réponse admin existe déjà pour ce mois.');
