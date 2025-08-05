@@ -35,7 +35,8 @@ router.post(
     // 2) gestion des erreurs de validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      const firstError = errors.array()[0];
+      return res.status(400).json({ message: firstError.msg });
     }
 
     // 3) normalisation des données
