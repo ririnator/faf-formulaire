@@ -58,6 +58,7 @@ The frontend consists of static files served directly by Express from `frontend/
 - `ADMIN_USER` - Admin username
 - `ADMIN_PASS` - Admin password (hashed with bcrypt)
 - `APP_BASE_URL` - Base URL for generating private links
+- `FRONTEND_URL` - Frontend domain URL for CORS configuration
 - `CLOUDINARY_*` - Cloudinary configuration for file uploads
 
 ### Database Schema
