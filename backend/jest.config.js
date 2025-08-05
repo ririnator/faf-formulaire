@@ -1,8 +1,10 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env.test') });
+
 module.exports = {
   testEnvironment: 'node',
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testMatch: ['<rootDir>/tests/**/*.test.js'],
-  testPathIgnorePatterns: ['<rootDir>/tests/environment.test.js'], // Skip env tests in CI
   collectCoverageFrom: [
     'routes/**/*.js',
     'models/**/*.js',

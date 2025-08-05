@@ -66,8 +66,8 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 
 // 6) Authentification Admin
-const ADMIN_USER      = process.env.ADMIN_USER;
-const ADMIN_PASS_HASH = process.env.ADMIN_PASS;
+const LOGIN_ADMIN_USER = process.env.LOGIN_ADMIN_USER;
+const LOGIN_ADMIN_PASS = process.env.LOGIN_ADMIN_PASS;
 function ensureAdmin(req, res, next) {
   if (req.session?.isAdmin) return next();
   return res.redirect('/login');
@@ -79,7 +79,7 @@ app.get('/login', (req, res) => {
 });
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  if (username === ADMIN_USER && await bcrypt.compare(password, ADMIN_PASS_HASH)) {
+  if (username === LOGIN_ADMIN_USER && await bcrypt.compare(password, LOGIN_ADMIN_PASS)) {
     req.session.isAdmin = true;
     return res.redirect('/admin');
   }
