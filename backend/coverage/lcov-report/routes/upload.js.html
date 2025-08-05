@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.11% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>16/17</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.66% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>4/6</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/3</span>
+                <span class='fraction'>0/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.11% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>16/17</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -101,79 +101,79 @@
 <a name='L36'></a><a href='#L36'>36</a>
 <a name='L37'></a><a href='#L37'>37</a>
 <a name='L38'></a><a href='#L38'>38</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// backend/routes/upload.js
-const express               = require('express');
-const multer                = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary            = require('../config/cloudinary');
-const router                = express.Router();
+const express               = <span class="cstat-no" title="statement not covered" >require('express');</span>
+const multer                = <span class="cstat-no" title="statement not covered" >require('multer');</span>
+const { CloudinaryStorage } = <span class="cstat-no" title="statement not covered" >require('multer-storage-cloudinary');</span>
+const cloudinary            = <span class="cstat-no" title="statement not covered" >require('../config/cloudinary');</span>
+const router                = <span class="cstat-no" title="statement not covered" >express.Router();</span>
 &nbsp;
 // ← configuration du storage Cloudinary
-const storage = new CloudinaryStorage({
+const storage = <span class="cstat-no" title="statement not covered" >new CloudinaryStorage({</span>
   cloudinary,
   params: {
     folder:    'faf-images',
-    public_id: (req, file) =&gt;
-      `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`
+    public_id: <span class="fstat-no" title="function not covered" >(r</span>eq, file) =&gt;
+<span class="cstat-no" title="statement not covered" >      `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`</span>
   }
 });
 &nbsp;
 // ← parser Multer branché sur Cloudinary
-const parser = multer({
+const parser = <span class="cstat-no" title="statement not covered" >multer({</span>
   storage
 });
 &nbsp;
 // ← Route POST /api/upload
-router.post('/', (req, res) =&gt; {
-    parser.single('image')(req, res, err =&gt; {
-      if (err) {
-        console.error('⛔️ Erreur pendant l’upload :', err);
-        return res.status(500).json({ message: 'Erreur upload', detail: err.message });
+<span class="cstat-no" title="statement not covered" >router.post('/', <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    parser.single('image')(req, res, <span class="fstat-no" title="function not covered" >er</span>r =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      if (err) {</span>
+<span class="cstat-no" title="statement not covered" >        console.error('⛔️ Erreur pendant l’upload :', err);</span>
+<span class="cstat-no" title="statement not covered" >        return res.status(500).json({ message: 'Erreur upload', detail: err.message });</span>
       }
-      <span class="missing-if-branch" title="else path not taken" >E</span>if (!req.file || <span class="branch-1 cbranch-no" title="branch not covered" >!req.file.path)</span> {
-        return res.status(400).json({ message: 'Aucun fichier reçu' });
+<span class="cstat-no" title="statement not covered" >      if (!req.file || !req.file.path) {</span>
+<span class="cstat-no" title="statement not covered" >        return res.status(400).json({ message: 'Aucun fichier reçu' });</span>
       }
 <span class="cstat-no" title="statement not covered" >      res.json({ url: req.file.path });</span>
     });
   });
 &nbsp;
-module.exports = router;
+<span class="cstat-no" title="statement not covered" >module.exports = router;</span>
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -181,7 +181,7 @@ module.exports = router;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-05T21:08:42.145Z
+                at 2025-08-05T21:22:29.191Z
             </div>
         <script src="../prettify.js"></script>
         <script>

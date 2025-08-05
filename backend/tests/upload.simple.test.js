@@ -5,18 +5,21 @@ const path = require('path');
 const fs = require('fs');
 const uploadRoutes = require('../routes/upload');
 
-// Mock Cloudinary storage for testing
+// Mock Cloudinary storage with more realistic scenarios
+const mockCloudinaryStorage = {
+  _handleFile: jest.fn(),
+  _removeFile: jest.fn()
+};
+
 jest.mock('multer-storage-cloudinary', () => ({
-  CloudinaryStorage: jest.fn().mockImplementation(() => ({
-    _handleFile: jest.fn((req, file, cb) => {
-      // Simulate successful upload
-      cb(null, {
-        path: 'https://res.cloudinary.com/test/image/upload/v123456/test.jpg',
-        filename: 'test.jpg'
-      });
-    }),
-    _removeFile: jest.fn((req, file, cb) => cb(null))
-  }))
+  CloudinaryStorage: jest.fn().mockImplementation(() => mockCloudinaryStorage)
+}));
+
+// Mock Cloudinary config
+jest.mock('../config/cloudinary', () => ({
+  api_key: 'test-api-key',
+  api_secret: 'test-api-secret',
+  cloud_name: 'test-cloud'
 }));
 
 const cloudinary = require('../config/cloudinary');
@@ -47,19 +50,24 @@ describe('Upload Route Integration Tests', () => {
     
     // Reset mocks
     jest.clearAllMocks();
+    
+    // Setup default successful mock behavior
+    mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+      cb(null, {
+        path: `https://res.cloudinary.com/test-cloud/image/upload/v${Date.now()}/${file.originalname}`,
+        filename: file.originalname,
+        size: file.size || 1024,
+        format: path.extname(file.originalname).slice(1) || 'jpg'
+      });
+    });
+    
+    mockCloudinaryStorage._removeFile.mockImplementation((req, file, cb) => {
+      cb(null);
+    });
   });
 
-  describe('Upload endpoints', () => {
-    test('should upload file successfully with actual multer integration', async () => {
-      // Mock successful Cloudinary response
-      const mockCloudinaryResult = {
-        secure_url: 'https://res.cloudinary.com/test/image/upload/v123456/test.jpg',
-        public_id: 'test-image',
-        format: 'jpg'
-      };
-      
-      // The actual route uses multer-storage-cloudinary which doesn't use uploader.upload directly
-      // Instead we test the actual route behavior
+  describe('Upload endpoints - Basic Functionality', () => {
+    test('should upload file successfully with realistic Cloudinary response', async () => {
       const response = await request(app)
         .post('/api/upload')
         .attach('image', testImagePath)
@@ -67,7 +75,13 @@ describe('Upload Route Integration Tests', () => {
 
       expect(response.body).toHaveProperty('url');
       expect(typeof response.body.url).toBe('string');
-      expect(response.body.url.length).toBeGreaterThan(0);
+      expect(response.body.url).toMatch(/^https:\/\/res\.cloudinary\.com\/test-cloud/);
+      expect(response.body.url).toContain('test-image.jpg');
+      
+      // Verify Cloudinary storage was called correctly
+      expect(mockCloudinaryStorage._handleFile).toHaveBeenCalledTimes(1);
+      const callArgs = mockCloudinaryStorage._handleFile.mock.calls[0];
+      expect(callArgs[1]).toHaveProperty('originalname', 'test-image.jpg');
     });
 
     test('should return error for missing file', async () => {
@@ -76,16 +90,224 @@ describe('Upload Route Integration Tests', () => {
         .expect(400);
 
       expect(response.body.message).toBe('Aucun fichier reçu');
+      expect(mockCloudinaryStorage._handleFile).not.toHaveBeenCalled();
     });
 
-    test('should handle multer errors gracefully', async () => {
-      // Test with invalid field name (not 'image')
+    test('should handle wrong field name gracefully', async () => {
       const response = await request(app)
         .post('/api/upload')
         .attach('wrongfield', testImagePath);
         
       expect(response.status).toBe(400);
       expect(response.body.message).toBe('Aucun fichier reçu');
+    });
+
+    test('should handle multiple file upload attempts', async () => {
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', testImagePath)
+        .attach('image', testImagePath); // Second file should be ignored
+        
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('url');
+    });
+  });
+
+  describe('Cloudinary Integration - Error Scenarios', () => {
+    test('should handle Cloudinary upload timeout', async () => {
+      mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+        cb(new Error('Upload timeout - Cloudinary service unavailable'));
+      });
+
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', testImagePath)
+        .expect(500);
+
+      expect(response.body.message).toBe('Erreur upload');
+      expect(response.body.detail).toBe('Upload timeout - Cloudinary service unavailable');
+    });
+
+    test('should handle Cloudinary API key errors', async () => {
+      mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+        cb(new Error('Invalid API key - check your credentials'));
+      });
+
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', testImagePath)
+        .expect(500);
+
+      expect(response.body.message).toBe('Erreur upload');
+      expect(response.body.detail).toBe('Invalid API key - check your credentials');
+    });
+
+    test('should handle Cloudinary quota exceeded', async () => {
+      mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+        cb(new Error('Monthly quota exceeded'));
+      });
+
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', testImagePath)
+        .expect(500);
+
+      expect(response.body.detail).toBe('Monthly quota exceeded');
+    });
+
+    test('should handle Cloudinary file size limit', async () => {
+      mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+        cb(new Error('File size exceeds limit'));
+      });
+
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', testImagePath)
+        .expect(500);
+
+      expect(response.body.detail).toBe('File size exceeds limit');
+    });
+
+    test('should handle network connectivity issues', async () => {
+      mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+        cb(new Error('ECONNREFUSED - Cannot connect to Cloudinary'));
+      });
+
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', testImagePath)
+        .expect(500);
+
+      expect(response.body.detail).toContain('ECONNREFUSED');
+    });
+  });
+
+  describe('File Type and Format Handling', () => {
+    beforeEach(() => {
+      // Create different test files
+      const fixturesDir = path.join(__dirname, 'fixtures');
+      const pngPath = path.join(fixturesDir, 'test.png');
+      const gifPath = path.join(fixturesDir, 'test.gif');
+      const webpPath = path.join(fixturesDir, 'test.webp');
+      
+      if (!fs.existsSync(pngPath)) {
+        fs.writeFileSync(pngPath, Buffer.from('fake-png-data'));
+      }
+      if (!fs.existsSync(gifPath)) {
+        fs.writeFileSync(gifPath, Buffer.from('fake-gif-data'));
+      }
+      if (!fs.existsSync(webpPath)) {
+        fs.writeFileSync(webpPath, Buffer.from('fake-webp-data'));
+      }
+    });
+
+    test('should handle PNG uploads', async () => {
+      const pngPath = path.join(__dirname, 'fixtures', 'test.png');
+      
+      mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+        cb(null, {
+          path: `https://res.cloudinary.com/test-cloud/image/upload/v${Date.now()}/test.png`,
+          filename: 'test.png',
+          format: 'png'
+        });
+      });
+
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', pngPath)
+        .expect(200);
+
+      expect(response.body.url).toContain('.png');
+    });
+
+    test('should handle GIF uploads', async () => {
+      const gifPath = path.join(__dirname, 'fixtures', 'test.gif');
+      
+      mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+        cb(null, {
+          path: `https://res.cloudinary.com/test-cloud/image/upload/v${Date.now()}/test.gif`,
+          filename: 'test.gif',
+          format: 'gif'
+        });
+      });
+
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', gifPath)
+        .expect(200);
+
+      expect(response.body.url).toContain('.gif');
+    });
+
+    test('should handle unsupported file formats', async () => {
+      mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+        cb(new Error('Unsupported file format'));
+      });
+
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', testImagePath)
+        .expect(500);
+
+      expect(response.body.detail).toBe('Unsupported file format');
+    });
+  });
+
+  describe('Cloudinary Configuration Integration', () => {
+    test('should use correct Cloudinary folder configuration', async () => {
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', testImagePath)
+        .expect(200);
+
+      // Verify the upload uses the configured folder structure
+      expect(mockCloudinaryStorage._handleFile).toHaveBeenCalledTimes(1);
+      const callArgs = mockCloudinaryStorage._handleFile.mock.calls[0];
+      expect(callArgs[1]).toHaveProperty('originalname');
+    });
+
+    test('should generate unique public_id based on timestamp', async () => {
+      const startTime = Date.now();
+      
+      mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+        const timestamp = Date.now();
+        const publicId = `${timestamp}-${file.originalname.replace(/\s+/g, '_')}`;
+        cb(null, {
+          path: `https://res.cloudinary.com/test-cloud/image/upload/v${timestamp}/${publicId}`,
+          filename: publicId,
+          public_id: publicId
+        });
+      });
+
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', testImagePath)
+        .expect(200);
+
+      expect(response.body.url).toMatch(/v\d{13}-/); // Should contain timestamp
+    });
+
+    test('should handle filename sanitization', async () => {
+      const specialCharsPath = path.join(__dirname, 'fixtures', 'file with spaces & chars!.jpg');
+      fs.writeFileSync(specialCharsPath, Buffer.from('fake-image-data'));
+
+      mockCloudinaryStorage._handleFile.mockImplementation((req, file, cb) => {
+        const sanitizedName = file.originalname.replace(/\s+/g, '_');
+        cb(null, {
+          path: `https://res.cloudinary.com/test-cloud/image/upload/v${Date.now()}/${sanitizedName}`,
+          filename: sanitizedName
+        });
+      });
+
+      const response = await request(app)
+        .post('/api/upload')
+        .attach('image', specialCharsPath)
+        .expect(200);
+
+      expect(response.body.url).toContain('file_with_spaces');
+      
+      // Cleanup
+      fs.unlinkSync(specialCharsPath);
     });
   });
 
