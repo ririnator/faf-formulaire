@@ -17,7 +17,11 @@ cd backend
 npm install          # Install dependencies
 npm start           # Start production server (node app.js)
 npm run dev         # Start development server with nodemon
+npm test            # Run all tests
+npm run test:watch  # Run tests in watch mode
+npm run test:coverage # Run tests with coverage report
 ```
+
 
 ### No Frontend Build Process
 The frontend consists of static files served directly by Express from `frontend/public/` and `frontend/admin/`.
@@ -55,15 +59,16 @@ The frontend consists of static files served directly by Express from `frontend/
 ### Environment Variables Required
 - `MONGODB_URI` - MongoDB connection string
 - `SESSION_SECRET` - Session encryption key
-- `ADMIN_USER` - Admin username
-- `ADMIN_PASS` - Admin password (hashed with bcrypt)
+- `LOGIN_ADMIN_USER` - Admin username for web interface login
+- `LOGIN_ADMIN_PASS` - Admin password for web interface (hashed with bcrypt)
+- `FORM_ADMIN_NAME` - Name of the person who fills forms as admin (e.g., "riri")
 - `APP_BASE_URL` - Base URL for generating private links
 - `FRONTEND_URL` - Frontend domain URL for CORS configuration
 - `CLOUDINARY_*` - Cloudinary configuration for file uploads
 
 ### Database Schema
 The `Response` model contains:
-- `name` - User's name (admin detection via 'riri')
+- `name` - User's name (admin detection via `FORM_ADMIN_NAME` env var)
 - `responses[]` - Array of question/answer pairs
 - `month` - YYYY-MM format for monthly grouping
 - `isAdmin` - Boolean flag for admin responses
@@ -71,8 +76,14 @@ The `Response` model contains:
 - `createdAt` - Timestamp with index
 
 ### Security Features
-- CORS configuration restricting to `APP_BASE_URL`
+- CORS configuration supporting multiple origins (`APP_BASE_URL` and `FRONTEND_URL`)
 - Admin middleware protecting all admin routes
 - Input validation using express-validator
-- Rate limiting on form submissions
+- Rate limiting on form submissions (3 per 15 minutes)
+- Honeypot spam protection with hidden 'website' field
 - Secure session configuration with MongoDB store
+
+### Testing Infrastructure
+- **Backend**: Jest + Supertest + MongoDB Memory Server for API and integration tests
+- **Coverage**: Response validation, spam detection, admin logic, rate limiting, file uploads
+- **Test Commands**: `npm test`, `npm run test:watch`, `npm run test:coverage`
