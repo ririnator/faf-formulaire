@@ -9,11 +9,13 @@ const DatabaseConfig = require('./config/database');
 const CorsConfig = require('./config/cors');
 const SessionConfig = require('./config/session');
 
+// Services avec injection de dépendances
+const ServiceFactory = require('./services/serviceFactory');
+
 // Middleware centralisé
-const { ensureAdmin, authenticateAdmin, logout } = require('./middleware/auth');
 const { formLimiter, loginLimiter } = require('./middleware/rateLimiting');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
-const { validateLogin, handleValidationErrors } = require('./middleware/validation');
+const { validateLogin, validateResponse, handleValidationErrors } = require('./middleware/validation');
 const { 
   validateToken, 
   handleParamValidationErrors, 
@@ -21,13 +23,8 @@ const {
   tokenRateLimit 
 } = require('./middleware/paramValidation');
 
-// Services
-const ResponseService = require('./services/responseService');
-const AuthService = require('./services/authService');
-
 // Routes
 const formRoutes = require('./routes/formRoutes');
-const responseRoutes = require('./routes/responseRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const uploadRoutes = require('./routes/upload');
 
@@ -35,6 +32,7 @@ class App {
   constructor() {
     this.app = express();
     this.port = process.env.PORT || 3000;
+    this.services = null;
   }
 
   async initialize() {
@@ -42,16 +40,19 @@ class App {
     EnvironmentConfig.validate();
     EnvironmentConfig.logEnvironment();
 
-    // 2. Configuration des middlewares de base
+    // 2. Initialisation des services avec config injectée
+    this.services = ServiceFactory.create();
+
+    // 3. Configuration des middlewares de base
     this.setupBasicMiddleware();
 
-    // 3. Connexion à la base de données
+    // 4. Connexion à la base de données
     await DatabaseConfig.connect();
 
-    // 4. Configuration des routes
+    // 5. Configuration des routes
     this.setupRoutes();
 
-    // 5. Gestionnaire d'erreurs (à la fin)
+    // 6. Gestionnaire d'erreurs (à la fin)
     this.setupErrorHandlers();
 
     return this.app;
@@ -94,6 +95,8 @@ class App {
   }
 
   setupAuthRoutes() {
+    const authService = this.services.getAuthService();
+
     this.app.get('/login', (req, res) => {
       res.sendFile(path.join(__dirname, '../frontend/public/login.html'));
     });
@@ -102,13 +105,41 @@ class App {
       loginLimiter,
       validateLogin,
       handleValidationErrors,
-      authenticateAdmin
+      async (req, res) => {
+        try {
+          const { username, password } = req.body;
+          const isValid = await authService.validateAdminCredentials(username, password);
+          
+          if (isValid) {
+            authService.createAdminSession(req);
+            return res.redirect('/admin');
+          }
+          
+          return res.redirect('/login?error=1');
+        } catch (err) {
+          console.error('Erreur login:', err);
+          return res.redirect('/login?error=1');
+        }
+      }
     );
 
-    this.app.get('/logout', logout);
+    this.app.get('/logout', async (req, res) => {
+      const authService = this.services.getAuthService();
+      await authService.destroySession(req);
+      res.clearCookie('connect.sid');
+      res.redirect('/login');
+    });
   }
 
   setupAdminRoutes() {
+    const authService = this.services.getAuthService();
+    
+    // Middleware auth pour les routes admin
+    const ensureAdmin = (req, res, next) => {
+      if (authService.isAuthenticated(req)) return next();
+      return res.redirect('/login');
+    };
+
     // Pages admin
     this.app.get('/admin', ensureAdmin, (req, res) => {
       res.sendFile(path.join(__dirname, '../frontend/admin/admin.html'));
@@ -123,8 +154,11 @@ class App {
       express.static(path.join(__dirname, '../frontend/admin'))
     );
 
-    // API Admin
-    this.app.use('/api/admin', ensureAdmin, adminRoutes);
+    // API Admin avec services injectés
+    this.app.use('/api/admin', ensureAdmin, (req, res, next) => {
+      req.services = this.services;
+      next();
+    }, adminRoutes);
   }
 
   setupViewRoute() {
@@ -136,7 +170,16 @@ class App {
       async (req, res) => {
         try {
           const { token } = req.params;
-          const result = await ResponseService.getResponseByToken(token);
+          const responseService = this.services.getResponseService();
+          
+          if (!responseService) {
+            return res.status(503).json({ 
+              error: 'Service indisponible',
+              details: 'Le service de réponses n\'est pas disponible'
+            });
+          }
+
+          const result = await responseService.getResponseByToken(token);
           
           if (!result) {
             return res.status(404).json({ error: 'Lien invalide ou expiré' });
@@ -161,6 +204,13 @@ class App {
             });
           }
 
+          if (err.message && err.message.includes('Service not available')) {
+            return res.status(503).json({ 
+              error: 'Service indisponible',
+              details: 'Le service de réponses n\'est pas disponible'
+            });
+          }
+
           res.status(500).json({ error: 'Erreur serveur' });
         }
       }
@@ -168,12 +218,69 @@ class App {
   }
 
   setupPublicApiRoutes() {
-    // Rate limiting pour les soumissions
-    this.app.use('/api/response', formLimiter);
+    // Injection des services dans les routes publiques
+    this.app.use('/api/response', formLimiter, (req, res, next) => {
+      req.services = this.services;
+      next();
+    });
 
-    // Routes API publiques
+    // Route pour les réponses avec service injecté
+    this.app.post('/api/response',
+      validateResponse,
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const responseService = this.services.getResponseService();
+          
+          if (!responseService) {
+            return res.status(503).json({ 
+              message: 'Service de réponses indisponible' 
+            });
+          }
+
+          const result = await responseService.createResponse(req.body);
+          
+          res.status(201).json({
+            message: 'Réponse enregistrée avec succès !',
+            link: result.link
+          });
+        } catch (err) {
+          console.error('Erreur en sauvegardant la réponse :', err);
+          
+          // Gestion d'erreurs spécifiques
+          if (err.message.includes('admin existe déjà')) {
+            return res.status(409).json({ message: err.message });
+          }
+
+          if (err.name === 'ValidationError') {
+            return res.status(400).json({ 
+              message: 'Données de réponse invalides',
+              details: err.message 
+            });
+          }
+
+          if (err.name === 'MongoNetworkError' || err.name === 'MongoTimeoutError') {
+            return res.status(503).json({ 
+              message: 'Service temporairement indisponible',
+              details: 'Problème de connexion à la base de données'
+            });
+          }
+
+          if (err.code === 11000) {
+            return res.status(409).json({ 
+              message: 'Réponse déjà enregistrée pour ce mois' 
+            });
+          }
+          
+          res.status(500).json({ 
+            message: 'Erreur en sauvegardant la réponse' 
+          });
+        }
+      }
+    );
+
+    // Autres routes
     this.app.use('/api/form', formRoutes);
-    this.app.use('/api/response', responseRoutes);
     this.app.use('/api/upload', uploadRoutes);
   }
 
@@ -202,6 +309,7 @@ class App {
       this.app.listen(this.port, () => {
         console.log(`🚀 Serveur lancé sur le port ${this.port}`);
         console.log(`🌐 Application disponible sur ${process.env.APP_BASE_URL}`);
+        console.log(`🔧 Services initialisés avec injection de dépendances`);
       });
     } catch (error) {
       console.error('❌ Erreur lors du démarrage:', error);

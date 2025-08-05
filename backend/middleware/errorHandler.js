@@ -1,3 +1,5 @@
+const path = require('path');
+
 function errorHandler(err, req, res, next) {
   console.error('Erreur capturée:', err);
 
@@ -31,7 +33,6 @@ function errorHandler(err, req, res, next) {
 }
 
 function notFoundHandler(req, res) {
-  const path = require('path');
   res.status(404).sendFile(path.join(__dirname, '../../frontend/404.html'));
 }
 

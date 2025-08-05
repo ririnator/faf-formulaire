@@ -1,10 +1,12 @@
 const bcrypt = require('bcrypt');
-const EnvironmentConfig = require('../config/environment');
 
 class AuthService {
-  static async validateAdminCredentials(username, password) {
-    const config = EnvironmentConfig.getConfig();
-    const { user: adminUser, password: adminPass } = config.admin;
+  constructor(config) {
+    this.config = config;
+  }
+
+  async validateAdminCredentials(username, password) {
+    const { user: adminUser, password: adminPass } = this.config.admin;
 
     if (!adminUser || !adminPass) {
       throw new Error('Credentials admin non configurées');
@@ -16,12 +18,12 @@ class AuthService {
     return isValidUser && isValidPass;
   }
 
-  static createAdminSession(req) {
+  createAdminSession(req) {
     req.session.isAdmin = true;
     req.session.loginTime = new Date();
   }
 
-  static destroySession(req) {
+  destroySession(req) {
     return new Promise((resolve) => {
       req.session.destroy(() => {
         resolve();
@@ -29,11 +31,11 @@ class AuthService {
     });
   }
 
-  static isAuthenticated(req) {
+  isAuthenticated(req) {
     return !!req.session?.isAdmin;
   }
 
-  static getSessionInfo(req) {
+  getSessionInfo(req) {
     if (!this.isAuthenticated(req)) {
       return null;
     }

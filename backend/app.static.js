@@ -10,10 +10,9 @@ const CorsConfig = require('./config/cors');
 const SessionConfig = require('./config/session');
 
 // Middleware centralisé
-const { ensureAdmin, authenticateAdmin, logout } = require('./middleware/auth');
 const { formLimiter, loginLimiter } = require('./middleware/rateLimiting');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
-const { validateLogin, handleValidationErrors } = require('./middleware/validation');
+const { validateLogin, validateResponse, handleValidationErrors } = require('./middleware/validation');
 const { 
   validateToken, 
   handleParamValidationErrors, 
@@ -21,15 +20,14 @@ const {
   tokenRateLimit 
 } = require('./middleware/paramValidation');
 
-// Services
+// Services statiques
 const ResponseService = require('./services/responseService');
 const AuthService = require('./services/authService');
+const UploadService = require('./services/uploadService.static');
 
 // Routes
 const formRoutes = require('./routes/formRoutes');
-const responseRoutes = require('./routes/responseRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const uploadRoutes = require('./routes/upload');
 
 class App {
   constructor() {
@@ -102,13 +100,38 @@ class App {
       loginLimiter,
       validateLogin,
       handleValidationErrors,
-      authenticateAdmin
+      async (req, res) => {
+        try {
+          const { username, password } = req.body;
+          const isValid = await AuthService.validateAdminCredentials(username, password);
+          
+          if (isValid) {
+            AuthService.createAdminSession(req);
+            return res.redirect('/admin');
+          }
+          
+          return res.redirect('/login?error=1');
+        } catch (err) {
+          console.error('Erreur login:', err);
+          return res.redirect('/login?error=1');
+        }
+      }
     );
 
-    this.app.get('/logout', logout);
+    this.app.get('/logout', async (req, res) => {
+      await AuthService.destroySession(req);
+      res.clearCookie('connect.sid');
+      res.redirect('/login');
+    });
   }
 
   setupAdminRoutes() {
+    // Middleware auth pour les routes admin
+    const ensureAdmin = (req, res, next) => {
+      if (AuthService.isAuthenticated(req)) return next();
+      return res.redirect('/login');
+    };
+
     // Pages admin
     this.app.get('/admin', ensureAdmin, (req, res) => {
       res.sendFile(path.join(__dirname, '../frontend/admin/admin.html'));
@@ -168,13 +191,91 @@ class App {
   }
 
   setupPublicApiRoutes() {
-    // Rate limiting pour les soumissions
-    this.app.use('/api/response', formLimiter);
+    // Route pour les réponses avec service statique
+    this.app.post('/api/response',
+      formLimiter,
+      validateResponse,
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const result = await ResponseService.createResponse(req.body);
+          
+          res.status(201).json({
+            message: 'Réponse enregistrée avec succès !',
+            link: result.link
+          });
+        } catch (err) {
+          console.error('Erreur en sauvegardant la réponse :', err);
+          
+          // Gestion d'erreurs spécifiques
+          if (err.message.includes('admin existe déjà')) {
+            return res.status(409).json({ message: err.message });
+          }
 
-    // Routes API publiques
+          if (err.name === 'ValidationError') {
+            return res.status(400).json({ 
+              message: 'Données de réponse invalides',
+              details: err.message 
+            });
+          }
+
+          if (err.name === 'MongoNetworkError' || err.name === 'MongoTimeoutError') {
+            return res.status(503).json({ 
+              message: 'Service temporairement indisponible',
+              details: 'Problème de connexion à la base de données'
+            });
+          }
+
+          if (err.code === 11000) {
+            return res.status(409).json({ 
+              message: 'Réponse déjà enregistrée pour ce mois' 
+            });
+          }
+          
+          res.status(500).json({ 
+            message: 'Erreur en sauvegardant la réponse' 
+          });
+        }
+      }
+    );
+
+    // Route upload avec service statique
+    this.app.post('/api/upload', async (req, res) => {
+      try {
+        const result = await UploadService.uploadSingle(req, res);
+        res.json({ 
+          url: result.url,
+          meta: {
+            size: result.size,
+            format: result.format
+          }
+        });
+      } catch (err) {
+        console.error('⛔️ Erreur pendant l\'upload :', err);
+        
+        let statusCode = 500;
+        let message = 'Erreur upload';
+
+        if (err.message.includes('Type de fichier')) {
+          statusCode = 400;
+          message = err.message;
+        } else if (err.message.includes('trop volumineux')) {
+          statusCode = 413;
+          message = err.message;
+        } else if (err.message.includes('Aucun fichier')) {
+          statusCode = 400;
+          message = err.message;
+        }
+
+        res.status(statusCode).json({ 
+          message,
+          detail: err.message 
+        });
+      }
+    });
+
+    // Autres routes
     this.app.use('/api/form', formRoutes);
-    this.app.use('/api/response', responseRoutes);
-    this.app.use('/api/upload', uploadRoutes);
   }
 
   setupViewTokenRoute() {
@@ -202,6 +303,7 @@ class App {
       this.app.listen(this.port, () => {
         console.log(`🚀 Serveur lancé sur le port ${this.port}`);
         console.log(`🌐 Application disponible sur ${process.env.APP_BASE_URL}`);
+        console.log(`🔧 Services statiques utilisés pour la consistance`);
       });
     } catch (error) {
       console.error('❌ Erreur lors du démarrage:', error);
