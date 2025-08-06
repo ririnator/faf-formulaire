@@ -175,10 +175,10 @@
       const card = document.createElement('div');
       card.className = "bg-white shadow rounded p-4 mb-4";
 
-      // Titre
+      // Titre (décoder les entités HTML)
       const h2 = document.createElement('h2');
       h2.className = "text-lg font-bold mb-2";
-      h2.textContent = question;
+      h2.textContent = unescapeHTML(question);
       card.appendChild(h2);
 
       if (question === CONFIG.pieQuestion) {
