@@ -92,10 +92,9 @@ The frontend consists of static files served directly by Express from `frontend/
   - `view.html` - Private response viewing page with secure HTML entity decoding
   - `login.html` - Admin login
 - `admin/` - Admin dashboard:
-  - `admin.html` - Main admin interface with refactored utility functions
-  - `admin_gestion.html` - Response management with enhanced error handling
-  - `core-utils.js` - Essential utilities loaded synchronously (unescapeHTML, coreAlert)
-  - `admin-utils.js` - Extended functionality loaded asynchronously (CSRF, API calls, UI components)
+  - `admin.html` - Main admin interface using ES6 module imports
+  - `admin_gestion.html` - Response management using ES6 module imports
+  - `faf-admin.js` - Unified ES6 module with named exports (AdminAPI, Utils, UI, Charts)
 - `tests/` - Frontend testing infrastructure:
   - `dynamic-option.test.js` - Dynamic form option testing
   - `form-integration.test.js` - Form integration testing
@@ -109,7 +108,7 @@ The frontend consists of static files served directly by Express from `frontend/
 - **XSS Prevention Architecture** - Secure DOM element creation, whitelist-based HTML entity decoding, no innerHTML with user content
 - **Comprehensive Input Validation** - 100+ tests covering null/undefined/boundary/XSS edge cases
 - **UTF-8 Encoding Support** - Global UTF-8 middleware, proper character encoding for French accented characters
-- **Modular Frontend Architecture** - DRY principle with shared constants, synchronous/asynchronous utility loading
+- **ES6 Module Architecture** - Unified faf-admin.js module with named exports, eliminating dual-file complexity
 - **Service Layer Architecture** - Separation of concerns with dedicated service classes for business logic
 - **Configuration Modularity** - Environment-specific configuration files for database, CORS, sessions
 - **Optimized Body Parser Limits** - 512KB standard, 2MB forms, 5MB images (80% memory reduction)
@@ -173,10 +172,10 @@ The `Response` model contains:
 
 ### Frontend Security Architecture
 - **XSS Prevention**: Secure DOM element creation, no `innerHTML` with user content
-- **HTML Entity Decoding**: Whitelist approach supporting only known-safe entities
-- **Shared Constants**: `SAFE_HTML_ENTITIES` prevents code duplication and drift
-- **Hierarchical Error Handling**: `safeAlert()` with multiple fallback levels
-- **Modular Loading**: Synchronous loading for critical utilities, asynchronous for extended features
+- **HTML Entity Decoding**: Whitelist approach supporting only known-safe entities with `SAFE_HTML_ENTITIES`
+- **ES6 Module Structure**: Clean imports with `AdminAPI`, `Utils`, `UI`, and `Charts` namespaces
+- **Unified Error Handling**: Centralized alert system through `UI.showAlert()`
+- **CSRF Integration**: Automatic token management through `AdminAPI.request()`
 - **Content Security Policy**: Strict CSP with nonces preventing injection attacks
 
 ### Testing Infrastructure
@@ -201,3 +200,4 @@ The `Response` model contains:
 - **🔒 Production Debug Lock**: Debug endpoints now disabled in production environment
 - **🧹 Code Cleanup**: Removed 18 duplicate/obsolete files (*.refactored.js, *.v2.js, test files)
 - **✅ Test Repairs**: Fixed session configuration tests and removed problematic upload mocks
+- **🔧 Architecture Refactor**: Replaced admin-utils.js + core-utils.js with unified faf-admin.js ES6 module
