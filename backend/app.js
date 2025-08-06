@@ -147,45 +147,45 @@ app.use('/admin/assets', ensureAdmin,
   express.static(path.join(__dirname, '../frontend/admin'))
 );
 
-// DEBUG ENDPOINTS - pour diagnostiquer le problème de production
-app.get('/api/debug/health', (req, res) => {
-  console.log('=== DEBUG HEALTH CHECK ===');
-  try {
-    res.setHeader('Content-Type', 'application/json');
-    const response = {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-      environment: process.env.NODE_ENV || 'undefined',
-      hasMongoUri: !!process.env.MONGODB_URI,
-      hasSessionSecret: !!process.env.SESSION_SECRET,
-      version: 'debug-1.0'
-    };
-    console.log('Sending response:', JSON.stringify(response, null, 2));
-    res.status(200).json(response);
-  } catch (error) {
-    console.error('ERROR in debug endpoint:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// DEBUG ENDPOINTS - désactivés en production pour la sécurité
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/debug/health', (req, res) => {
+    console.log('=== DEBUG HEALTH CHECK ===');
+    try {
+      res.setHeader('Content-Type', 'application/json');
+      const response = {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        environment: process.env.NODE_ENV || 'development',
+        version: 'debug-1.0'
+      };
+      console.log('Sending response:', JSON.stringify(response, null, 2));
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('ERROR in debug endpoint:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
-app.post('/api/debug/echo', (req, res) => {
-  console.log('=== DEBUG ECHO ===');
-  console.log('Body:', req.body);
-  console.log('Headers:', req.headers);
-  try {
-    res.setHeader('Content-Type', 'application/json');
-    res.status(200).json({
-      received: req.body,
-      method: req.method,
-      path: req.path,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('ERROR in debug echo:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+  app.post('/api/debug/echo', (req, res) => {
+    console.log('=== DEBUG ECHO ===');
+    console.log('Body:', req.body);
+    console.log('Headers:', req.headers);
+    try {
+      res.setHeader('Content-Type', 'application/json');
+      res.status(200).json({
+        received: req.body,
+        method: req.method,
+        path: req.path,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('ERROR in debug echo:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+}
 
 // 9) API Admin
 app.use('/api/admin', ensureAdmin, adminRoutes);
