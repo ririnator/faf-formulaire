@@ -277,27 +277,50 @@ function createAnswersList(items, config = {}) {
   const ul = document.createElement('ul');
   ul.className = "list-disc pl-5";
 
-  // Regex pré-compilées pour éviter ReDoS et améliorer performance
-  const IMAGE_REGEX = {
-    base64: /^data:image\/[a-z]+;base64,/,
-    extension: /\.(jpe?g|png|gif|webp|heic)(?:\?.*)?$/i,
-    cloudinary: /^https?:\/\/res\.cloudinary\.com\/[a-zA-Z0-9-_]{1,50}\/image\/upload\//
-  };
+  // 🔒 SECURITY: Use same trusted domain validation as view.html
+  const TRUSTED_IMAGE_DOMAINS = [
+    'res.cloudinary.com',           // Cloudinary CDN (notre service upload)
+    'images.unsplash.com',          // Unsplash (si utilisé pour placeholder)
+    'via.placeholder.com',          // Placeholder service (si nécessaire)
+  ];
+
+  // Fonction de validation sécurisée des images (même logique que view.html)
+  function isTrustedImageUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    
+    try {
+      const urlObj = new URL(url);
+      
+      // 1. Force HTTPS only
+      if (urlObj.protocol !== 'https:') return false;
+      
+      // 2. Check if domain is in whitelist
+      const hostname = urlObj.hostname.toLowerCase();
+      const isTrustedDomain = TRUSTED_IMAGE_DOMAINS.some(domain => 
+        hostname === domain || hostname.endsWith('.' + domain)
+      );
+      if (!isTrustedDomain) return false;
+      
+      // 3. Verify file extension for images
+      const pathname = urlObj.pathname.toLowerCase();
+      const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+      const hasValidExtension = validExtensions.some(ext => 
+        pathname.includes(ext)
+      );
+      if (!hasValidExtension) return false;
+      
+      return true;
+    } catch (e) {
+      // Invalid URL format
+      return false;
+    }
+  }
 
   items.forEach(({ user, answer }) => {
     const li = document.createElement('li');
     
-    // Protection ReDoS: utiliser constantes configurables
-    const isImage = (
-      typeof answer === 'string' && 
-      answer.length < (config.maxUrlLength || 1000) &&
-      (
-        IMAGE_REGEX.base64.test(answer) ||
-        IMAGE_REGEX.extension.test(answer) ||
-        IMAGE_REGEX.cloudinary.test(answer) ||
-        (answer.length < (config.maxFallbackLength || 200) && answer.includes('cloudinary.com'))
-      )
-    );
+    // 🔒 SECURITY: Use trusted image validation instead of regex
+    const isImage = isTrustedImageUrl(answer);
 
     if (isImage) {
       // Miniature cliquable
