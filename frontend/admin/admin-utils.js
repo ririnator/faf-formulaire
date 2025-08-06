@@ -326,6 +326,12 @@ function createAnswersList(items, config = {}) {
   items.forEach(({ user, answer }) => {
     const li = document.createElement('li');
     
+    // DEBUG: Log pour comprendre pourquoi les images d'août ne s'affichent pas
+    if (answer && (answer.includes('http') || answer.includes('cloudinary'))) {
+      console.log(`🖼️ Image candidate: ${user} -> ${answer.substring(0, 100)}...`);
+      console.log(`🔍 isTrustedImageUrl result:`, isTrustedImageUrl(answer));
+    }
+    
     // 🔒 SECURITY: Use trusted image validation instead of regex
     const isImage = isTrustedImageUrl(answer);
 
