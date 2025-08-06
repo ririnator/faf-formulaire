@@ -126,6 +126,14 @@ app.get('/admin/gestion', ensureAdmin, (req, res) => {
 });
 
 // Assets JavaScript admin - accessible si session admin active
+app.get('/admin/assets/core-utils.js', ensureAdmin, (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  // Cache pour 24 heures (plus long car rarement modifié)
+  const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 7200;
+  res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+  res.sendFile(path.join(__dirname, '../frontend/admin/core-utils.js'));
+});
+
 app.get('/admin/assets/admin-utils.js', ensureAdmin, (req, res) => {
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
   // Cache pour 1 heure en développement, 24h en production
