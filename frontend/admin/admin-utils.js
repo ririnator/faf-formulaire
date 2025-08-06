@@ -164,6 +164,17 @@ function escapeHTML(text) {
 }
 
 /**
+ * Décode les entités HTML (inverse d'escapeHTML)
+ * @param {string} text - Texte contenant des entités HTML
+ * @returns {string} - Texte avec entités décodées
+ */
+function unescapeHTML(text) {
+  const div = document.createElement('div');
+  div.innerHTML = text;
+  return div.textContent || div.innerText || '';
+}
+
+/**
  * Formate une date au format français
  * @param {string|Date} date - Date à formater
  * @returns {string} - Date formatée
@@ -303,7 +314,8 @@ function createAnswersList(items, config = {}) {
       li.appendChild(img);
       li.appendChild(document.createTextNode(` ${user}`));
     } else {
-      li.textContent = `${user} : ${answer}`;
+      // Décoder les entités HTML pour un affichage correct
+      li.textContent = `${user} : ${unescapeHTML(answer)}`;
     }
 
     ul.appendChild(li);
@@ -377,6 +389,7 @@ if (typeof module !== 'undefined' && module.exports) {
     fetchWithErrorHandling,
     fetchCSRFToken,
     escapeHTML,
+    unescapeHTML,
     formatDateFR,
     debounce,
     createPieChart,

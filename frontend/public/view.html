@@ -10,6 +10,14 @@
   <div id="qa-container"></div>
 
   <script>
+    // Fonction pour décoder les entités HTML
+    function unescapeHTML(text) {
+      if (!text) return text;
+      const div = document.createElement('div');
+      div.innerHTML = text;
+      return div.textContent || div.innerText || '';
+    }
+
     (async () => {
       const token = location.pathname.split('/').pop();
       const res = await fetch(`/api/view/${token}`);
@@ -22,10 +30,18 @@
 
       user.responses.forEach((q, i) => {
         const block = document.createElement('div');
+        
+        // Décoder les entités HTML pour un affichage correct
+        const question = unescapeHTML(q.question);
+        const answer = unescapeHTML(q.answer);
+        const adminAnswer = admin && admin.responses[i] 
+          ? unescapeHTML(admin.responses[i].answer)
+          : '<em>Pas encore répondu</em>';
+
         block.innerHTML = `
-          <h2>Q${i+1} : ${q.question}</h2>
-          <p><strong>Vous :</strong> ${q.answer}</p>
-          <p class="admin-answer"><strong>Moi (Admin) :</strong> ${admin && admin.responses[i] ? admin.responses[i].answer : '<em>Pas encore répondu</em>'}</p>
+          <h2>Q${i+1} : ${question}</h2>
+          <p><strong>Vous :</strong> ${answer}</p>
+          <p class="admin-answer"><strong>Moi (Admin) :</strong> ${adminAnswer}</p>
         `;
         document.getElementById('qa-container').append(block);
       });
