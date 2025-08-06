@@ -305,13 +305,14 @@ heroku config:set MONGODB_URI=mongodb+srv://...
 
 #### **Guides Principaux**
 - 📋 **[CLAUDE.md](CLAUDE.md)** - Guide complet pour Claude Code + nouvelles features
-- 🏗️ **[ARCHITECTURE.md](backend/ARCHITECTURE.md)** - Architecture sécurisée + middleware modulaire
-- ❌ **[ERROR_HANDLING.md](backend/ERROR_HANDLING.md)** - Gestion d'erreurs + validation XSS
+- 🏗️ **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Architecture sécurisée + middleware modulaire
+- ❌ **[ERROR_HANDLING.md](docs/ERROR_HANDLING.md)** - Gestion d'erreurs + validation XSS
+- 🔧 **[SERVICE_PATTERNS.md](docs/SERVICE_PATTERNS.md)** - Patterns de services
 
 #### **Configuration & Sécurité**  
-- 🍪 **[SESSION_CONFIG.md](SESSION_CONFIG.md)** - Configuration cookies dev/prod
-- 📝 **[BODY_PARSER_OPTIMIZATION.md](BODY_PARSER_OPTIMIZATION.md)** - Limites optimisées par endpoint
-- 🧪 **[INPUT_VALIDATION_TESTING.md](INPUT_VALIDATION_TESTING.md)** - Tests validation 84+ edge cases
+- 🍪 **[SESSION_CONFIG.md](docs/SESSION_CONFIG.md)** - Configuration cookies dev/prod
+- 📝 **[BODY_PARSER_OPTIMIZATION.md](docs/BODY_PARSER_OPTIMIZATION.md)** - Limites optimisées par endpoint
+- 🧪 **[INPUT_VALIDATION_TESTING.md](docs/INPUT_VALIDATION_TESTING.md)** - Tests validation 84+ edge cases
 
 ### API Endpoints
 
@@ -439,7 +440,7 @@ MIT License - Voir [LICENSE.md](LICENSE.md) pour détails.
 ## 📞 Support
 
 **Questions ?** 
-- 📖 Consulter la [Documentation](backend/ARCHITECTURE.md)
+- 📖 Consulter la [Documentation](docs/ARCHITECTURE.md)
 - 🐛 Reporter un [Bug](issues/new?template=bug_report.md)
 - 💡 Proposer une [Feature](issues/new?template=feature_request.md)
 
