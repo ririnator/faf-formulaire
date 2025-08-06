@@ -4,10 +4,10 @@ const express       = require('express');
 const rateLimit     = require('express-rate-limit');
 const mongoose      = require('mongoose');
 const bodyParser    = require('body-parser');
-const bcrypt        = require('bcrypt');
 const path          = require('path');
 const session       = require('express-session');
 const cors          = require('cors');
+const helmet        = require('helmet');
 const MongoStore    = require('connect-mongo');
 
 const formRoutes     = require('./routes/formRoutes');
@@ -15,11 +15,28 @@ const responseRoutes = require('./routes/responseRoutes');
 const adminRoutes    = require('./routes/adminRoutes');
 const uploadRoutes   = require('./routes/upload');
 const Response       = require('./models/Response');
+const { ensureAdmin, authenticateAdmin, destroySession } = require('./middleware/auth');
 
 const app  = express();
 const port = process.env.PORT || 3000;
 
-// 1) CORS – n’autorise que votre front
+// 1) Security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "cdn.tailwindcss.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "cdn.tailwindcss.com", "cdn.jsdelivr.net"],
+      imgSrc: ["'self'", "res.cloudinary.com", "data:"],
+      fontSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// 2) CORS – n'autorise que votre front
 app.use(cors({
   origin: [
     process.env.APP_BASE_URL, 
@@ -29,7 +46,7 @@ app.use(cors({
 }));
 app.set('trust proxy', 1);
 
-// 2) Sessions
+// 3) Sessions
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -47,12 +64,12 @@ app.use(session({
   }
 }));
 
-// 3) Parsers
+// 4) Parsers
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.json());
 
-// 4) Connexion à MongoDB
+// 5) Connexion à MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log("Connecté à la base de données");
@@ -62,35 +79,15 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.error("Erreur de connexion à la DB :", err));
 
-// 5) Front public (index.html, view.html…)
+// 6) Front public (index.html, view.html…)
 app.use(express.static(path.join(__dirname, '../frontend/public')));
-
-// 6) Authentification Admin
-const LOGIN_ADMIN_USER = process.env.LOGIN_ADMIN_USER;
-const LOGIN_ADMIN_PASS = process.env.LOGIN_ADMIN_PASS;
-function ensureAdmin(req, res, next) {
-  if (req.session?.isAdmin) return next();
-  return res.redirect('/login');
-}
 
 // 7) Pages de login/logout
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/public/login.html'));
 });
-app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  if (username === LOGIN_ADMIN_USER && await bcrypt.compare(password, LOGIN_ADMIN_PASS)) {
-    req.session.isAdmin = true;
-    return res.redirect('/admin');
-  }
-  return res.redirect('/login?error=1');
-});
-app.get('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie('connect.sid');
-    res.redirect('/login');
-  });
-});
+app.post('/login', authenticateAdmin);
+app.get('/logout', destroySession);
 
 // 8) Back-office Admin (HTML + assets)
 app.get('/admin', ensureAdmin, (req, res) => {

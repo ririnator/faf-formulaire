@@ -14,7 +14,7 @@ FAF (Form-a-Friend) is a monthly form application that allows friends to submit 
 ### Backend Development
 ```bash
 cd backend
-npm install          # Install dependencies
+npm install          # Install dependencies (includes helmet for security)
 npm start           # Start production server (node app.js)
 npm run dev         # Start development server with nodemon
 npm test            # Run all tests
@@ -29,12 +29,17 @@ The frontend consists of static files served directly by Express from `frontend/
 ## Architecture
 
 ### Backend Structure (`backend/`)
-- `app.js` - Main Express server with authentication, CORS, sessions, and routing
+- `app.js` - Main Express server with security headers, CORS, sessions, and routing
 - `models/Response.js` - MongoDB schema for form responses with admin/user distinction
+- `middleware/` - Modular middleware functions:
+  - `auth.js` - Admin authentication and session management
+  - `validation.js` - Input validation and XSS protection middleware
+  - `rateLimiting.js` - Rate limiting configurations
+  - `errorHandler.js` - Centralized error handling
 - `routes/` - API endpoints:
-  - `responseRoutes.js` - Public form submission endpoint
+  - `responseRoutes.js` - Public form submission endpoint with strict validation
   - `adminRoutes.js` - Admin dashboard APIs (pagination, summary, CRUD)
-  - `formRoutes.js` - Form-related utilities
+  - `formRoutes.js` - Form-related utilities (legacy compatibility)
   - `upload.js` - File upload handling with Cloudinary
 - `config/cloudinary.js` - Cloudinary configuration
 
@@ -53,6 +58,8 @@ The frontend consists of static files served directly by Express from `frontend/
 - **Private response viewing** via secure tokens for non-admin users
 - **Admin responses** stored without tokens, accessible only through admin interface
 - **Rate limiting** (3 submissions per 15 minutes) on form endpoints
+- **Enhanced security** with Helmet.js security headers and CSP policies
+- **Input validation** with XSS protection using express-validator escaping
 - **Honeypot spam protection** with hidden 'website' field
 - **MongoDB indexes** on createdAt and unique month/isAdmin combinations
 
@@ -76,14 +83,17 @@ The `Response` model contains:
 - `createdAt` - Timestamp with index
 
 ### Security Features
-- CORS configuration supporting multiple origins (`APP_BASE_URL` and `FRONTEND_URL`)
-- Admin middleware protecting all admin routes
-- Input validation using express-validator
-- Rate limiting on form submissions (3 per 15 minutes)
-- Honeypot spam protection with hidden 'website' field
-- Secure session configuration with MongoDB store
+- **Helmet.js security headers** with Content Security Policy (CSP) protecting against XSS
+- **CORS configuration** supporting multiple origins (`APP_BASE_URL` and `FRONTEND_URL`)
+- **Modular authentication middleware** protecting all admin routes
+- **Strict input validation** with XSS protection using express-validator escaping
+- **Rate limiting** on form submissions (3 per 15 minutes)
+- **Honeypot spam protection** with hidden 'website' field
+- **Secure session configuration** with MongoDB store
+- **Data sanitization** with length limits (names: 100 chars, responses: 10k chars, max 20 responses)
 
 ### Testing Infrastructure
 - **Backend**: Jest + Supertest + MongoDB Memory Server for API and integration tests
-- **Coverage**: Response validation, spam detection, admin logic, rate limiting, file uploads
+- **Coverage**: Response validation, spam detection, admin logic, rate limiting, file uploads, XSS protection
 - **Test Commands**: `npm test`, `npm run test:watch`, `npm run test:coverage`
+- **Note**: Tests maintain backward compatibility while new security features protect production endpoints

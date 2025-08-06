@@ -1,26 +1,40 @@
 const bcrypt = require('bcrypt');
-const EnvironmentConfig = require('../config/environment');
+
+const LOGIN_ADMIN_USER = process.env.LOGIN_ADMIN_USER;
+const LOGIN_ADMIN_PASS = process.env.LOGIN_ADMIN_PASS;
 
 function ensureAdmin(req, res, next) {
-  if (req.session?.isAdmin) return next();
+  if (req.session?.isAdmin) {
+    return next();
+  }
   return res.redirect('/login');
 }
 
 async function authenticateAdmin(req, res, next) {
-  const { username, password } = req.body;
-  const config = EnvironmentConfig.getConfig();
-  const { user: adminUser, password: adminPass } = config.admin;
-  
-  if (username === adminUser && await bcrypt.compare(password, adminPass)) {
-    req.session.isAdmin = true;
-    return res.redirect('/admin');
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.redirect('/login?error=1');
+    }
+    
+    if (username === LOGIN_ADMIN_USER && await bcrypt.compare(password, LOGIN_ADMIN_PASS)) {
+      req.session.isAdmin = true;
+      return res.redirect('/admin');
+    }
+    
+    return res.redirect('/login?error=1');
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return res.redirect('/login?error=1');
   }
-  
-  return res.redirect('/login?error=1');
 }
 
-function logout(req, res) {
-  req.session.destroy(() => {
+function destroySession(req, res) {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Session destruction error:', err);
+    }
     res.clearCookie('connect.sid');
     res.redirect('/login');
   });
@@ -29,5 +43,5 @@ function logout(req, res) {
 module.exports = {
   ensureAdmin,
   authenticateAdmin,
-  logout
+  destroySession
 };
