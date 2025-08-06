@@ -179,7 +179,7 @@
       // Titre (décoder les entités HTML)
       const h2 = document.createElement('h2');
       h2.className = "text-lg font-bold mb-2";
-      h2.textContent = unescapeHTML(question);
+      h2.textContent = window.unescapeHTML ? window.unescapeHTML(question) : question;
       card.appendChild(h2);
 
       if (question === CONFIG.pieQuestion) {
