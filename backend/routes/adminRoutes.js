@@ -116,16 +116,42 @@ router.get('/summary', async (req, res) => {
       .select('name responses.question responses.answer')
       .lean();
 
+    // Fonction pour normaliser les questions (éviter les divisions)
+    const normalizeQuestion = (question) => {
+      return question.trim()
+        .replace(/\s+/g, ' ')  // Remplacer espaces multiples par un seul
+        .toLowerCase()
+        .replace(/[^\w\s\u00C0-\u017F]/g, '') // Garder alphanumériques + accents
+        .trim();
+    };
+
     const textMap = {};
+    const questionNormalizedMap = {}; // Map: normalized → première question originale
+    
     docs.forEach(doc => {
       doc.responses.forEach(r => {
         if (r.question === PIE_Q) return;
-        textMap[r.question] = textMap[r.question] || [];
-        textMap[r.question].push({ user: doc.name, answer: r.answer });
+        
+        const normalizedQ = normalizeQuestion(r.question);
+        
+        // Utiliser la première version de la question comme clé de référence
+        if (!questionNormalizedMap[normalizedQ]) {
+          questionNormalizedMap[normalizedQ] = r.question;
+        }
+        
+        const canonicalQ = questionNormalizedMap[normalizedQ];
+        textMap[canonicalQ] = textMap[canonicalQ] || [];
+        textMap[canonicalQ].push({ user: doc.name, answer: r.answer });
       });
     });
     const textSummary = Object.entries(textMap)
       .map(([question, items]) => ({ question, items }));
+
+    // Debug pour diagnostiquer les problèmes de regroupement
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📊 Questions détectées:', Object.keys(textMap));
+      console.log('📊 Normalisation mapping:', questionNormalizedMap);
+    }
 
     res.json([ ...pieSummary, ...textSummary ]);
   } catch (err) {
