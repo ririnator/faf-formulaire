@@ -164,19 +164,24 @@ function escapeHTML(text) {
 }
 
 /**
- * Décode les entités HTML en utilisant la fonction de core-utils
+ * Décode les entités HTML - version pour admin-utils
+ * Utilise directement les constantes SAFE_HTML_ENTITIES si disponibles
  * @param {string} text - Texte contenant des entités HTML
  * @returns {string} - Texte avec entités décodées
  */
-function unescapeHTMLLocal(text) {
-  // Utiliser la fonction globale de core-utils si disponible
-  if (typeof window !== 'undefined' && window.unescapeHTML && window.unescapeHTML !== unescapeHTMLLocal) {
-    return window.unescapeHTML(text);
-  }
-  
-  // Fallback local
+function unescapeHTMLAdmin(text) {
   if (!text || typeof text !== 'string') return text || '';
   
+  // Utiliser SAFE_HTML_ENTITIES si disponible (depuis core-utils.js)
+  if (typeof window !== 'undefined' && window.SAFE_HTML_ENTITIES) {
+    let result = text;
+    for (const [entity, char] of Object.entries(window.SAFE_HTML_ENTITIES)) {
+      result = result.replace(new RegExp(entity, 'g'), char);
+    }
+    return result;
+  }
+  
+  // Fallback basique si SAFE_HTML_ENTITIES n'est pas disponible
   return text
     .replace(/&#x27;/g, "'")
     .replace(/&#39;/g, "'")
@@ -358,7 +363,7 @@ function createAnswersList(items, config = {}) {
       li.appendChild(document.createTextNode(` ${user}`));
     } else {
       // Décoder les entités HTML pour un affichage correct
-      li.textContent = `${user} : ${unescapeHTMLLocal(answer)}`;
+      li.textContent = `${user} : ${unescapeHTMLAdmin(answer)}`;
     }
 
     ul.appendChild(li);
@@ -432,7 +437,7 @@ if (typeof module !== 'undefined' && module.exports) {
     fetchWithErrorHandling,
     fetchCSRFToken,
     escapeHTML,
-    unescapeHTML: unescapeHTMLLocal,
+    unescapeHTML: unescapeHTMLAdmin,
     formatDateFR,
     debounce,
     createPieChart,
