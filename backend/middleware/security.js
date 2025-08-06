@@ -13,13 +13,18 @@ function generateNonce() {
 
 function createSecurityMiddleware() {
   return (req, res, next) => {
+    // Skip CSP for API endpoints - HOTFIX for empty responses
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    
     // Generate unique nonce for each request
     const nonce = generateNonce();
     
     // Store nonce in res.locals for template access
     res.locals.nonce = nonce;
     
-    // Apply Helmet with nonce-based CSP
+    // Apply Helmet with nonce-based CSP only for HTML pages
     helmet({
       contentSecurityPolicy: {
         directives: {
