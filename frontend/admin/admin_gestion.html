@@ -5,7 +5,7 @@
   <title>Liste de toutes les réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <script src="admin-utils.js"></script>
+  <script src="/admin/assets/admin-utils.js"></script>
   <link rel="icon" href="/favicon.ico" />
 </head>
 <body class="bg-gray-50 p-6">
@@ -66,6 +66,12 @@
   </div>
 
   <script>
+    // Vérification que admin-utils.js est bien chargé
+    if (typeof fetchWithErrorHandling === 'undefined') {
+      console.error('admin-utils.js n\'est pas chargé correctement');
+      alert('Erreur de chargement. Veuillez recharger la page.');
+    }
+    
     let currentPage = 1;
     const limit = 10;
     let allResponses = [];
@@ -179,7 +185,13 @@
     });
 
     // Recherche globale avec debounce amélioré
-    const debouncedSearch = debounce(async (term) => {
+    const debouncedSearch = (typeof debounce !== 'undefined' ? debounce : (fn, delay) => {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), delay);
+      };
+    })(async (term) => {
       if (term === '') {
         // Si pas de terme, recharger la page courante
         loadPage(currentPage);
