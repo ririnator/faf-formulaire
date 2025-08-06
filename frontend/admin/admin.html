@@ -6,6 +6,7 @@
   <title>Interface d'administration – Résumé des réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="admin-utils.js"></script>
 
   <style>
     /* overlay full‐screen */
@@ -59,6 +60,9 @@
   <div class="container mx-auto">
     <h1 class="text-3xl font-bold text-center mb-4">Résumé des réponses</h1>
 
+    <!-- Message d'erreur/succès -->
+    <div id="alertMessage" class="hidden mb-4 p-4 rounded-lg"></div>
+
     <!-- Filtre par mois -->
     <div class="mb-6 text-center">
       <label for="monthFilter" class="font-semibold mr-2">Filtrer par mois :</label>
@@ -76,16 +80,18 @@
 
     // 1. Charger la liste des mois
     async function loadMonths() {
-      const res = await fetch('/api/admin/months', {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!res.ok) throw new Error(`Months ${res.status}`);
-      const months = await res.json();
+      const months = await fetchWithErrorHandling(
+        '/api/admin/months',
+        { headers: { 'Content-Type': 'application/json' } },
+        'Impossible de charger la liste des mois'
+      );
+      
+      if (!months) return [];
+      
       const sel = document.getElementById('monthFilter');
       months.forEach(m => {
         const opt = document.createElement('option');
-        opt.value       = m.key;
+        opt.value = m.key;
         opt.textContent = m.label;
         sel.appendChild(opt);
       });
@@ -96,13 +102,16 @@
     async function loadSummary() {
       const month = document.getElementById('monthFilter').value;
       if (!month) return;
-      const res = await fetch(`/api/admin/summary?month=${month}`, {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!res.ok) throw new Error(`Summary ${res.status}`);
-      const summary = await res.json();
-      displaySummary(summary);
+      
+      const summary = await fetchWithErrorHandling(
+        `/api/admin/summary?month=${month}`,
+        { headers: { 'Content-Type': 'application/json' } },
+        'Impossible de charger le résumé'
+      );
+      
+      if (summary) {
+        displaySummary(summary);
+      }
     }
 
     // 3. Rendu des cartes
@@ -204,8 +213,9 @@
                 //Légende centrée en bas sur l'image
                 const caption = document.createElement('div');
                 caption.className = 'lightbox-caption';
-                caption.style.textAlign       = 'center';
-                caption.textContent           = user; //Injection du nom
+                caption.style.textAlign = 'center';
+                // Utilisation de textContent pour éviter les XSS
+                caption.textContent = user;
                 overlay.appendChild(caption);
 
                 //Fermeture de la lightbox aussi si on clique en dehors de l'image

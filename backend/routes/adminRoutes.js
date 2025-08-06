@@ -4,34 +4,49 @@ const mongoose = require('mongoose');
 const router   = express.Router();
 const Response = require('../models/Response');
 const { createAdminBodyParser } = require('../middleware/bodyParser');
+const { csrfProtection, csrfTokenEndpoint } = require('../middleware/csrf');
 
 // Apply admin-specific body parser (1MB limit) to all admin routes
 router.use(createAdminBodyParser());
+
+// Endpoint pour récupérer le token CSRF
+router.get('/csrf-token', csrfTokenEndpoint());
 
 // Middleware : charge la réponse dans req.responseDoc
 router.param('id', async (req, res, next, id) => {
   try {
     const doc = await Response.findById(id);
-    if (!doc) return res.status(404).json({ message: 'Réponse non trouvée' });
+    if (!doc) return res.status(404).json({ error: 'Réponse non trouvée', code: 'NOT_FOUND' });
     req.responseDoc = doc;
     next();
   } catch (err) {
-    next(err);
+    console.error('❌ Erreur param :id :', err);
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération', code: 'SERVER_ERROR' });
   }
 });
 
-// GET /api/admin/responses?page=1&limit=10
-// Pour l’UI de gestion paginée, incluant maintenant isAdmin et token
+// GET /api/admin/responses?page=1&limit=10&search=term
+// Pour l'UI de gestion paginée, incluant maintenant isAdmin et token
 router.get('/responses', async (req, res) => {
   try {
     const page  = Math.max(1, parseInt(req.query.page, 10)  || 1);
-    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const skip  = (page - 1) * limit;
+    const search = req.query.search?.trim();
 
-    const totalCount = await Response.countDocuments();
+    // Construction du filtre de recherche avec protection ReDoS
+    let filter = {};
+    if (search) {
+      // Échapper les caractères spéciaux regex pour éviter ReDoS
+      const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedSearch = escapeRegex(search);
+      filter.name = { $regex: escapedSearch, $options: 'i' };
+    }
+
+    const totalCount = await Response.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / limit);
 
-    const data = await Response.find()
+    const data = await Response.find(filter)
       .select('name month createdAt isAdmin token')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -40,11 +55,12 @@ router.get('/responses', async (req, res) => {
 
     res.json({
       responses:  data,
-      pagination: { page, totalPages, totalCount }
+      pagination: { page, totalPages, totalCount },
+      search: search || null
     });
   } catch (err) {
     console.error('❌ Erreur pagination /responses :', err);
-    res.status(500).json({ message: 'Erreur serveur pagination' });
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération des réponses', code: 'SERVER_ERROR' });
   }
 });
 
@@ -53,13 +69,13 @@ router.route('/responses/:id')
   .get((req, res) => {
     res.json(req.responseDoc);
   })
-  .delete(async (req, res) => {
+  .delete(csrfProtection(), async (req, res) => {
     try {
       await req.responseDoc.deleteOne();
       res.json({ message: 'Réponse supprimée avec succès' });
     } catch (err) {
       console.error('❌ Erreur suppression /responses/:id :', err);
-      res.status(500).json({ message: 'Erreur serveur suppression' });
+      res.status(500).json({ error: 'Erreur serveur lors de la suppression', code: 'SERVER_ERROR' });
     }
   });
 
@@ -114,7 +130,7 @@ router.get('/summary', async (req, res) => {
     res.json([ ...pieSummary, ...textSummary ]);
   } catch (err) {
     console.error('❌ Erreur summary :', err);
-    res.status(500).json({ message: 'Erreur serveur summary' });
+    res.status(500).json({ error: 'Erreur serveur lors de la génération du résumé', code: 'SERVER_ERROR' });
   }
 });
 
@@ -159,7 +175,7 @@ router.get('/months', async (req, res) => {
     res.json(months);
   } catch (err) {
     console.error('❌ Erreur months :', err);
-    res.status(500).json({ message: 'Erreur serveur months' });
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération des mois', code: 'SERVER_ERROR' });
   }
 });
 
