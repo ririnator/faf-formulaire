@@ -12,6 +12,62 @@ router.use(createAdminBodyParser());
 // Endpoint pour récupérer le token CSRF
 router.get('/csrf-token', csrfTokenEndpoint());
 
+// DEBUG: Endpoint sécurisé pour analyser les questions (admin + dev uniquement)
+router.get('/debug/questions', (req, res, next) => {
+  // SÉCURITÉ: Uniquement en développement local
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  next();
+}, (req, res, next) => {
+  // SÉCURITÉ: Vérifier authentification admin même en dev
+  if (!req.session || !req.session.isAdmin) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  next();
+}, async (req, res) => {
+  try {
+    // Configuration question pie chart (même logique que summary)
+    const PIE_Q = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
+    
+    const docs = await Response.find()
+      .select('responses.question')  // Suppression des noms utilisateurs
+      .lean();
+    
+    const allQuestions = [];
+    const questionMap = new Map(); // Éviter doublons
+    
+    docs.forEach(doc => {
+      doc.responses.forEach(r => {
+        if (r.question && r.question !== PIE_Q) {
+          const key = r.question;
+          if (!questionMap.has(key)) {
+            questionMap.set(key, {
+              question: r.question,
+              count: 0,
+              length: r.question.length,
+              charCodes: Array.from(r.question).map(c => c.charCodeAt(0)),
+              // Masquer données sensibles en prod
+              hexDump: Array.from(r.question).map(c => 
+                `${c === ' ' ? '·' : c}(${c.charCodeAt(0).toString(16)})`
+              ).join(' ')
+            });
+          }
+          questionMap.get(key).count++;
+        }
+      });
+    });
+    
+    res.json({ 
+      total: questionMap.size,
+      questions: Array.from(questionMap.values()).sort((a, b) => b.count - a.count)
+    });
+  } catch (err) {
+    console.error('Debug endpoint error:', err);
+    res.status(500).json({ error: 'Debug error' });
+  }
+});
+
 // Middleware : charge la réponse dans req.responseDoc
 router.param('id', async (req, res, next, id) => {
   try {
@@ -92,7 +148,8 @@ router.get('/summary', async (req, res) => {
       };
     }
 
-    const PIE_Q = "En rapide, comment ça va ?";
+    // Configuration question pie chart (centralisée)
+    const PIE_Q = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
     const piePipeline = [
       { $match: match },
       { $unwind: '$responses' },
@@ -112,45 +169,100 @@ router.get('/summary', async (req, res) => {
       .aggregate(piePipeline, { allowDiskUse: true })
       .toArray();
 
-    const docs = await Response.find(match)
-      .select('name responses.question responses.answer')
-      .lean();
+    // Optimisation: Utiliser aggregation pipeline pour éviter O(n²)
+    const textPipeline = [
+      { $match: match },
+      { $unwind: '$responses' },
+      { $match: { 'responses.question': { $ne: PIE_Q } } },
+      {
+        $group: {
+          _id: '$responses.question',
+          items: { $push: { user: '$name', answer: '$responses.answer' } }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          question: '$_id',
+          items: 1
+        }
+      }
+    ];
+
+    const rawTextSummary = await mongoose.connection.db
+      .collection('responses')
+      .aggregate(textPipeline, { allowDiskUse: true })
+      .toArray();
 
     // Fonction pour normaliser les questions (éviter les divisions)
     const normalizeQuestion = (question) => {
-      return question.trim()
+      if (!question || typeof question !== 'string') return '';
+      
+      const normalized = question
+        .trim()
         .replace(/\s+/g, ' ')  // Remplacer espaces multiples par un seul
         .toLowerCase()
-        .replace(/[^\w\s\u00C0-\u017F]/g, '') // Garder alphanumériques + accents
+        // Supprimer caractères invisibles/contrôle
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+        // Normaliser accents Unicode (NFD puis supprimer diacritiques)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        // Supprimer ponctuation mais garder lettres/nombres/espaces
+        .replace(/[^\p{L}\p{N}\s]/gu, '')
         .trim();
+        
+      // Debug détaillé pour diagnostiquer (STRICTEMENT développement local)
+      if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
+        const questionHex = Array.from(question).map(c => `${c}(${c.charCodeAt(0).toString(16)})`).join(' ');
+        console.log(`🔍 Normalisation: "${question.substring(0, 50)}..." → "${normalized.substring(0, 50)}..."`);
+      }
+      
+      return normalized;
     };
 
+    // Regrouper questions similaires après aggregation (plus efficace)
     const textMap = {};
     const questionNormalizedMap = {}; // Map: normalized → première question originale
     
-    docs.forEach(doc => {
-      doc.responses.forEach(r => {
-        if (r.question === PIE_Q) return;
-        
-        const normalizedQ = normalizeQuestion(r.question);
-        
-        // Utiliser la première version de la question comme clé de référence
-        if (!questionNormalizedMap[normalizedQ]) {
-          questionNormalizedMap[normalizedQ] = r.question;
-        }
-        
-        const canonicalQ = questionNormalizedMap[normalizedQ];
-        textMap[canonicalQ] = textMap[canonicalQ] || [];
-        textMap[canonicalQ].push({ user: doc.name, answer: r.answer });
-      });
+    rawTextSummary.forEach(({ question, items }) => {
+      const normalizedQ = normalizeQuestion(question);
+      
+      // Ignorer questions vides après normalisation
+      if (!normalizedQ) {
+        console.warn(`⚠️  Question vide ignorée:`, question);
+        return;
+      }
+      
+      // Utiliser la première version de la question comme clé de référence
+      if (!questionNormalizedMap[normalizedQ]) {
+        questionNormalizedMap[normalizedQ] = question;
+      }
+      
+      const canonicalQ = questionNormalizedMap[normalizedQ];
+      textMap[canonicalQ] = textMap[canonicalQ] || [];
+      textMap[canonicalQ].push(...items); // Merger les items
     });
+    
     const textSummary = Object.entries(textMap)
       .map(([question, items]) => ({ question, items }));
 
-    // Debug pour diagnostiquer les problèmes de regroupement
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📊 Questions détectées:', Object.keys(textMap));
-      console.log('📊 Normalisation mapping:', questionNormalizedMap);
+    // Debug sécurisé pour diagnostiquer (LOCAL uniquement)
+    if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
+      console.log('📊 Questions regroupées:', Object.keys(textMap).length);
+      
+      // Debug doublons uniquement (sans contenu sensible)
+      const questionsByNormalized = {};
+      rawTextSummary.forEach(({question}) => {
+        const norm = normalizeQuestion(question);
+        if (!questionsByNormalized[norm]) questionsByNormalized[norm] = [];
+        questionsByNormalized[norm].push(question.length); // Juste la longueur
+      });
+      
+      const duplicates = Object.entries(questionsByNormalized)
+        .filter(([norm, lengths]) => lengths.length > 1);
+      
+      if (duplicates.length > 0) {
+        console.log(`🔍 ${duplicates.length} groupes de doublons détectés`);
+      }
     }
 
     res.json([ ...pieSummary, ...textSummary ]);
