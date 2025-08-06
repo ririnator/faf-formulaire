@@ -108,6 +108,22 @@
     // Initialiser les variables CSS à partir de CONFIG
     document.documentElement.style.setProperty('--lightbox-z-index', CONFIG.lightbox.zIndex);
 
+    // Fallback alert function si admin-utils.js ne charge pas
+    function fallbackAlert(message, type = 'error') {
+      const alertDiv = document.getElementById('alertMessage');
+      if (alertDiv) {
+        const baseClasses = 'mb-4 p-4 rounded-lg';
+        const typeClasses = type === 'error' 
+          ? 'bg-red-100 text-red-700 border border-red-300'
+          : 'bg-green-100 text-green-700 border border-green-300';
+        alertDiv.className = `${baseClasses} ${typeClasses}`;
+        alertDiv.textContent = message;
+        alertDiv.classList.remove('hidden');
+      } else {
+        alert(message); // Dernier recours
+      }
+    }
+
     // 1. Charger la liste des mois
     async function loadMonths() {
       const months = await fetchWithErrorHandling(
@@ -197,7 +213,9 @@
         }
       } catch (err) {
         console.error('Initialisation admin.html :', err);
-        showAlert('Erreur lors du chargement de l\'interface. Veuillez recharger la page.', 'error');
+        // Utiliser fallbackAlert si showAlert n'est pas disponible
+        const alertFn = typeof showAlert !== 'undefined' ? showAlert : fallbackAlert;
+        alertFn('Erreur lors du chargement de l\'interface. Veuillez recharger la page.', 'error');
       }
     })();
   </script>
