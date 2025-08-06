@@ -12,15 +12,24 @@ router.use(createAdminBodyParser());
 // Endpoint pour récupérer le token CSRF
 router.get('/csrf-token', csrfTokenEndpoint());
 
-// DEBUG: Endpoint sécurisé pour analyser les questions (dev uniquement)
+// DEBUG: Endpoint sécurisé pour analyser les questions (admin + dev uniquement)
 router.get('/debug/questions', (req, res, next) => {
   // SÉCURITÉ: Uniquement en développement local
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).json({ error: 'Not found' });
   }
   next();
+}, (req, res, next) => {
+  // SÉCURITÉ: Vérifier authentification admin même en dev
+  if (!req.session || !req.session.isAdmin) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  next();
 }, async (req, res) => {
   try {
+    // Configuration question pie chart (même logique que summary)
+    const PIE_Q = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
+    
     const docs = await Response.find()
       .select('responses.question')  // Suppression des noms utilisateurs
       .lean();
