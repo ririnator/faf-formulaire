@@ -10,7 +10,12 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:dynamic": "jest dynamic.option.integration.test.js",
-    "test:all": "jest && cd ../frontend && jest --config tests/jest.config.js"
+    "test:frontend": "node ../run-frontend-tests.js",
+    "test:frontend:watch": "node ../run-frontend-tests.js --watch",
+    "test:frontend:coverage": "node ../run-frontend-tests.js --coverage",
+    "test:form": "node ../test-form-locally.js",
+    "test:all": "npm test && npm run test:frontend",
+    "test:all:coverage": "npm run test:coverage && npm run test:frontend:coverage"
   },
   "keywords": [],
   "author": "",
