@@ -5,6 +5,7 @@ const router   = express.Router();
 const Response = require('../models/Response');
 const { createAdminBodyParser } = require('../middleware/bodyParser');
 const { csrfProtection, csrfTokenEndpoint } = require('../middleware/csrf');
+const { normalizeQuestion } = require('../utils/questionNormalizer');
 
 // Configuration constants
 const PIE_CHART_QUESTION = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
@@ -197,30 +198,7 @@ router.get('/summary', async (req, res) => {
       .aggregate(textPipeline, { allowDiskUse: true })
       .toArray();
 
-    // Fonction pour normaliser les questions (éviter les divisions)
-    const normalizeQuestion = (question) => {
-      if (!question || typeof question !== 'string') return '';
-      
-      const normalized = question
-        .trim()
-        .replace(/\s+/g, ' ')  // Remplacer espaces multiples par un seul
-        .toLowerCase()
-        // Supprimer caractères invisibles/contrôle
-        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-        // Normaliser accents Unicode (NFD puis supprimer diacritiques)
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        // Supprimer ponctuation mais garder lettres/nombres/espaces
-        .replace(/[^\p{L}\p{N}\s]/gu, '')
-        .trim();
-        
-      // Debug détaillé pour diagnostiquer (STRICTEMENT développement local)
-      if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
-        const questionHex = Array.from(question).map(c => `${c}(${c.charCodeAt(0).toString(16)})`).join(' ');
-        console.log(`🔍 Normalisation: "${question.substring(0, 50)}..." → "${normalized.substring(0, 50)}..."`);
-      }
-      
-      return normalized;
-    };
+    // Note: normalizeQuestion est maintenant importée du module utils/questionNormalizer
 
     // Regrouper questions similaires après aggregation (plus efficace)
     const textMap = {};
@@ -283,11 +261,8 @@ router.get('/summary', async (req, res) => {
       "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre" // Q10 - copié exactement du form
     ];
 
-    // Fonction pour normaliser une question pour comparaison
-    const normalizeForComparison = (question) => {
-      if (!question || typeof question !== 'string') return '';
-      return question.trim().replace(/\s+/g, ' ');
-    };
+    // Utiliser la même normalisation que pour le regroupement des questions
+    const normalizeForComparison = normalizeQuestion;
 
     // Combiner toutes les questions
     const allSummary = [...pieSummary, ...textSummary];
