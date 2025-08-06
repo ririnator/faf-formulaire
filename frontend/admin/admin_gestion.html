@@ -5,11 +5,19 @@
   <title>Liste de toutes les réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="admin-utils.js"></script>
   <link rel="icon" href="/favicon.ico" />
 </head>
 <body class="bg-gray-50 p-6">
   <div class="container mx-auto">
+    <div class="flex justify-between items-center mb-6">
+      <a href="/admin" class="text-blue-600 hover:underline">← Retour au résumé</a>
+      <a href="/logout" class="text-red-600 hover:underline">Déconnexion</a>
+    </div>
     <h1 class="text-3xl font-bold text-center mb-6">Toutes les réponses reçues</h1>
+
+    <!-- Message d'erreur/succès -->
+    <div id="alertMessage" class="hidden mb-4 p-4 rounded-lg"></div>
 
     <!-- Search et Filter Section -->
     <div class="mb-6 flex gap-4">
@@ -62,25 +70,27 @@
     const limit = 10;
     let allResponses = [];
 
-    // Charge une page donnée
+    // Charge une page donnée avec gestion d'erreur améliorée
     async function loadPage(page = 1) {
-      try {
-        const res = await fetch(`/api/admin/responses?page=${page}&limit=${limit}`);
-        if (!res.ok) throw new Error(`Statut HTTP ${res.status}`);
-        const { responses, pagination } = await res.json();
+      const data = await fetchWithErrorHandling(
+        `/api/admin/responses?page=${page}&limit=${limit}`,
+        {},
+        'Impossible de charger les données'
+      );
+      
+      if (!data) return;
+      
+      const { responses, pagination } = data;
+      
+      allResponses = responses;
+      renderTable(responses);
 
-        allResponses = responses;
-        renderTable(responses);
+      currentPage = pagination.page;
+      document.getElementById('currentPage').textContent = pagination.page;
+      document.getElementById('totalPages').textContent = pagination.totalPages;
 
-        currentPage = pagination.page;
-        document.getElementById('currentPage').textContent = pagination.page;
-        document.getElementById('totalPages').textContent = pagination.totalPages;
-
-        document.getElementById('prevBtn').disabled = pagination.page <= 1;
-        document.getElementById('nextBtn').disabled = pagination.page >= pagination.totalPages;
-      } catch (error) {
-        console.error("Erreur lors du chargement de la page :", error);
-      }
+      document.getElementById('prevBtn').disabled = pagination.page <= 1;
+      document.getElementById('nextBtn').disabled = pagination.page >= pagination.totalPages;
     }
 
     // Crée dynamiquement le <tbody> du tableau
@@ -99,14 +109,7 @@
         // Date
         const dateTd = document.createElement('td');
         dateTd.className = "py-2 px-4 border-b text-left";
-        const d = new Date(doc.createdAt);
-        dateTd.textContent = d.toLocaleString('fr-FR', {
-          year:   'numeric',
-          month:  '2-digit',
-          day:    '2-digit',
-          hour:   '2-digit',
-          minute: '2-digit'
-        });
+        dateTd.textContent = formatDateFR(doc.createdAt);
         tr.appendChild(dateTd);
 
         // Nom (on ajoute "(Admin)" si nécessaire)
@@ -134,22 +137,30 @@
         delBtn.className = "bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600";
         delBtn.textContent = 'Supprimer';
         delBtn.addEventListener('click', async () => {
-          if (!confirm(`Supprimer la réponse de ${doc.name} du ${new Date(doc.createdAt).toLocaleDateString('fr-FR')} ?`)) {
+          if (!confirm(`Supprimer la réponse de ${doc.name} du ${formatDateFR(doc.createdAt).split(' ')[0]} ?`)) {
             return;
           }
-          try {
-            const res = await fetch(`/api/admin/responses/${doc._id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error(`Statut ${res.status}`);
-            tr.remove();
-            // Recharger si la page est vide
-            if (allResponses.length === 1 && currentPage > 1) {
+          
+          const result = await fetchWithErrorHandling(
+            `/api/admin/responses/${doc._id}`, 
+            { method: 'DELETE' },
+            'Erreur lors de la suppression'
+          );
+          
+          if (result) {
+            showAlert(`Réponse de ${doc.name} supprimée avec succès`, 'success');
+            
+            // Logique de pagination améliorée
+            // D'abord recharger la page courante pour voir s'il reste des éléments
+            const remainingResponses = allResponses.filter(r => r._id !== doc._id);
+            
+            if (remainingResponses.length === 0 && currentPage > 1) {
+              // Si plus rien sur cette page et on n'est pas sur la page 1, aller à la précédente
               loadPage(currentPage - 1);
             } else {
+              // Sinon recharger la page courante
               loadPage(currentPage);
             }
-          } catch (err) {
-            console.error("Erreur en supprimant :", err);
-            alert("La suppression a échoué.");
           }
         });
         actionTd.appendChild(delBtn);
@@ -167,11 +178,40 @@
       loadPage(currentPage + 1);
     });
 
-    // Recherche par nom
+    // Recherche globale avec debounce amélioré
+    const debouncedSearch = debounce(async (term) => {
+      if (term === '') {
+        // Si pas de terme, recharger la page courante
+        loadPage(currentPage);
+        return;
+      }
+      
+      // Recherche globale sur toutes les données
+      const data = await fetchWithErrorHandling(
+        `/api/admin/responses?search=${encodeURIComponent(term)}&limit=100`,
+        {},
+        'Erreur lors de la recherche'
+      );
+      
+      if (data) {
+        allResponses = data.responses;
+        renderTable(data.responses);
+        
+        // Désactiver pagination pendant recherche
+        document.getElementById('prevBtn').disabled = true;
+        document.getElementById('nextBtn').disabled = true;
+        document.getElementById('currentPage').textContent = 1;
+        document.getElementById('totalPages').textContent = 1;
+        
+        if (data.responses.length === 0) {
+          showAlert('Aucun résultat trouvé pour cette recherche', 'error');
+        }
+      }
+    }, 300);
+    
     document.getElementById('searchInput').addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      const filtered = allResponses.filter(doc => doc.name.toLowerCase().includes(term));
-      renderTable(filtered);
+      const term = e.target.value.toLowerCase().trim();
+      debouncedSearch(term);
     });
 
     // Tri par date
