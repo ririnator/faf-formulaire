@@ -6,9 +6,23 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/frontend/tests/setup.js'],
   collectCoverageFrom: [
     'frontend/**/*.js',
+    'frontend/**/*.html',
     '!frontend/tests/**',
     '!frontend/node_modules/**'
   ],
   coverageReporters: ['text', 'lcov', 'html'],
-  verbose: true
+  verbose: true,
+  
+  // Configuration spécifique pour les tests DOM
+  testEnvironmentOptions: {
+    url: 'http://localhost:3000'
+  },
+  
+  // Timeouts pour tests d'intégration
+  testTimeout: 10000,
+  
+  // Mock des modules externes
+  moduleNameMapping: {
+    '^@/(.*)$': '<rootDir>/frontend/$1'
+  }
 };
