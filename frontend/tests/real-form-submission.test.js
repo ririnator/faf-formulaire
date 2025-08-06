@@ -217,7 +217,7 @@ describe('Real Form Submission Tests', () => {
         status: 201,
         json: () => Promise.resolve({
           message: 'Réponse enregistrée avec succès !',
-          link: 'https://faf-jotg.onrender.com/view/token123'
+          link: `${process.env.APP_BASE_URL || 'http://localhost:3000'}/view/token123`
         })
       });
 
@@ -329,7 +329,7 @@ describe('Real Form Submission Tests', () => {
           ok: true,
           json: () => Promise.resolve({
             message: 'Réponse enregistrée avec succès !',
-            link: 'https://faf-jotg.onrender.com/view/token456'
+            link: `${process.env.APP_BASE_URL || 'http://localhost:3000'}/view/token456`
           })
         });
 

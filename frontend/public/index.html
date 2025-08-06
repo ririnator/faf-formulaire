@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Form-a-Friend - Formulaire</title>
+  <link rel="stylesheet" href="/admin/mobile-responsive.css">
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     form { max-width: 600px; margin: 0 auto; }
@@ -20,23 +21,35 @@
   </style>
 </head>
 <body>
-  <h1>Formulaire Mensuel... dis-moi tout</h1>
-  <form id="friendForm">
-    <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off">
+  <!-- Skip link for keyboard navigation -->
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  
+  <main id="main-content" role="main">
+    <h1 id="form-title">Formulaire Mensuel... dis-moi tout</h1>
+    
+    <form id="friendForm" role="form" aria-labelledby="form-title" novalidate>
+      <!-- Honeypot field for spam protection -->
+      <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off" aria-hidden="true">
 
     <!-- Champ Nom -->
     <div class="form-group">
       <label for="name">Ton nom :</label>
-      <input type="text" id="name" name="name" required>
+      <input type="text" id="name" name="name" required 
+             aria-describedby="name-help" 
+             aria-invalid="false"
+             autocomplete="name">
+      <div id="name-help" class="sr-only">Entrez votre prénom ou surnom</div>
     </div>
 
     <!-- Question 1 -->
-    <div class="form-group">
-      <label>En rapide, comment ça va ? :</label>
+    <fieldset class="form-group">
+      <legend>En rapide, comment ça va ? :</legend>
       <div class="radio-group">
-        <input type="radio" name="question1" id="option1" value="ça va" required>
+        <input type="radio" name="question1" id="option1" value="ça va" required 
+               aria-describedby="q1-help">
         <label for="option1">ça va</label>
       </div>
+      <div id="q1-help" class="sr-only">Sélectionnez votre état d'esprit du moment</div>
       <div class="radio-group">
         <input type="radio" name="question1" id="option2" value="a connu meilleur mois">
         <label for="option2" id="labelOption2"></label>
@@ -49,18 +62,26 @@
         <input type="radio" name="question1" id="option4" value="WE'RE BARACK">
         <label for="option4">WE'RE BARACK</label>
       </div>
-    </div>
+    </fieldset>
 
     <!-- Question 2 -->
     <div class="form-group">
       <label for="question2">Possibilité d'ajouter un peu plus de détails à la question précédente :</label>
-      <input type="text" id="question2" name="question2" required>
+      <input type="text" id="question2" name="question2" required
+             aria-describedby="q2-help"
+             aria-invalid="false"
+             maxlength="10000"
+             placeholder="Développez votre réponse précédente...">
+      <div id="q2-help" class="sr-only">Ajoutez des détails sur votre état d'esprit actuel (maximum 10 000 caractères)</div>
     </div>
 
     <!-- Question 3 -->
     <div class="form-group">
       <label for="question3">Le pulse check mensuel... montre une photo de toi ce mois-ci :</label>
-      <input type="file" id="question3" name="question3" accept="image/*" required>
+      <input type="file" id="question3" name="question3" accept="image/*" required
+             aria-describedby="q3-help"
+             aria-invalid="false">
+      <div id="q3-help" class="sr-only">Sélectionnez une photo de vous prise ce mois-ci (formats acceptés: JPG, PNG, GIF, max 5MB)</div>
     </div>
 
     <!-- Question 4 -->
@@ -105,10 +126,20 @@
       <input type="file" id="question10" name="question10" accept="image/*" required>
     </div>
 
-    <button type="submit">Envoyer</button>
+    <button type="submit" 
+            aria-describedby="submit-help"
+            class="btn-submit">
+      Envoyer le formulaire
+    </button>
+    <div id="submit-help" class="sr-only">
+      Soumettre vos réponses mensuelles. Un lien privé vous sera fourni pour consulter vos réponses.
+    </div>
   </form>
 
-  <div id="feedback"></div>
+  <!-- Section de feedback -->
+  <section id="feedback" role="status" aria-live="polite" aria-atomic="true"></section>
+  
+  </main>
 
   <script>
     /**
@@ -147,17 +178,53 @@
       }
     });
 
+    // Fonction pour afficher/cacher l'état de chargement
+    function showLoading(show = true, message = 'Traitement en cours...') {
+      let overlay = document.getElementById('loadingOverlay');
+      
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loadingOverlay';
+        overlay.className = 'loading-overlay hidden';
+        overlay.innerHTML = `
+          <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">${message}</div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+      }
+      
+      if (show) {
+        overlay.classList.remove('hidden');
+        overlay.querySelector('.loading-text').textContent = message;
+      } else {
+        overlay.classList.add('hidden');
+      }
+    }
+
     // Upload et soumission
     document.getElementById('friendForm').addEventListener('submit', async e => {
       e.preventDefault();
       const feedback = document.getElementById('feedback');
-      feedback.textContent = ''; // efface les anciens messages
+      const submitBtn = document.querySelector('button[type="submit"]');
+      
+      // Réinitialiser l'état
+      feedback.textContent = '';
+      
+      // Afficher état de chargement
+      showLoading(true, 'Validation en cours...');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Envoi en cours...';
 
       // Validation helper function
       function validateField(id, errorMessage, isFile = false) {
         const element = document.getElementById(id);
         const value = isFile ? element.files[0] : element.value.trim();
         if (!value) {
+          showLoading(false);
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Envoyer le formulaire';
           feedback.textContent = `❌ ${errorMessage}`;
           return false;
         }
@@ -167,6 +234,9 @@
       // Validate radio button
       const q1Radio = document.querySelector('input[name="question1"]:checked');
       if (!q1Radio) {
+        showLoading(false);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Envoyer le formulaire';
         feedback.textContent = '❌ Veuillez sélectionner une réponse à la première question';
         return;
       }
@@ -241,6 +311,9 @@
           ]
         };
 
+        // Mettre à jour le message de chargement
+        showLoading(true, 'Envoi de vos réponses...');
+
         // Envoi des réponses
         const resp = await fetch('/api/response', {
           method: 'POST',
@@ -278,6 +351,11 @@
       } catch (err) {
         console.error(err);
         feedback.textContent = '❌ ' + err.message;
+      } finally {
+        // Restaurer l'état du bouton et cacher le chargement
+        showLoading(false);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Envoyer le formulaire';
       }
     });
   </script>

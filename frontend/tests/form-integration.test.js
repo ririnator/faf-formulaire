@@ -170,7 +170,7 @@ describe('Form Integration End-to-End Tests', () => {
         status: 201,
         json: () => Promise.resolve({
           message: 'Réponse enregistrée avec succès !',
-          link: 'https://faf-jotg.onrender.com/view/abc123def456'
+          link: `${process.env.APP_BASE_URL || 'http://localhost:3000'}/view/abc123def456`
         })
       });
 
@@ -216,14 +216,14 @@ describe('Form Integration End-to-End Tests', () => {
       const feedback = document.getElementById('feedback');
       feedback.innerHTML = `
         ✅ Réponse enregistrée avec succès !<br/>
-        Votre lien privé : <a href="https://faf-jotg.onrender.com/view/abc123def456" target="_blank">https://faf-jotg.onrender.com/view/abc123def456</a>
+        Votre lien privé : <a href="${process.env.APP_BASE_URL || 'http://localhost:3000'}/view/abc123def456" target="_blank">${process.env.APP_BASE_URL || 'http://localhost:3000'}/view/abc123def456</a>
       `;
 
       expect(feedback.innerHTML).toContain('✅ Réponse enregistrée avec succès !');
       expect(feedback.innerHTML).toContain('Votre lien privé :');
       
       const link = feedback.querySelector('a');
-      expect(link.href).toBe('https://faf-jotg.onrender.com/view/abc123def456');
+      expect(link.href).toBe(`${process.env.APP_BASE_URL || 'http://localhost:3000'}/view/abc123def456`);
       expect(link.target).toBe('_blank');
 
       // 8. Vérifier que le formulaire n'a PAS été reset (comportement actuel)

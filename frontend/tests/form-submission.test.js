@@ -239,7 +239,7 @@ describe('Form Submission Workflow Tests', () => {
         status: 201,
         json: () => Promise.resolve({
           message: 'Réponse enregistrée avec succès !',
-          link: 'https://faf-jotg.onrender.com/view/abc123token'
+          link: `${process.env.APP_BASE_URL || 'http://localhost:3000'}/view/abc123token`
         })
       });
 
@@ -248,7 +248,7 @@ describe('Form Submission Workflow Tests', () => {
       // Simuler la logique de succès
       const mockResponse = {
         message: 'Réponse enregistrée avec succès !',
-        link: 'https://faf-jotg.onrender.com/view/abc123token'
+        link: `${process.env.APP_BASE_URL || 'http://localhost:3000'}/view/abc123token`
       };
 
       feedback.innerHTML = `
@@ -260,7 +260,7 @@ describe('Form Submission Workflow Tests', () => {
 
       expect(feedback.innerHTML).toContain('✅ Réponse enregistrée avec succès !');
       expect(feedback.innerHTML).toContain('Votre lien privé :');
-      expect(feedback.innerHTML).toContain('https://faf-jotg.onrender.com/view/abc123token');
+      expect(feedback.innerHTML).toContain(`${process.env.APP_BASE_URL || 'http://localhost:3000'}/view/abc123token`);
       expect(feedback.querySelector('a')).toBeTruthy();
       expect(feedback.querySelector('a').getAttribute('target')).toBe('_blank');
     });

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Interface d'administration – Résumé des réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/admin/mobile-responsive.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
   <script type="module" src="/admin/faf-admin.js"></script>
 
@@ -52,28 +53,38 @@
   </style>
 </head>
 <body class="bg-gray-50 p-4">
-  <div class="flex justify-end mb-4">
-    <a href="/admin/gestion" class="text-blue-600 hover:underline">Gestion avancée</a>
-    <a href="/logout" class="text-red-600 hover:underline ml-4">Déconnexion</a>
-  </div>
+  <!-- Skip link for keyboard navigation -->
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  
+  <nav class="admin-nav flex justify-end mb-4" role="navigation" aria-label="Navigation administrateur">
+    <a href="/admin/gestion" class="text-blue-600 hover:underline" 
+       aria-describedby="gestion-help">Gestion avancée</a>
+    <div id="gestion-help" class="sr-only">Accéder à la liste détaillée des réponses</div>
+    <a href="/logout" class="text-red-600 hover:underline ml-4"
+       aria-describedby="logout-help">Déconnexion</a>
+    <div id="logout-help" class="sr-only">Se déconnecter de l'interface admin</div>
+  </nav>
 
-  <div class="container mx-auto">
+  <main id="main-content" class="container mx-auto" role="main">
     <h1 class="text-3xl font-bold text-center mb-4">Résumé des réponses</h1>
 
     <!-- Message d'erreur/succès -->
-    <div id="alertMessage" class="hidden mb-4 p-4 rounded-lg"></div>
+    <div id="alertMessage" class="hidden mb-4 p-4 rounded-lg" 
+         role="alert" aria-live="assertive"></div>
 
     <!-- Filtre par mois -->
     <div class="mb-6 text-center">
       <label for="monthFilter" class="font-semibold mr-2">Filtrer par mois :</label>
-      <select id="monthFilter" class="p-2 border rounded">
+      <select id="monthFilter" class="p-2 border rounded"
+              aria-describedby="month-help">
         <option value="" disabled selected>Choisissez un mois</option>
       </select>
+      <div id="month-help" class="sr-only">Sélectionnez un mois pour afficher le résumé des réponses</div>
     </div>
 
     <!-- Conteneur des cards -->
-    <div id="summaryContainer"></div>
-  </div>
+    <div id="summaryContainer" role="region" aria-label="Résumé des réponses par question"></div>
+  </main>
 
   <script type="module">
     import { AdminAPI, Utils, UI, Charts } from '/admin/faf-admin.js';
