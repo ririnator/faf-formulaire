@@ -125,27 +125,17 @@ app.get('/admin/gestion', ensureAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin/admin_gestion.html'));
 });
 
-// Assets JavaScript admin - accessible si session admin active
-app.get('/admin/assets/core-utils.js', ensureAdmin, (req, res) => {
-  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-  // Cache pour 24 heures (plus long car rarement modifié)
-  const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 7200;
-  res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
-  res.sendFile(path.join(__dirname, '../frontend/admin/core-utils.js'));
-});
-
-app.get('/admin/assets/admin-utils.js', ensureAdmin, (req, res) => {
-  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-  // Cache pour 1 heure en développement, 24h en production
-  const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 3600;
-  res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
-  res.sendFile(path.join(__dirname, '../frontend/admin/admin-utils.js'));
-});
-
-// Autres assets admin (CSS, images, etc.)
-app.use('/admin/assets', ensureAdmin,
-  express.static(path.join(__dirname, '../frontend/admin'))
-);
+// Assets admin (faf-admin.js module, CSS, images, etc.) - accessible si session admin active
+app.use('/admin', ensureAdmin, (req, res, next) => {
+  // Set proper MIME type for JavaScript modules
+  if (req.path.endsWith('.js')) {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    // Cache pour 1 heure en développement, 24h en production
+    const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 3600;
+    res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+  }
+  next();
+}, express.static(path.join(__dirname, '../frontend/admin')));
 
 // DEBUG ENDPOINTS - désactivés en production pour la sécurité
 if (process.env.NODE_ENV !== 'production') {

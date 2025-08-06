@@ -1,7 +1,7 @@
 // Admin Image Security Tests
 describe('🔒 Admin Image Security Tests', () => {
   
-  // Simulate the same trusted image validation used in admin-utils.js
+  // Simulate the same trusted image validation used in faf-admin.js Utils.isTrustedImageUrl
   function isTrustedImageUrl(url) {
     const TRUSTED_IMAGE_DOMAINS = [
       'res.cloudinary.com',           

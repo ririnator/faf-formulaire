@@ -155,7 +155,7 @@
           );
           
           if (result) {
-            showAlert(`Réponse de ${doc.name} supprimée avec succès`, 'success');
+            safeAlert(`Réponse de ${doc.name} supprimée avec succès`, 'success');
             
             // Logique de pagination améliorée
             // D'abord recharger la page courante pour voir s'il reste des éléments
@@ -217,7 +217,7 @@
         document.getElementById('totalPages').textContent = 1;
         
         if (data.responses.length === 0) {
-          showAlert('Aucun résultat trouvé pour cette recherche', 'error');
+          safeAlert('Aucun résultat trouvé pour cette recherche', 'error');
         }
       }
     }, 300);
