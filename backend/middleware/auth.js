@@ -35,7 +35,7 @@ function destroySession(req, res) {
     if (err) {
       console.error('Session destruction error:', err);
     }
-    res.clearCookie('connect.sid');
+    res.clearCookie('faf-session');
     res.redirect('/login');
   });
 }

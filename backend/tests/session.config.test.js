@@ -96,11 +96,22 @@ describe('Session Cookie Configuration', () => {
     });
 
     test('should have environment-aware secure settings', () => {
-      const appContent = require('fs').readFileSync(require('path').join(__dirname, '../app.js'), 'utf8');
+      const { getSessionConfig } = require('../middleware/security');
       
-      // Should have conditional secure and sameSite settings
-      expect(appContent).toContain("secure: process.env.NODE_ENV === 'production'");
-      expect(appContent).toContain("sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'");
+      // Test production environment
+      process.env.NODE_ENV = 'production';
+      const prodConfig = getSessionConfig();
+      expect(prodConfig.cookie.sameSite).toBe('none');
+      expect(prodConfig.cookie.secure).toBe(true);
+      
+      // Test development environment
+      process.env.NODE_ENV = 'development';
+      const devConfig = getSessionConfig();
+      expect(devConfig.cookie.sameSite).toBe('lax');
+      expect(devConfig.cookie.secure).toBe(false);
+      
+      // Reset environment
+      delete process.env.NODE_ENV;
     });
   });
 });

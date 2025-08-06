@@ -164,7 +164,7 @@
     // 3. Rendu des cartes
     function displaySummary(summary) {
       const container = document.getElementById('summaryContainer');
-      container.innerHTML = '';
+      container.replaceChildren();
 
       summary.forEach(({ question, items }) => {
         const card = createSummaryCard(question, items);
