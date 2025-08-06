@@ -12,6 +12,8 @@ const validateResponseStrict = [
     .withMessage('Il faut entre 1 et 20 réponses'),
   
   body('responses.*.question')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('La question ne peut pas être nulle ou vide')
     .trim()
     .escape()
     .notEmpty()
@@ -19,6 +21,8 @@ const validateResponseStrict = [
     .withMessage('Chaque question doit être précisée (max 500 caractères)'),
   
   body('responses.*.answer')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('La réponse ne peut pas être nulle ou vide')
     .trim()
     .escape()
     .notEmpty()
@@ -76,10 +80,17 @@ function handleValidationErrors(req, res, next) {
 
 function sanitizeResponse(req, res, next) {
   if (req.body.responses && Array.isArray(req.body.responses)) {
-    req.body.responses = req.body.responses.map(response => ({
-      question: response.question?.toString().substring(0, 500) || '',
-      answer: response.answer?.toString().substring(0, 10000) || ''
-    }));
+    req.body.responses = req.body.responses
+      .filter(response => response !== null && response !== undefined) // Remove null/undefined elements
+      .map(response => {
+        if (typeof response !== 'object' || response === null) {
+          return { question: '', answer: '' };
+        }
+        return {
+          question: response.question != null ? response.question.toString().substring(0, 500) : '',
+          answer: response.answer != null ? response.answer.toString().substring(0, 10000) : ''
+        };
+      });
   }
   next();
 }

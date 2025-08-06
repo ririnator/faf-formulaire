@@ -297,8 +297,8 @@ describe('Validation Middleware Security Tests', () => {
         .send(edgeCaseData)
         .expect(400);
 
-      // Express-validator returns 'Invalid value' for null/undefined
-      expect(response.body.message).toContain('Invalid value');
+      // Updated validation returns specific message for null/undefined
+      expect(response.body.message).toContain('question ne peut pas être nulle');
     });
 
     test('should handle empty strings after trimming', async () => {

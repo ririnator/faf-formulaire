@@ -6,10 +6,12 @@ const router = express.Router();
 
 const Response = require('../models/Response');
 const { validateResponseStrict, handleValidationErrors, sanitizeResponse } = require('../middleware/validation');
+const { createFormBodyParser } = require('../middleware/bodyParser');
 
-// POST /api/response
+// POST /api/response with form-specific body parser (2MB limit for text data)
 router.post(
   '/',
+  createFormBodyParser(),
   validateResponseStrict,
   handleValidationErrors,
   sanitizeResponse,
