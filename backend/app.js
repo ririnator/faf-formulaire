@@ -3,7 +3,6 @@ require('dotenv').config();
 const express       = require('express');
 const rateLimit     = require('express-rate-limit');
 const mongoose      = require('mongoose');
-const bodyParser    = require('body-parser');
 const path          = require('path');
 const session       = require('express-session');
 const cors          = require('cors');
@@ -59,15 +58,14 @@ app.use(session({
   }),
   cookie: {
     maxAge: 1000 * 60 * 60, // 1 heure
-    sameSite: 'none',
-    secure: true            // en prod via HTTPS
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production'
   }
 }));
 
 // 4) Parsers
-app.use(bodyParser.json({ limit: '50mb' }));
-app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // 5) Connexion à MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -143,6 +141,10 @@ app.use((req, res) => {
 });
 
 // 15) Lancement du serveur
-app.listen(port, () => {
-  console.log(`Serveur lancé sur le port ${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Serveur lancé sur le port ${port}`);
+  });
+}
+
+module.exports = app;
