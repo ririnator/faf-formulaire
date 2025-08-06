@@ -16,6 +16,7 @@ const Response       = require('./models/Response');
 const { ensureAdmin, authenticateAdmin, destroySession } = require('./middleware/auth');
 const { createSecurityMiddleware, createSessionOptions } = require('./middleware/security');
 const { createStandardBodyParser, createPayloadErrorHandler } = require('./middleware/bodyParser');
+const { csrfTokenMiddleware } = require('./middleware/csrf');
 
 const app  = express();
 const port = process.env.PORT || 3000;
@@ -53,6 +54,9 @@ app.set('trust proxy', 1);
 
 // 3) Enhanced Sessions with better dev/prod handling
 app.use(session(createSessionOptions()));
+
+// 3.5) CSRF Token generation for admin routes
+app.use(csrfTokenMiddleware());
 
 // 4) Optimized Body Parsers (512KB standard limit)
 app.use(createStandardBodyParser());

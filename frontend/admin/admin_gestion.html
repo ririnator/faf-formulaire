@@ -5,6 +5,7 @@
   <title>Liste de toutes les réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="admin-utils.js"></script>
   <link rel="icon" href="/favicon.ico" />
 </head>
 <body class="bg-gray-50 p-6">
@@ -69,51 +70,27 @@
     const limit = 10;
     let allResponses = [];
 
-    // Gestion des messages d'alerte
-    function showAlert(message, type = 'error') {
-      const alertDiv = document.getElementById('alertMessage');
-      alertDiv.className = `mb-4 p-4 rounded-lg ${type === 'error' ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-green-100 text-green-700 border border-green-300'}`;
-      alertDiv.textContent = message;
-      alertDiv.classList.remove('hidden');
-      
-      // Auto-hide after 5 seconds
-      setTimeout(() => {
-        alertDiv.classList.add('hidden');
-      }, 5000);
-    }
-
-    // Charge une page donnée
+    // Charge une page donnée avec gestion d'erreur améliorée
     async function loadPage(page = 1) {
-      try {
-        const res = await fetch(`/api/admin/responses?page=${page}&limit=${limit}`, {
-          credentials: 'include'
-        });
-        
-        if (res.status === 401) {
-          showAlert("Session expirée. Veuillez vous reconnecter.", 'error');
-          setTimeout(() => window.location.href = '/login', 2000);
-          return;
-        }
-        
-        if (!res.ok) {
-          throw new Error(`Erreur serveur: ${res.status}`);
-        }
-        
-        const { responses, pagination } = await res.json();
+      const data = await fetchWithErrorHandling(
+        `/api/admin/responses?page=${page}&limit=${limit}`,
+        {},
+        'Impossible de charger les données'
+      );
+      
+      if (!data) return;
+      
+      const { responses, pagination } = data;
+      
+      allResponses = responses;
+      renderTable(responses);
 
-        allResponses = responses;
-        renderTable(responses);
+      currentPage = pagination.page;
+      document.getElementById('currentPage').textContent = pagination.page;
+      document.getElementById('totalPages').textContent = pagination.totalPages;
 
-        currentPage = pagination.page;
-        document.getElementById('currentPage').textContent = pagination.page;
-        document.getElementById('totalPages').textContent = pagination.totalPages;
-
-        document.getElementById('prevBtn').disabled = pagination.page <= 1;
-        document.getElementById('nextBtn').disabled = pagination.page >= pagination.totalPages;
-      } catch (error) {
-        console.error("Erreur lors du chargement de la page :", error);
-        showAlert("Impossible de charger les données. Vérifiez votre connexion.", 'error');
-      }
+      document.getElementById('prevBtn').disabled = pagination.page <= 1;
+      document.getElementById('nextBtn').disabled = pagination.page >= pagination.totalPages;
     }
 
     // Crée dynamiquement le <tbody> du tableau
@@ -132,14 +109,7 @@
         // Date
         const dateTd = document.createElement('td');
         dateTd.className = "py-2 px-4 border-b text-left";
-        const d = new Date(doc.createdAt);
-        dateTd.textContent = d.toLocaleString('fr-FR', {
-          year:   'numeric',
-          month:  '2-digit',
-          day:    '2-digit',
-          hour:   '2-digit',
-          minute: '2-digit'
-        });
+        dateTd.textContent = formatDateFR(doc.createdAt);
         tr.appendChild(dateTd);
 
         // Nom (on ajoute "(Admin)" si nécessaire)
@@ -167,34 +137,30 @@
         delBtn.className = "bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600";
         delBtn.textContent = 'Supprimer';
         delBtn.addEventListener('click', async () => {
-          if (!confirm(`Supprimer la réponse de ${doc.name} du ${new Date(doc.createdAt).toLocaleDateString('fr-FR')} ?`)) {
+          if (!confirm(`Supprimer la réponse de ${doc.name} du ${formatDateFR(doc.createdAt).split(' ')[0]} ?`)) {
             return;
           }
-          try {
-            const res = await fetch(`/api/admin/responses/${doc._id}`, { 
-              method: 'DELETE',
-              credentials: 'include'
-            });
-            
-            if (res.status === 401) {
-              showAlert("Session expirée. Veuillez vous reconnecter.", 'error');
-              setTimeout(() => window.location.href = '/login', 2000);
-              return;
-            }
-            
-            if (!res.ok) throw new Error(`Statut ${res.status}`);
-            
+          
+          const result = await fetchWithErrorHandling(
+            `/api/admin/responses/${doc._id}`, 
+            { method: 'DELETE' },
+            'Erreur lors de la suppression'
+          );
+          
+          if (result) {
             showAlert(`Réponse de ${doc.name} supprimée avec succès`, 'success');
             
-            // Recharger si la page est vide
-            if (allResponses.length === 1 && currentPage > 1) {
+            // Logique de pagination améliorée
+            // D'abord recharger la page courante pour voir s'il reste des éléments
+            const remainingResponses = allResponses.filter(r => r._id !== doc._id);
+            
+            if (remainingResponses.length === 0 && currentPage > 1) {
+              // Si plus rien sur cette page et on n'est pas sur la page 1, aller à la précédente
               loadPage(currentPage - 1);
             } else {
+              // Sinon recharger la page courante
               loadPage(currentPage);
             }
-          } catch (err) {
-            console.error("Erreur en supprimant :", err);
-            showAlert(`Erreur lors de la suppression: ${err.message}`, 'error');
           }
         });
         actionTd.appendChild(delBtn);
@@ -212,42 +178,24 @@
       loadPage(currentPage + 1);
     });
 
-    // Recherche globale par nom
-    let searchTimeout;
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-      clearTimeout(searchTimeout);
-      const term = e.target.value.toLowerCase().trim();
+    // Recherche globale avec debounce amélioré
+    const debouncedSearch = debounce(async (term) => {
+      if (term === '') {
+        // Si pas de terme, recharger la page courante
+        loadPage(currentPage);
+        return;
+      }
       
-      // Délai pour éviter trop de requêtes
-      searchTimeout = setTimeout(() => {
-        if (term === '') {
-          // Si pas de terme, recharger la page courante
-          loadPage(currentPage);
-        } else {
-          // Recherche globale sur toutes les données
-          searchGlobal(term);
-        }
-      }, 300);
-    });
-    
-    // Fonction de recherche globale
-    async function searchGlobal(term) {
-      try {
-        const res = await fetch(`/api/admin/responses?search=${encodeURIComponent(term)}&limit=100`, {
-          credentials: 'include'
-        });
-        
-        if (res.status === 401) {
-          showAlert("Session expirée. Veuillez vous reconnecter.", 'error');
-          setTimeout(() => window.location.href = '/login', 2000);
-          return;
-        }
-        
-        if (!res.ok) throw new Error(`Erreur serveur: ${res.status}`);
-        
-        const { responses } = await res.json();
-        allResponses = responses;
-        renderTable(responses);
+      // Recherche globale sur toutes les données
+      const data = await fetchWithErrorHandling(
+        `/api/admin/responses?search=${encodeURIComponent(term)}&limit=100`,
+        {},
+        'Erreur lors de la recherche'
+      );
+      
+      if (data) {
+        allResponses = data.responses;
+        renderTable(data.responses);
         
         // Désactiver pagination pendant recherche
         document.getElementById('prevBtn').disabled = true;
@@ -255,11 +203,16 @@
         document.getElementById('currentPage').textContent = 1;
         document.getElementById('totalPages').textContent = 1;
         
-      } catch (error) {
-        console.error("Erreur recherche globale :", error);
-        showAlert("Erreur lors de la recherche", 'error');
+        if (data.responses.length === 0) {
+          showAlert('Aucun résultat trouvé pour cette recherche', 'error');
+        }
       }
-    }
+    }, 300);
+    
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase().trim();
+      debouncedSearch(term);
+    });
 
     // Tri par date
     document.getElementById('sortSelect').addEventListener('change', (e) => {
