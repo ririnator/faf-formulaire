@@ -43,7 +43,21 @@ router.post('/', (req, res) => {
       if (!req.file || !req.file.path) {
         return res.status(400).json({ message: 'Aucun fichier reçu' });
       }
-      res.json({ url: req.file.path });
+
+      // 🔒 SECURITY: Validate that returned URL is from trusted Cloudinary domain
+      const uploadedUrl = req.file.path;
+      const trustedCloudinaryPattern = /^https:\/\/res\.cloudinary\.com\/[a-zA-Z0-9_-]+\/image\/upload\/.+$/;
+      
+      if (!trustedCloudinaryPattern.test(uploadedUrl)) {
+        console.error('🚨 SECURITY: Upload returned untrusted URL:', uploadedUrl);
+        return res.status(500).json({ 
+          message: 'Erreur de sécurité lors de l\'upload',
+          detail: 'URL non sécurisée retournée par le service'
+        });
+      }
+
+      console.log('✅ Upload sécurisé réussi:', uploadedUrl);
+      res.json({ url: uploadedUrl });
     });
   });
 
