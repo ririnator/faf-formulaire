@@ -88,7 +88,7 @@
 
     // Configuration constantes
     const CONFIG = {
-      pieQuestion: "En rapide, comment ça va ?",
+      pieQuestion: "En rapide, comment ça va ?", // Sync avec PIE_CHART_QUESTION env var
       chart: {
         width: 1100,
         height: 320
@@ -97,7 +97,8 @@
         maxUrlLength: 1000,
         maxFallbackLength: 200,
         thumbnailSize: 'w-16 h-16',
-        lightboxMaxSize: '90%'
+        lightboxMaxSize: '90%',
+        fallbackSvg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAyOEMyNiAyNiAyOCAyNiAzMCAyOEMzMiAzMCAzNCAzMCAzNiAyOEMzOCAyNiA0MCAyNiA0MiAyOFY0MEgyMlYyOFoiIGZpbGw9IiNEMUQ1REIiLz4KPHA+SW1hZ2UgaW5kaXNwb25pYmxlPC9wPgo8L3N2Zz4K'
       }
     };
 
@@ -225,9 +226,9 @@
               img.alt       = `Image de ${user}`;
               img.className = `${CONFIG.image.thumbnailSize} object-cover inline-block mr-2 border cursor-pointer`;
               
-              // Gestion erreur de chargement image
+              // Gestion erreur de chargement image avec fallback configuré
               img.onerror = function() {
-                this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAyOEMyNiAyNiAyOCAyNiAzMCAyOEMzMiAzMCAzNCAzMCAzNiAyOEMzOCAyNiA0MCAyNiA0MiAyOFY0MEgyMlYyOFoiIGZpbGw9IiNEMUQ1REIiLz4KPHA+SW1hZ2UgaW5kaXNwb25pYmxlPC9wPgo8L3N2Zz4K';
+                this.src = CONFIG.image.fallbackSvg;
                 this.alt = `Image indisponible (${user})`;
                 this.title = 'Image Cloudinary inaccessible';
               };
@@ -303,7 +304,7 @@
         }
       } catch (err) {
         console.error('Initialisation admin.html :', err);
-        alert('Erreur lors du chargement de l\'interface. Veuillez recharger la page.');
+        showAlert('Erreur lors du chargement de l\'interface. Veuillez recharger la page.', 'error');
       }
     })();
   </script>
