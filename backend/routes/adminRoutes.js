@@ -20,18 +20,25 @@ router.param('id', async (req, res, next, id) => {
   }
 });
 
-// GET /api/admin/responses?page=1&limit=10
-// Pour l’UI de gestion paginée, incluant maintenant isAdmin et token
+// GET /api/admin/responses?page=1&limit=10&search=term
+// Pour l'UI de gestion paginée, incluant maintenant isAdmin et token
 router.get('/responses', async (req, res) => {
   try {
     const page  = Math.max(1, parseInt(req.query.page, 10)  || 1);
-    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const skip  = (page - 1) * limit;
+    const search = req.query.search?.trim();
 
-    const totalCount = await Response.countDocuments();
+    // Construction du filtre de recherche
+    let filter = {};
+    if (search) {
+      filter.name = { $regex: search, $options: 'i' }; // Recherche insensible à la casse
+    }
+
+    const totalCount = await Response.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / limit);
 
-    const data = await Response.find()
+    const data = await Response.find(filter)
       .select('name month createdAt isAdmin token')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -40,7 +47,8 @@ router.get('/responses', async (req, res) => {
 
     res.json({
       responses:  data,
-      pagination: { page, totalPages, totalCount }
+      pagination: { page, totalPages, totalCount },
+      search: search || null
     });
   } catch (err) {
     console.error('❌ Erreur pagination /responses :', err);
