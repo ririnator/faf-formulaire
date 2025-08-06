@@ -10,12 +10,38 @@
   <div id="qa-container"></div>
 
   <script>
-    // Fonction pour décoder les entités HTML
+    // Fonction pour décoder uniquement les entités HTML sûres (liste blanche)
     function unescapeHTML(text) {
-      if (!text) return text;
-      const div = document.createElement('div');
-      div.innerHTML = text;
-      return div.textContent || div.innerText || '';
+      if (!text || typeof text !== 'string') return text || '';
+      
+      // Approche liste blanche : décoder uniquement les entités communes et sûres
+      const safeEntityMap = {
+        '&#x27;': "'",
+        '&#39;': "'",
+        '&apos;': "'",
+        '&quot;': '"',
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&nbsp;': ' ',
+        '&eacute;': 'é',
+        '&egrave;': 'è',
+        '&ecirc;': 'ê',
+        '&agrave;': 'à',
+        '&acirc;': 'â',
+        '&ugrave;': 'ù',
+        '&ucirc;': 'û',
+        '&icirc;': 'î',
+        '&ocirc;': 'ô',
+        '&ccedil;': 'ç'
+      };
+      
+      let result = text;
+      for (const [entity, char] of Object.entries(safeEntityMap)) {
+        result = result.replace(new RegExp(entity, 'g'), char);
+      }
+      
+      return result;
     }
 
     (async () => {
@@ -31,18 +57,33 @@
       user.responses.forEach((q, i) => {
         const block = document.createElement('div');
         
-        // Décoder les entités HTML pour un affichage correct
+        // Décoder les entités HTML de manière sécurisée
         const question = unescapeHTML(q.question);
         const answer = unescapeHTML(q.answer);
-        const adminAnswer = admin && admin.responses[i] 
-          ? unescapeHTML(admin.responses[i].answer)
-          : '<em>Pas encore répondu</em>';
 
-        block.innerHTML = `
-          <h2>Q${i+1} : ${question}</h2>
-          <p><strong>Vous :</strong> ${answer}</p>
-          <p class="admin-answer"><strong>Moi (Admin) :</strong> ${adminAnswer}</p>
-        `;
+        // Créer les éléments de manière sécurisée (pas d'innerHTML)
+        const questionElement = document.createElement('h2');
+        questionElement.textContent = `Q${i+1} : ${question}`;
+
+        const yourAnswer = document.createElement('p');
+        yourAnswer.innerHTML = `<strong>Vous :</strong> `;
+        yourAnswer.appendChild(document.createTextNode(answer));
+
+        const adminAnswerElement = document.createElement('p');
+        adminAnswerElement.className = 'admin-answer';
+        adminAnswerElement.innerHTML = `<strong>Moi (Admin) :</strong> `;
+        if (admin && admin.responses[i]) {
+          const adminAnswerText = unescapeHTML(admin.responses[i].answer);
+          adminAnswerElement.appendChild(document.createTextNode(adminAnswerText));
+        } else {
+          const emElement = document.createElement('em');
+          emElement.textContent = 'Pas encore répondu';
+          adminAnswerElement.appendChild(emElement);
+        }
+
+        block.appendChild(questionElement);
+        block.appendChild(yourAnswer);
+        block.appendChild(adminAnswerElement);
         document.getElementById('qa-container').append(block);
       });
     })();
