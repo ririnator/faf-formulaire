@@ -54,37 +54,147 @@
       const { user, admin } = await res.json();
       document.getElementById('month').textContent = user.month;
 
-      user.responses.forEach((q, i) => {
-        const block = document.createElement('div');
+      // Configuration du regroupement des questions
+      const questionGroups = [
+        { name: "État général du mois", questions: [0, 1] }, // Q1-Q2: Comment ça va + détails
+        { name: "Check personnel", questions: [2] }, // Q3: Photo de toi
+        { name: "Activités & découvertes", questions: [3, 4, 6] }, // Q4: Truc cool, Q5: Reaction pic, Q7: Découverte culturelle  
+        { name: "Réflexions & conversations", questions: [5, 7] }, // Q6: Conversation intéressante, Q8: Habitudes/routines
+        { name: "Appel à un ami", questions: [8] }, // Q9: Problème/opinions tierces
+        { name: "Connexion à la nature", questions: [9] } // Q10: Photo avec herbe/arbre
+      ];
+
+      // Fonction pour détecter et afficher une image sécurisée
+      function createAnswerContent(answer) {
+        const container = document.createElement('span');
         
-        // Décoder les entités HTML de manière sécurisée
-        const question = unescapeHTML(q.question);
-        const answer = unescapeHTML(q.answer);
-
-        // Créer les éléments de manière sécurisée (pas d'innerHTML)
-        const questionElement = document.createElement('h2');
-        questionElement.textContent = `Q${i+1} : ${question}`;
-
-        const yourAnswer = document.createElement('p');
-        yourAnswer.innerHTML = `<strong>Vous :</strong> `;
-        yourAnswer.appendChild(document.createTextNode(answer));
-
-        const adminAnswerElement = document.createElement('p');
-        adminAnswerElement.className = 'admin-answer';
-        adminAnswerElement.innerHTML = `<strong>Moi (Admin) :</strong> `;
-        if (admin && admin.responses[i]) {
-          const adminAnswerText = unescapeHTML(admin.responses[i].answer);
-          adminAnswerElement.appendChild(document.createTextNode(adminAnswerText));
-        } else {
-          const emElement = document.createElement('em');
-          emElement.textContent = 'Pas encore répondu';
-          adminAnswerElement.appendChild(emElement);
+        // 🔒 SECURITY: Only allow trusted image domains (whitelist approach)
+        const TRUSTED_IMAGE_DOMAINS = [
+          'res.cloudinary.com',           // Cloudinary CDN (notre service upload)
+          'images.unsplash.com',          // Unsplash (si utilisé pour placeholder)
+          'via.placeholder.com',          // Placeholder service (si nécessaire)
+          // Ajouter d'autres domaines de confiance si nécessaire
+        ];
+        
+        // Strict validation: URL must be HTTPS and from trusted domain
+        function isTrustedImageUrl(url) {
+          if (!url || typeof url !== 'string') return false;
+          
+          try {
+            const urlObj = new URL(url);
+            
+            // 1. Force HTTPS only
+            if (urlObj.protocol !== 'https:') return false;
+            
+            // 2. Check if domain is in whitelist
+            const hostname = urlObj.hostname.toLowerCase();
+            const isTrustedDomain = TRUSTED_IMAGE_DOMAINS.some(domain => 
+              hostname === domain || hostname.endsWith('.' + domain)
+            );
+            if (!isTrustedDomain) return false;
+            
+            // 3. Verify file extension for images
+            const pathname = urlObj.pathname.toLowerCase();
+            const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+            const hasValidExtension = validExtensions.some(ext => 
+              pathname.includes(ext)
+            );
+            if (!hasValidExtension) return false;
+            
+            return true;
+          } catch (e) {
+            // Invalid URL format
+            return false;
+          }
         }
+        
+        if (isTrustedImageUrl(answer)) {
+          const img = document.createElement('img');
+          img.src = answer;
+          img.alt = 'Image partagée';
+          img.style.maxWidth = '300px';
+          img.style.maxHeight = '300px'; 
+          img.style.borderRadius = '8px';
+          img.style.margin = '10px 0';
+          img.style.display = 'block';
+          
+          // 🔒 SECURITY: Enhanced error handling without exposing URLs
+          img.onerror = function() {
+            container.innerHTML = '<em style="color: #888;">Image temporairement indisponible</em>';
+          };
+          
+          // 🔒 SECURITY: Add CSP-friendly loading attribute
+          img.loading = 'lazy';
+          
+          container.appendChild(img);
+        } else {
+          container.textContent = answer;
+        }
+        
+        return container;
+      }
 
-        block.appendChild(questionElement);
-        block.appendChild(yourAnswer);
-        block.appendChild(adminAnswerElement);
-        document.getElementById('qa-container').append(block);
+      // Affichage par groupes
+      questionGroups.forEach(group => {
+        const groupBlock = document.createElement('div');
+        groupBlock.className = 'question-group';
+        groupBlock.style.marginBottom = '30px';
+        groupBlock.style.padding = '20px';
+        groupBlock.style.border = '2px solid #e3f2fd';
+        groupBlock.style.borderRadius = '10px';
+        groupBlock.style.backgroundColor = '#f9f9f9';
+
+        const groupTitle = document.createElement('h2');
+        groupTitle.textContent = group.name;
+        groupTitle.style.color = '#1976d2';
+        groupTitle.style.borderBottom = '2px solid #1976d2';
+        groupTitle.style.paddingBottom = '10px';
+        groupTitle.style.marginBottom = '20px';
+        groupBlock.appendChild(groupTitle);
+
+        group.questions.forEach(questionIndex => {
+          if (questionIndex < user.responses.length) {
+            const q = user.responses[questionIndex];
+            const questionDiv = document.createElement('div');
+            questionDiv.style.marginBottom = '20px';
+            
+            // Décoder les entités HTML de manière sécurisée
+            const question = unescapeHTML(q.question);
+            const answer = unescapeHTML(q.answer);
+
+            // Question
+            const questionElement = document.createElement('h3');
+            questionElement.textContent = `Q${questionIndex+1}: ${question}`;
+            questionElement.style.color = '#333';
+            questionElement.style.marginBottom = '10px';
+
+            // Votre réponse
+            const yourAnswer = document.createElement('p');
+            yourAnswer.innerHTML = `<strong>Vous:</strong> `;
+            yourAnswer.appendChild(createAnswerContent(answer));
+            yourAnswer.style.marginBottom = '10px';
+
+            // Réponse admin
+            const adminAnswerElement = document.createElement('p');
+            adminAnswerElement.className = 'admin-answer';
+            adminAnswerElement.innerHTML = `<strong>Moi (Admin):</strong> `;
+            if (admin && admin.responses[questionIndex]) {
+              const adminAnswerText = unescapeHTML(admin.responses[questionIndex].answer);
+              adminAnswerElement.appendChild(createAnswerContent(adminAnswerText));
+            } else {
+              const emElement = document.createElement('em');
+              emElement.textContent = 'Pas encore répondu';
+              adminAnswerElement.appendChild(emElement);
+            }
+
+            questionDiv.appendChild(questionElement);
+            questionDiv.appendChild(yourAnswer);
+            questionDiv.appendChild(adminAnswerElement);
+            groupBlock.appendChild(questionDiv);
+          }
+        });
+
+        document.getElementById('qa-container').appendChild(groupBlock);
       });
     })();
   </script>
