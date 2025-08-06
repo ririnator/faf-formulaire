@@ -111,19 +111,37 @@
   <div id="feedback"></div>
 
   <script>
-    // Mise à jour dynamique de l'option 2
-    document.addEventListener('DOMContentLoaded', () => {
+    /**
+     * Génère dynamiquement l'option 2 du formulaire avec le mois précédent
+     * Utilise les règles de français pour les articles ('d'' vs 'de ')
+     * Voyelles + 'h' → "d'" (ex: "a connu meilleur mois d'octobre")  
+     * Consonnes → "de " (ex: "a connu meilleur mois de janvier")
+     */
+    function generateDynamicOption2() {
       const today = new Date();
       const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const month = prev.toLocaleString('fr-FR',{ month:'long' });
-      const vowels = ['a','e','i','o','u','h'];
-      const prefix = vowels.includes(month[0].toLowerCase())
+      
+      // Force la locale française pour assurer la cohérence
+      const month = prev.toLocaleString('fr-FR', { month: 'long' });
+      
+      // Voyelles françaises + 'h' muet (règles d'élision)
+      const vowelsAndH = ['a', 'e', 'i', 'o', 'u', 'h'];
+      
+      const firstLetter = month[0].toLowerCase();
+      const prefix = vowelsAndH.includes(firstLetter)
         ? "a connu meilleur mois d'"
         : 'a connu meilleur mois de ';
+      
+      return `${prefix}${month}`;
+    }
+
+    // Mise à jour dynamique de l'option 2
+    document.addEventListener('DOMContentLoaded', () => {
       const opt2 = document.getElementById('option2');
       const lbl2 = document.getElementById('labelOption2');
+      
       if (opt2 && lbl2) {
-        const fullText = `${prefix}${month}`;
+        const fullText = generateDynamicOption2();
         opt2.value = fullText;
         lbl2.textContent = fullText;
       }
