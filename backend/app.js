@@ -16,6 +16,7 @@ const Response       = require('./models/Response');
 const { ensureAdmin, authenticateAdmin, destroySession } = require('./middleware/auth');
 const { createSecurityMiddleware, createSessionOptions } = require('./middleware/security');
 const { createStandardBodyParser, createPayloadErrorHandler } = require('./middleware/bodyParser');
+const { csrfTokenMiddleware } = require('./middleware/csrf');
 
 const app  = express();
 const port = process.env.PORT || 3000;
@@ -41,6 +42,31 @@ app.get('/test-debug', (req, res) => {
 // 1) Enhanced Security headers with nonce-based CSP
 app.use(createSecurityMiddleware());
 
+// 1.5) UTF-8 encoding middleware for all responses
+app.use((req, res, next) => {
+  // Définir l'encodage UTF-8 par défaut pour toutes les réponses
+  const originalSend = res.send;
+  const originalJson = res.json;
+  
+  res.send = function(data) {
+    if (!res.get('Content-Type')) {
+      if (typeof data === 'string' && data.trim().startsWith('<')) {
+        res.set('Content-Type', 'text/html; charset=utf-8');
+      } else {
+        res.set('Content-Type', 'text/plain; charset=utf-8');
+      }
+    }
+    return originalSend.call(this, data);
+  };
+  
+  res.json = function(data) {
+    res.set('Content-Type', 'application/json; charset=utf-8');
+    return originalJson.call(this, data);
+  };
+  
+  next();
+});
+
 // 2) CORS – n'autorise que votre front
 app.use(cors({
   origin: [
@@ -53,6 +79,9 @@ app.set('trust proxy', 1);
 
 // 3) Enhanced Sessions with better dev/prod handling
 app.use(session(createSessionOptions()));
+
+// 3.5) CSRF Token generation for admin routes
+app.use(csrfTokenMiddleware());
 
 // 4) Optimized Body Parsers (512KB standard limit)
 app.use(createStandardBodyParser());
@@ -95,6 +124,25 @@ app.get('/admin', ensureAdmin, (req, res) => {
 app.get('/admin/gestion', ensureAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin/admin_gestion.html'));
 });
+
+// Assets JavaScript admin - accessible si session admin active
+app.get('/admin/assets/core-utils.js', ensureAdmin, (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  // Cache pour 24 heures (plus long car rarement modifié)
+  const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 7200;
+  res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+  res.sendFile(path.join(__dirname, '../frontend/admin/core-utils.js'));
+});
+
+app.get('/admin/assets/admin-utils.js', ensureAdmin, (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  // Cache pour 1 heure en développement, 24h en production
+  const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 3600;
+  res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+  res.sendFile(path.join(__dirname, '../frontend/admin/admin-utils.js'));
+});
+
+// Autres assets admin (CSS, images, etc.)
 app.use('/admin/assets', ensureAdmin,
   express.static(path.join(__dirname, '../frontend/admin'))
 );

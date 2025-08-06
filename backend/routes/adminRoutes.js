@@ -4,34 +4,108 @@ const mongoose = require('mongoose');
 const router   = express.Router();
 const Response = require('../models/Response');
 const { createAdminBodyParser } = require('../middleware/bodyParser');
+const { csrfProtection, csrfTokenEndpoint } = require('../middleware/csrf');
+
+// Configuration constants
+const PIE_CHART_QUESTION = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
 
 // Apply admin-specific body parser (1MB limit) to all admin routes
 router.use(createAdminBodyParser());
+
+// Endpoint pour récupérer le token CSRF
+router.get('/csrf-token', csrfTokenEndpoint());
+
+// DEBUG: Endpoint sécurisé pour analyser les questions (admin + dev uniquement)
+router.get('/debug/questions', (req, res, next) => {
+  // SÉCURITÉ: Uniquement en développement local
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  next();
+}, (req, res, next) => {
+  // SÉCURITÉ: Vérifier authentification admin même en dev
+  if (!req.session || !req.session.isAdmin) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  next();
+}, async (req, res) => {
+  try {
+    // Configuration question pie chart (même logique que summary)
+    const PIE_Q = PIE_CHART_QUESTION;
+    
+    const docs = await Response.find()
+      .select('responses.question')  // Suppression des noms utilisateurs
+      .lean();
+    
+    const allQuestions = [];
+    const questionMap = new Map(); // Éviter doublons
+    
+    docs.forEach(doc => {
+      doc.responses.forEach(r => {
+        if (r.question && r.question !== PIE_Q) {
+          const key = r.question;
+          if (!questionMap.has(key)) {
+            questionMap.set(key, {
+              question: r.question,
+              count: 0,
+              length: r.question.length,
+              charCodes: Array.from(r.question).map(c => c.charCodeAt(0)),
+              // Masquer données sensibles en prod
+              hexDump: Array.from(r.question).map(c => 
+                `${c === ' ' ? '·' : c}(${c.charCodeAt(0).toString(16)})`
+              ).join(' ')
+            });
+          }
+          questionMap.get(key).count++;
+        }
+      });
+    });
+    
+    res.json({ 
+      total: questionMap.size,
+      questions: Array.from(questionMap.values()).sort((a, b) => b.count - a.count)
+    });
+  } catch (err) {
+    console.error('Debug endpoint error:', err);
+    res.status(500).json({ error: 'Debug error' });
+  }
+});
 
 // Middleware : charge la réponse dans req.responseDoc
 router.param('id', async (req, res, next, id) => {
   try {
     const doc = await Response.findById(id);
-    if (!doc) return res.status(404).json({ message: 'Réponse non trouvée' });
+    if (!doc) return res.status(404).json({ error: 'Réponse non trouvée', code: 'NOT_FOUND' });
     req.responseDoc = doc;
     next();
   } catch (err) {
-    next(err);
+    console.error('❌ Erreur param :id :', err);
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération', code: 'SERVER_ERROR' });
   }
 });
 
-// GET /api/admin/responses?page=1&limit=10
-// Pour l’UI de gestion paginée, incluant maintenant isAdmin et token
+// GET /api/admin/responses?page=1&limit=10&search=term
+// Pour l'UI de gestion paginée, incluant maintenant isAdmin et token
 router.get('/responses', async (req, res) => {
   try {
     const page  = Math.max(1, parseInt(req.query.page, 10)  || 1);
-    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const skip  = (page - 1) * limit;
+    const search = req.query.search?.trim();
 
-    const totalCount = await Response.countDocuments();
+    // Construction du filtre de recherche avec protection ReDoS
+    let filter = {};
+    if (search) {
+      // Échapper les caractères spéciaux regex pour éviter ReDoS
+      const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedSearch = escapeRegex(search);
+      filter.name = { $regex: escapedSearch, $options: 'i' };
+    }
+
+    const totalCount = await Response.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / limit);
 
-    const data = await Response.find()
+    const data = await Response.find(filter)
       .select('name month createdAt isAdmin token')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -40,11 +114,12 @@ router.get('/responses', async (req, res) => {
 
     res.json({
       responses:  data,
-      pagination: { page, totalPages, totalCount }
+      pagination: { page, totalPages, totalCount },
+      search: search || null
     });
   } catch (err) {
     console.error('❌ Erreur pagination /responses :', err);
-    res.status(500).json({ message: 'Erreur serveur pagination' });
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération des réponses', code: 'SERVER_ERROR' });
   }
 });
 
@@ -53,13 +128,13 @@ router.route('/responses/:id')
   .get((req, res) => {
     res.json(req.responseDoc);
   })
-  .delete(async (req, res) => {
+  .delete(csrfProtection(), async (req, res) => {
     try {
       await req.responseDoc.deleteOne();
       res.json({ message: 'Réponse supprimée avec succès' });
     } catch (err) {
       console.error('❌ Erreur suppression /responses/:id :', err);
-      res.status(500).json({ message: 'Erreur serveur suppression' });
+      res.status(500).json({ error: 'Erreur serveur lors de la suppression', code: 'SERVER_ERROR' });
     }
   });
 
@@ -76,7 +151,8 @@ router.get('/summary', async (req, res) => {
       };
     }
 
-    const PIE_Q = "En rapide, comment ça va ?";
+    // Configuration question pie chart (centralisée)
+    const PIE_Q = PIE_CHART_QUESTION;
     const piePipeline = [
       { $match: match },
       { $unwind: '$responses' },
@@ -96,25 +172,155 @@ router.get('/summary', async (req, res) => {
       .aggregate(piePipeline, { allowDiskUse: true })
       .toArray();
 
-    const docs = await Response.find(match)
-      .select('name responses.question responses.answer')
-      .lean();
+    // Optimisation: Utiliser aggregation pipeline pour éviter O(n²)
+    const textPipeline = [
+      { $match: match },
+      { $unwind: '$responses' },
+      { $match: { 'responses.question': { $ne: PIE_Q } } },
+      {
+        $group: {
+          _id: '$responses.question',
+          items: { $push: { user: '$name', answer: '$responses.answer' } }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          question: '$_id',
+          items: 1
+        }
+      }
+    ];
 
+    const rawTextSummary = await mongoose.connection.db
+      .collection('responses')
+      .aggregate(textPipeline, { allowDiskUse: true })
+      .toArray();
+
+    // Fonction pour normaliser les questions (éviter les divisions)
+    const normalizeQuestion = (question) => {
+      if (!question || typeof question !== 'string') return '';
+      
+      const normalized = question
+        .trim()
+        .replace(/\s+/g, ' ')  // Remplacer espaces multiples par un seul
+        .toLowerCase()
+        // Supprimer caractères invisibles/contrôle
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+        // Normaliser accents Unicode (NFD puis supprimer diacritiques)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        // Supprimer ponctuation mais garder lettres/nombres/espaces
+        .replace(/[^\p{L}\p{N}\s]/gu, '')
+        .trim();
+        
+      // Debug détaillé pour diagnostiquer (STRICTEMENT développement local)
+      if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
+        const questionHex = Array.from(question).map(c => `${c}(${c.charCodeAt(0).toString(16)})`).join(' ');
+        console.log(`🔍 Normalisation: "${question.substring(0, 50)}..." → "${normalized.substring(0, 50)}..."`);
+      }
+      
+      return normalized;
+    };
+
+    // Regrouper questions similaires après aggregation (plus efficace)
     const textMap = {};
-    docs.forEach(doc => {
-      doc.responses.forEach(r => {
-        if (r.question === PIE_Q) return;
-        textMap[r.question] = textMap[r.question] || [];
-        textMap[r.question].push({ user: doc.name, answer: r.answer });
-      });
+    const questionNormalizedMap = {}; // Map: normalized → première question originale
+    
+    rawTextSummary.forEach(({ question, items }) => {
+      const normalizedQ = normalizeQuestion(question);
+      
+      // Ignorer questions vides après normalisation
+      if (!normalizedQ) {
+        console.warn(`⚠️  Question vide ignorée:`, question);
+        return;
+      }
+      
+      // Utiliser la première version de la question comme clé de référence
+      if (!questionNormalizedMap[normalizedQ]) {
+        questionNormalizedMap[normalizedQ] = question;
+      }
+      
+      const canonicalQ = questionNormalizedMap[normalizedQ];
+      textMap[canonicalQ] = textMap[canonicalQ] || [];
+      textMap[canonicalQ].push(...items); // Merger les items
     });
+    
     const textSummary = Object.entries(textMap)
       .map(([question, items]) => ({ question, items }));
 
-    res.json([ ...pieSummary, ...textSummary ]);
+    // Debug sécurisé pour diagnostiquer (LOCAL uniquement)
+    if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
+      console.log('📊 Questions regroupées:', Object.keys(textMap).length);
+      
+      // Debug doublons uniquement (sans contenu sensible)
+      const questionsByNormalized = {};
+      rawTextSummary.forEach(({question}) => {
+        const norm = normalizeQuestion(question);
+        if (!questionsByNormalized[norm]) questionsByNormalized[norm] = [];
+        questionsByNormalized[norm].push(question.length); // Juste la longueur
+      });
+      
+      const duplicates = Object.entries(questionsByNormalized)
+        .filter(([norm, lengths]) => lengths.length > 1);
+      
+      if (duplicates.length > 0) {
+        console.log(`🔍 ${duplicates.length} groupes de doublons détectés`);
+      }
+    }
+
+    // 🔧 FIX: Maintenir l'ordre correct des questions selon le formulaire
+    // 🔧 FIXED: Questions exactement comme dans index.html - copiées de la ligne 231-240 du form
+    const QUESTION_ORDER = [
+      "En rapide, comment ça va ?", // Q1 - PIE CHART (sera en premier)
+      "Possibilité d'ajouter un peu plus de détails à la question précédente :", // Q2
+      "Le pulse check mensuel... montre une photo de toi ce mois-ci", // Q3 - copié exactement du form
+      "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ?", // Q4 - copié exactement du form
+      "C'est quoi la reaction pic que tu utilises le plus en ce moment ?", // Q5 - copié exactement du form
+      "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ?", // Q6 - copié exactement du form
+      "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement)", // Q7 - copié exactement du form
+      "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ?", // Q8 - copié exactement du form
+      "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.)", // Q9 - copié exactement du form
+      "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre" // Q10 - copié exactement du form
+    ];
+
+    // Fonction pour normaliser une question pour comparaison
+    const normalizeForComparison = (question) => {
+      if (!question || typeof question !== 'string') return '';
+      return question.trim().replace(/\s+/g, ' ');
+    };
+
+    // Combiner toutes les questions
+    const allSummary = [...pieSummary, ...textSummary];
+    
+    // Trier selon l'ordre du formulaire
+    const sortedSummary = allSummary.sort((a, b) => {
+      const normalizedA = normalizeForComparison(a.question);
+      const normalizedB = normalizeForComparison(b.question);
+      
+      // Chercher l'index dans QUESTION_ORDER
+      let indexA = QUESTION_ORDER.findIndex(q => normalizeForComparison(q) === normalizedA);
+      let indexB = QUESTION_ORDER.findIndex(q => normalizeForComparison(q) === normalizedB);
+      
+      // Si question non trouvée, mettre à la fin
+      if (indexA === -1) indexA = QUESTION_ORDER.length;
+      if (indexB === -1) indexB = QUESTION_ORDER.length;
+      
+      return indexA - indexB;
+    });
+
+    // Debug pour vérifier l'ordre (dev uniquement)
+    if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
+      console.log('📋 Ordre des questions dans le résumé:');
+      sortedSummary.forEach((item, index) => {
+        const shortQ = item.question.substring(0, 50) + (item.question.length > 50 ? '...' : '');
+        console.log(`  ${index + 1}. ${shortQ}`);
+      });
+    }
+
+    res.json(sortedSummary);
   } catch (err) {
     console.error('❌ Erreur summary :', err);
-    res.status(500).json({ message: 'Erreur serveur summary' });
+    res.status(500).json({ error: 'Erreur serveur lors de la génération du résumé', code: 'SERVER_ERROR' });
   }
 });
 
@@ -159,7 +365,7 @@ router.get('/months', async (req, res) => {
     res.json(months);
   } catch (err) {
     console.error('❌ Erreur months :', err);
-    res.status(500).json({ message: 'Erreur serveur months' });
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération des mois', code: 'SERVER_ERROR' });
   }
 });
 
