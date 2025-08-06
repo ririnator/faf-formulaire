@@ -255,13 +255,26 @@
           throw new Error(resJ.message || 'Erreur lors de l’envoi');
         }
 
-        // Affiche le message et le lien
-        feedback.innerHTML = `
-          ✅ ${resJ.message}<br/>
-          ${resJ.link
-            ? `Votre lien privé : <a href="${resJ.link}" target="_blank">${resJ.link}</a>`
-            : ''}
-        `;
+        // Affiche le message et le lien de manière sécurisée
+        feedback.replaceChildren();
+        
+        const successIcon = document.createTextNode('✅ ');
+        const messageText = document.createTextNode(resJ.message);
+        feedback.appendChild(successIcon);
+        feedback.appendChild(messageText);
+        
+        if (resJ.link) {
+          const br = document.createElement('br');
+          const linkText = document.createTextNode('Votre lien privé : ');
+          const linkEl = document.createElement('a');
+          linkEl.href = resJ.link;
+          linkEl.target = '_blank';
+          linkEl.textContent = resJ.link;
+          
+          feedback.appendChild(br);
+          feedback.appendChild(linkText);
+          feedback.appendChild(linkEl);
+        }
       } catch (err) {
         console.error(err);
         feedback.textContent = '❌ ' + err.message;
