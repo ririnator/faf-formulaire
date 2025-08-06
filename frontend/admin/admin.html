@@ -17,7 +17,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 9999;
+      z-index: var(--lightbox-z-index);
     }
     /*légende sur l'image*/
     .lightbox-caption {
@@ -99,8 +99,14 @@
         thumbnailSize: 'w-16 h-16',
         lightboxMaxSize: '90%',
         fallbackSvg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAyOEMyNiAyNiAyOCAyNiAzMCAyOEMzMiAzMCAzNCAzMCAzNiAyOEMzOCAyNiA0MCAyNiA0MiAyOFY0MEgyMlYyOFoiIGZpbGw9IiNEMUQ1REIiLz4KPHA+SW1hZ2UgaW5kaXNwb25pYmxlPC9wPgo8L3N2Zz4K'
+      },
+      lightbox: {
+        zIndex: 9999
       }
     };
+
+    // Initialiser les variables CSS à partir de CONFIG
+    document.documentElement.style.setProperty('--lightbox-z-index', CONFIG.lightbox.zIndex);
 
     // 1. Charger la liste des mois
     async function loadMonths() {
@@ -144,148 +150,35 @@
       container.innerHTML = '';
 
       summary.forEach(({ question, items }) => {
-        const card = document.createElement('div');
-        card.className = "bg-white shadow rounded p-4 mb-4";
-
-        // Titre
-        const h2 = document.createElement('h2');
-        h2.className = "text-lg font-bold mb-2";
-        h2.textContent = question;
-        card.appendChild(h2);
-
-        if (question === CONFIG.pieQuestion) {
-          // --- PIE CHART ---
-          const freq = {}, userMap = {};
-          items.forEach(({ user, answer }) => {
-            freq[answer] = (freq[answer] || 0) + 1;
-            (userMap[answer] = userMap[answer] || []).push(user);
-          });
-
-          const labels = [], data = [], bg = [];
-          Object.entries(freq).forEach(([ans, cnt]) => {
-            labels.push(`${ans} (${userMap[ans].join(', ')})`);
-            data.push(cnt);
-
-            // Couleurs fixes
-            let color = "rgba(254, 153,   0, 1)"; // orange
-            if (ans === "ça va")             color = "rgba( 50, 101, 204, 1)";
-            else if (ans === "WE'RE BARACK") color = "rgba( 13, 150,  24, 1)";
-            else if (ans === "ITS JOEVER")   color = "rgba(220,  55,  17, 1)";
-            else if (ans.startsWith("a connu meilleur mois")) 
-                                            color = "rgba(254, 153,   0, 1)";
-            bg.push(color);
-          });
-
-          // Canvas + chart
-          const wrapper = document.createElement('div');
-          wrapper.className = "flex items-center gap-4";
-          const canvas = document.createElement('canvas');
-          canvas.width  = CONFIG.chart.width;
-          canvas.height = CONFIG.chart.height;
-          wrapper.appendChild(canvas);
-          card.appendChild(wrapper);
-
-          new Chart(canvas, {
-            type: 'pie',
-            data: { labels, datasets: [{ data, backgroundColor: bg }] },
-            options: { responsive: false, plugins: { legend: { position: 'right' } } }
-          });
-
-        } else {
-          // --- LISTE TEXTUELLE OU IMAGES ---
-          const ul = document.createElement('ul');
-          ul.className = "list-disc pl-5";
-
-          // Regex pré-compilées pour éviter ReDoS et améliorer performance
-          const IMAGE_REGEX = {
-            base64: /^data:image\/[a-z]+;base64,/,
-            extension: /\.(jpe?g|png|gif|webp|heic)(?:\?.*)?$/i,
-            // Limite de longueur pour éviter ReDoS
-            cloudinary: /^https?:\/\/res\.cloudinary\.com\/[a-zA-Z0-9-_]{1,50}\/image\/upload\//
-          };
-
-          items.forEach(({ user, answer }) => {
-            const li = document.createElement('li');
-            
-            // Protection ReDoS: utiliser constantes configurables
-            const isImage = (
-              typeof answer === 'string' && 
-              answer.length < CONFIG.image.maxUrlLength &&
-              (
-                IMAGE_REGEX.base64.test(answer) ||
-                IMAGE_REGEX.extension.test(answer) ||
-                IMAGE_REGEX.cloudinary.test(answer) ||
-                (answer.length < CONFIG.image.maxFallbackLength && answer.includes('cloudinary.com'))
-              )
-            );
-
-            if (isImage) {
-              // miniature cliquable
-              const img = document.createElement('img');
-              img.src       = answer;
-              img.alt       = `Image de ${user}`;
-              img.className = `${CONFIG.image.thumbnailSize} object-cover inline-block mr-2 border cursor-pointer`;
-              
-              // Gestion erreur de chargement image avec fallback configuré
-              img.onerror = function() {
-                this.src = CONFIG.image.fallbackSvg;
-                this.alt = `Image indisponible (${user})`;
-                this.title = 'Image Cloudinary inaccessible';
-              };
-
-              // Ouverture de la lightbox quand on clique
-              img.onclick = () => {
-                const overlay = document.createElement('div');
-                overlay.className = 'lightbox-overlay';
-
-                // Bouton "Fermer"
-                const close = document.createElement('div');
-                close.className = 'close-btn';
-                close.textContent = '×';
-                close.onclick = () => document.body.removeChild(overlay);
-                overlay.appendChild(close);
-
-                //Agrandissement de l'image avec limites configurables
-                const bigImg = document.createElement('img');
-                bigImg.src = answer;
-                bigImg.alt = img.alt;
-                bigImg.style.maxWidth = CONFIG.image.lightboxMaxSize;
-                bigImg.style.maxHeight = CONFIG.image.lightboxMaxSize;
-                bigImg.style.objectFit = 'contain'; // Préserver ratio
-                overlay.appendChild(bigImg);
-
-
-                //Légende centrée en bas sur l'image
-                const caption = document.createElement('div');
-                caption.className = 'lightbox-caption';
-                caption.style.textAlign = 'center';
-                // Utilisation de textContent pour éviter les XSS
-                caption.textContent = user;
-                overlay.appendChild(caption);
-
-                //Fermeture de la lightbox aussi si on clique en dehors de l'image
-                overlay.addEventListener('click', e => {
-                  if (e.target === overlay) document.body.removeChild(overlay);
-                });
-
-                document.body.appendChild(overlay);
-              };
-
-              li.appendChild(img);
-              li.appendChild(document.createTextNode(` ${user}`));
-
-            } else {
-              li.textContent = `${user} : ${answer}`;
-            }
-
-            ul.appendChild(li);
-          });
-
-          card.appendChild(ul);
-        }
-
+        const card = createSummaryCard(question, items);
         container.appendChild(card);
       });
+    }
+
+    function createSummaryCard(question, items) {
+      const card = document.createElement('div');
+      card.className = "bg-white shadow rounded p-4 mb-4";
+
+      // Titre
+      const h2 = document.createElement('h2');
+      h2.className = "text-lg font-bold mb-2";
+      h2.textContent = question;
+      card.appendChild(h2);
+
+      if (question === CONFIG.pieQuestion) {
+        // Graphique en camembert
+        const chartWrapper = createPieChart(items, {
+          chartWidth: CONFIG.chart.width,
+          chartHeight: CONFIG.chart.height
+        });
+        card.appendChild(chartWrapper);
+      } else {
+        // Liste textuelle ou images
+        const answersList = createAnswersList(items, CONFIG.image);
+        card.appendChild(answersList);
+      }
+
+      return card;
     }
 
     // 4. Listeners + initialisation
