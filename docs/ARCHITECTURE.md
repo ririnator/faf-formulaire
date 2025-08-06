@@ -9,31 +9,45 @@ FAF utilise une architecture modulaire moderne centrée sur la sécurité, avec 
 ```
 backend/
 ├── app.js                     # Point d'entrée principal sécurisé
+├── config/                  # Configuration modulaire sécurisée
+│   ├── cloudinary.js        # Configuration upload Cloudinary
+│   ├── cors.js              # Configuration CORS multi-origins
+│   ├── database.js          # Configuration MongoDB avec optimisations
+│   ├── environment.js       # Validation variables d'environnement
+│   └── session.js           # Configuration sessions et cookies adaptatifs
+├── services/                # Couche logique métier
+│   ├── authService.js       # Logique authentification bcrypt
+│   ├── responseService.js   # CRUD réponses avec validation
+│   ├── uploadService.js     # Traitement uploads Cloudinary
+│   └── serviceFactory.js    # Factory pattern et injection dépendances
 ├── middleware/               # Middleware de sécurité modulaire avancé
 │   ├── auth.js              # Authentification admin avec bcrypt + sessions
 │   ├── validation.js        # Validation XSS + null/undefined + dual-level
 │   ├── security.js          # CSP nonce-based + session cookies adaptatifs
 │   ├── bodyParser.js        # Limites optimisées par endpoint (512KB-5MB)
 │   ├── rateLimiting.js      # Protection anti-spam intelligente
-│   └── errorHandler.js      # Gestion d'erreurs centralisée sécurisée
-├── config/                  # Configuration sécurisée
-│   ├── cloudinary.js        # Upload images Cloudinary
-│   └── [autres configs]     # Base de données, sessions, CORS
+│   ├── csrf.js              # Protection CSRF token-based
+│   ├── errorHandler.js      # Gestion d'erreurs centralisée sécurisée
+│   └── paramValidation.js   # Validation paramètres URL
 ├── models/
 │   └── Response.js          # Schéma MongoDB avec indexes optimisés
 ├── routes/                  # Endpoints avec sécurité layered
 │   ├── responseRoutes.js    # Validation stricte + XSS protection
 │   ├── adminRoutes.js       # Middleware admin + CRUD sécurisé
-│   ├── formRoutes.js        # Compatibilité legacy
-│   └── upload.js            # Upload sécurisé Cloudinary
-└── tests/                   # Suite de tests sécurité complète (100+ tests)
-    ├── validation.edge-cases.test.js    # 30 tests null/undefined/malformed
-    ├── validation.boundary.test.js      # 32 tests limites exactes + performance  
-    ├── validation.security.test.js      # 22 tests XSS + HTML escaping
-    ├── security.enhanced.test.js        # 19 tests CSP nonce + sessions
-    ├── bodyParser.limits.test.js        # 16 tests limites optimisées
-    ├── constraint.unit.test.js          # 14 tests contraintes DB
-    └── session.config.test.js           # 12 tests cookies environnement
+│   ├── formRoutes.js        # Compatibilité legacy + validation basique
+│   └── upload.js            # Upload sécurisé Cloudinary + validation MIME
+├── tests/                   # Suite de tests sécurité complète (100+ tests)
+│   ├── validation.edge-cases.test.js    # 30 tests null/undefined/malformed
+│   ├── validation.boundary.test.js      # 32 tests limites exactes + performance  
+│   ├── validation.security.test.js      # 22 tests XSS + HTML escaping
+│   ├── security.enhanced.test.js        # 19 tests CSP nonce + sessions
+│   ├── bodyParser.limits.test.js        # 16 tests limites optimisées
+│   ├── constraint.unit.test.js          # 14 tests contraintes DB
+│   ├── session.config.test.js           # 12 tests cookies environnement
+│   ├── dynamic.option.integration.test.js # Tests options dynamiques formulaires
+│   ├── integration.full.test.js         # Tests intégration complète
+│   └── middleware.integration.test.js   # Tests intégration middleware
+└── utils/                   # Utilitaires partagés
 ```
 
 ## Architecture de Sécurité
