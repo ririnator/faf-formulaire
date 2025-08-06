@@ -164,13 +164,17 @@ function escapeHTML(text) {
 }
 
 /**
- * Décode les entités HTML en utilisant la constante partagée de core-utils
- * Cette fonction utilise SAFE_HTML_ENTITIES si disponible, sinon fallback
+ * Décode les entités HTML en utilisant la fonction de core-utils
  * @param {string} text - Texte contenant des entités HTML
  * @returns {string} - Texte avec entités décodées
  */
-function unescapeHTML(text) {
-  // Fallback basique - ne pas utiliser window.unescapeHTML car cela créerait une boucle infinie
+function unescapeHTMLLocal(text) {
+  // Utiliser la fonction globale de core-utils si disponible
+  if (typeof window !== 'undefined' && window.unescapeHTML && window.unescapeHTML !== unescapeHTMLLocal) {
+    return window.unescapeHTML(text);
+  }
+  
+  // Fallback local
   if (!text || typeof text !== 'string') return text || '';
   
   return text
@@ -354,7 +358,7 @@ function createAnswersList(items, config = {}) {
       li.appendChild(document.createTextNode(` ${user}`));
     } else {
       // Décoder les entités HTML pour un affichage correct
-      li.textContent = `${user} : ${unescapeHTML(answer)}`;
+      li.textContent = `${user} : ${unescapeHTMLLocal(answer)}`;
     }
 
     ul.appendChild(li);
@@ -428,7 +432,7 @@ if (typeof module !== 'undefined' && module.exports) {
     fetchWithErrorHandling,
     fetchCSRFToken,
     escapeHTML,
-    unescapeHTML,
+    unescapeHTML: unescapeHTMLLocal,
     formatDateFR,
     debounce,
     createPieChart,
