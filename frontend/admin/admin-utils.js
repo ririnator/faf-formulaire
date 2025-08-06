@@ -301,13 +301,20 @@ function createAnswersList(items, config = {}) {
       );
       if (!isTrustedDomain) return false;
       
-      // 3. Verify file extension for images
+      // 3. Special handling for Cloudinary URLs (don't always have extensions)
       const pathname = urlObj.pathname.toLowerCase();
-      const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-      const hasValidExtension = validExtensions.some(ext => 
-        pathname.includes(ext)
-      );
-      if (!hasValidExtension) return false;
+      if (hostname === 'res.cloudinary.com' || hostname.endsWith('.cloudinary.com')) {
+        // Cloudinary URLs follow pattern: /cloud_name/image/upload/...
+        // They're trusted if they match the domain, regardless of extension
+        return pathname.includes('/image/upload/');
+      } else {
+        // For other domains, verify file extension for images
+        const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        const hasValidExtension = validExtensions.some(ext => 
+          pathname.includes(ext)
+        );
+        if (!hasValidExtension) return false;
+      }
       
       return true;
     } catch (e) {

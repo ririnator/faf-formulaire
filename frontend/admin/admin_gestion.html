@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Liste de toutes les réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/admin/assets/core-utils.js"></script>
+  <script src="/admin/core-utils.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link rel="icon" href="/favicon.ico" />
 </head>
@@ -70,7 +70,7 @@
     async function loadAdminUtils() {
       return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = '/admin/assets/admin-utils.js';
+        script.src = '/admin/admin-utils.js';
         script.onload = () => resolve();
         script.onerror = () => reject(new Error('Impossible de charger admin-utils.js'));
         document.head.appendChild(script);
