@@ -268,7 +268,55 @@ router.get('/summary', async (req, res) => {
       }
     }
 
-    res.json([ ...pieSummary, ...textSummary ]);
+    // 🔧 FIX: Maintenir l'ordre correct des questions selon le formulaire
+    const QUESTION_ORDER = [
+      "En rapide, comment ça va ?", // Q1 - PIE CHART (sera en premier)
+      "Possibilité d'ajouter un peu plus de détails à la question précédente :", // Q2
+      "Le pulse check mensuel... montre une photo de toi ce mois-ci :", // Q3
+      "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ? :", // Q4
+      "C'est quoi la reaction pic que tu utilises le plus en ce moment ? :", // Q5
+      "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ? :", // Q6
+      "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement) :", // Q7
+      "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ? :", // Q8
+      "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.) :", // Q9
+      "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre :" // Q10
+    ];
+
+    // Fonction pour normaliser une question pour comparaison
+    const normalizeForComparison = (question) => {
+      if (!question || typeof question !== 'string') return '';
+      return question.trim().replace(/\s+/g, ' ');
+    };
+
+    // Combiner toutes les questions
+    const allSummary = [...pieSummary, ...textSummary];
+    
+    // Trier selon l'ordre du formulaire
+    const sortedSummary = allSummary.sort((a, b) => {
+      const normalizedA = normalizeForComparison(a.question);
+      const normalizedB = normalizeForComparison(b.question);
+      
+      // Chercher l'index dans QUESTION_ORDER
+      let indexA = QUESTION_ORDER.findIndex(q => normalizeForComparison(q) === normalizedA);
+      let indexB = QUESTION_ORDER.findIndex(q => normalizeForComparison(q) === normalizedB);
+      
+      // Si question non trouvée, mettre à la fin
+      if (indexA === -1) indexA = QUESTION_ORDER.length;
+      if (indexB === -1) indexB = QUESTION_ORDER.length;
+      
+      return indexA - indexB;
+    });
+
+    // Debug pour vérifier l'ordre (dev uniquement)
+    if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
+      console.log('📋 Ordre des questions dans le résumé:');
+      sortedSummary.forEach((item, index) => {
+        const shortQ = item.question.substring(0, 50) + (item.question.length > 50 ? '...' : '');
+        console.log(`  ${index + 1}. ${shortQ}`);
+      });
+    }
+
+    res.json(sortedSummary);
   } catch (err) {
     console.error('❌ Erreur summary :', err);
     res.status(500).json({ error: 'Erreur serveur lors de la génération du résumé', code: 'SERVER_ERROR' });
