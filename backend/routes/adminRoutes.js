@@ -283,11 +283,8 @@ router.get('/summary', async (req, res) => {
       "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre" // Q10 - copié exactement du form
     ];
 
-    // Fonction pour normaliser une question pour comparaison
-    const normalizeForComparison = (question) => {
-      if (!question || typeof question !== 'string') return '';
-      return question.trim().replace(/\s+/g, ' ');
-    };
+    // Utiliser la même normalisation que pour le regroupement des questions
+    const normalizeForComparison = normalizeQuestion;
 
     // Combiner toutes les questions
     const allSummary = [...pieSummary, ...textSummary];
