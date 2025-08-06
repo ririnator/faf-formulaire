@@ -12,6 +12,36 @@ router.use(createAdminBodyParser());
 // Endpoint pour récupérer le token CSRF
 router.get('/csrf-token', csrfTokenEndpoint());
 
+// DEBUG: Endpoint temporaire pour analyser les questions
+router.get('/debug/questions', async (req, res) => {
+  try {
+    const docs = await Response.find()
+      .select('name responses.question')
+      .lean();
+    
+    const allQuestions = [];
+    docs.forEach(doc => {
+      doc.responses.forEach(r => {
+        if (r.question && r.question !== "En rapide, comment ça va ?") {
+          allQuestions.push({
+            question: r.question,
+            user: doc.name,
+            length: r.question.length,
+            charCodes: Array.from(r.question).map(c => c.charCodeAt(0))
+          });
+        }
+      });
+    });
+    
+    res.json({ 
+      total: allQuestions.length,
+      questions: allQuestions 
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Middleware : charge la réponse dans req.responseDoc
 router.param('id', async (req, res, next, id) => {
   try {
@@ -141,12 +171,25 @@ router.get('/summary', async (req, res) => {
     const normalizeQuestion = (question) => {
       if (!question || typeof question !== 'string') return '';
       
-      return question.trim()
+      const normalized = question
+        .trim()
         .replace(/\s+/g, ' ')  // Remplacer espaces multiples par un seul
         .toLowerCase()
-        // Support Unicode étendu pour accents (Node.js 12+)
-        .replace(/[^\p{L}\p{N}\s]/gu, '') // Garder lettres Unicode + nombres + espaces
+        // Supprimer caractères invisibles/contrôle
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+        // Normaliser accents Unicode (NFD puis supprimer diacritiques)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        // Supprimer ponctuation mais garder lettres/nombres/espaces
+        .replace(/[^\p{L}\p{N}\s]/gu, '')
         .trim();
+        
+      // Debug détaillé pour diagnostiquer
+      if (process.env.NODE_ENV === 'development') {
+        const questionHex = Array.from(question).map(c => `${c}(${c.charCodeAt(0).toString(16)})`).join(' ');
+        console.log(`🔍 Normalisation: "${question}" [${questionHex}] → "${normalized}"`);
+      }
+      
+      return normalized;
     };
 
     // Regrouper questions similaires après aggregation (plus efficace)
@@ -177,8 +220,23 @@ router.get('/summary', async (req, res) => {
 
     // Debug pour diagnostiquer les problèmes de regroupement
     if (process.env.NODE_ENV === 'development') {
-      console.log('📊 Questions détectées:', Object.keys(textMap));
+      console.log('📊 Questions AVANT regroupement:', rawTextSummary.map(r => r.question));
+      console.log('📊 Questions APRÈS regroupement:', Object.keys(textMap));
       console.log('📊 Normalisation mapping:', questionNormalizedMap);
+      
+      // Debug questions similaires
+      const questionsByNormalized = {};
+      rawTextSummary.forEach(({question}) => {
+        const norm = normalizeQuestion(question);
+        if (!questionsByNormalized[norm]) questionsByNormalized[norm] = [];
+        questionsByNormalized[norm].push(question);
+      });
+      
+      Object.entries(questionsByNormalized).forEach(([norm, questions]) => {
+        if (questions.length > 1) {
+          console.log(`🔍 DOUBLONS détectés pour "${norm}":`, questions);
+        }
+      });
     }
 
     res.json([ ...pieSummary, ...textSummary ]);
