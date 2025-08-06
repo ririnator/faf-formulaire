@@ -251,7 +251,7 @@
         await loadPage(1);
       } catch (err) {
         console.error('Initialisation admin_gestion.html :', err);
-        alert('Erreur lors du chargement de l\'interface. Veuillez recharger la page.');
+        showAlert('Erreur lors du chargement de l\'interface. Veuillez recharger la page.', 'error');
       }
     })();
   </script>

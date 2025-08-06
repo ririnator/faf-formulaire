@@ -86,7 +86,21 @@
       });
     }
 
-    const pieQuestion = "En rapide, comment ça va ?";
+    // Configuration constantes
+    const CONFIG = {
+      pieQuestion: "En rapide, comment ça va ?", // Sync avec PIE_CHART_QUESTION env var
+      chart: {
+        width: 1100,
+        height: 320
+      },
+      image: {
+        maxUrlLength: 1000,
+        maxFallbackLength: 200,
+        thumbnailSize: 'w-16 h-16',
+        lightboxMaxSize: '90%',
+        fallbackSvg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAyOEMyNiAyNiAyOCAyNiAzMCAyOEMzMiAzMCAzNCAzMCAzNiAyOEMzOCAyNiA0MCAyNiA0MiAyOFY0MEgyMlYyOFoiIGZpbGw9IiNEMUQ1REIiLz4KPHA+SW1hZ2UgaW5kaXNwb25pYmxlPC9wPgo8L3N2Zz4K'
+      }
+    };
 
     // 1. Charger la liste des mois
     async function loadMonths() {
@@ -139,7 +153,7 @@
         h2.textContent = question;
         card.appendChild(h2);
 
-        if (question === pieQuestion) {
+        if (question === CONFIG.pieQuestion) {
           // --- PIE CHART ---
           const freq = {}, userMap = {};
           items.forEach(({ user, answer }) => {
@@ -166,8 +180,8 @@
           const wrapper = document.createElement('div');
           wrapper.className = "flex items-center gap-4";
           const canvas = document.createElement('canvas');
-          canvas.width  = 1100;
-          canvas.height = 320;
+          canvas.width  = CONFIG.chart.width;
+          canvas.height = CONFIG.chart.height;
           wrapper.appendChild(canvas);
           card.appendChild(wrapper);
 
@@ -182,15 +196,26 @@
           const ul = document.createElement('ul');
           ul.className = "list-disc pl-5";
 
+          // Regex pré-compilées pour éviter ReDoS et améliorer performance
+          const IMAGE_REGEX = {
+            base64: /^data:image\/[a-z]+;base64,/,
+            extension: /\.(jpe?g|png|gif|webp|heic)(?:\?.*)?$/i,
+            // Limite de longueur pour éviter ReDoS
+            cloudinary: /^https?:\/\/res\.cloudinary\.com\/[a-zA-Z0-9-_]{1,50}\/image\/upload\//
+          };
+
           items.forEach(({ user, answer }) => {
             const li = document.createElement('li');
+            
+            // Protection ReDoS: utiliser constantes configurables
             const isImage = (
-              typeof answer === 'string' &&
+              typeof answer === 'string' && 
+              answer.length < CONFIG.image.maxUrlLength &&
               (
-                /^data:image\/[a-z]+;base64,/.test(answer) ||
-                /\.(jpe?g|png|gif|webp|heic)(?:\?.*)?$/i.test(answer) ||
-                /res\.cloudinary\.com/.test(answer) ||
-                answer.includes('cloudinary.com')
+                IMAGE_REGEX.base64.test(answer) ||
+                IMAGE_REGEX.extension.test(answer) ||
+                IMAGE_REGEX.cloudinary.test(answer) ||
+                (answer.length < CONFIG.image.maxFallbackLength && answer.includes('cloudinary.com'))
               )
             );
 
@@ -199,11 +224,11 @@
               const img = document.createElement('img');
               img.src       = answer;
               img.alt       = `Image de ${user}`;
-              img.className = "w-16 h-16 object-cover inline-block mr-2 border cursor-pointer";
+              img.className = `${CONFIG.image.thumbnailSize} object-cover inline-block mr-2 border cursor-pointer`;
               
-              // Gestion erreur de chargement image
+              // Gestion erreur de chargement image avec fallback configuré
               img.onerror = function() {
-                this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAyOEMyNiAyNiAyOCAyNiAzMCAyOEMzMiAzMCAzNCAzMCAzNiAyOEMzOCAyNiA0MCAyNiA0MiAyOFY0MEgyMlYyOFoiIGZpbGw9IiNEMUQ1REIiLz4KPHA+SW1hZ2UgaW5kaXNwb25pYmxlPC9wPgo8L3N2Zz4K';
+                this.src = CONFIG.image.fallbackSvg;
                 this.alt = `Image indisponible (${user})`;
                 this.title = 'Image Cloudinary inaccessible';
               };
@@ -220,12 +245,13 @@
                 close.onclick = () => document.body.removeChild(overlay);
                 overlay.appendChild(close);
 
-                //Agrandissement de l'image
+                //Agrandissement de l'image avec limites configurables
                 const bigImg = document.createElement('img');
                 bigImg.src = answer;
                 bigImg.alt = img.alt;
-                bigImg.style.maxWidth = '90%';
-                bigImg.style.maxHeight = '90%';
+                bigImg.style.maxWidth = CONFIG.image.lightboxMaxSize;
+                bigImg.style.maxHeight = CONFIG.image.lightboxMaxSize;
+                bigImg.style.objectFit = 'contain'; // Préserver ratio
                 overlay.appendChild(bigImg);
 
 
@@ -278,7 +304,7 @@
         }
       } catch (err) {
         console.error('Initialisation admin.html :', err);
-        alert('Erreur lors du chargement de l\'interface. Veuillez recharger la page.');
+        showAlert('Erreur lors du chargement de l\'interface. Veuillez recharger la page.', 'error');
       }
     })();
   </script>
