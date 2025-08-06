@@ -6,7 +6,6 @@
   <title>Interface d'administration – Résumé des réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="/admin/assets/admin-utils.js"></script>
 
   <style>
     /* overlay full‐screen */
@@ -76,12 +75,17 @@
   </div>
 
   <script>
-    // Vérification que admin-utils.js est bien chargé
-    if (typeof fetchWithErrorHandling === 'undefined') {
-      console.error('admin-utils.js n\'est pas chargé correctement');
-      alert('Erreur de chargement. Veuillez recharger la page.');
+    // Chargement asynchrone d'admin-utils.js
+    async function loadAdminUtils() {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = '/admin/assets/admin-utils.js';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Impossible de charger admin-utils.js'));
+        document.head.appendChild(script);
+      });
     }
-    
+
     const pieQuestion = "En rapide, comment ça va ?";
 
     // 1. Charger la liste des mois
@@ -255,6 +259,9 @@
 
     (async () => {
       try {
+        // Charger admin-utils.js en premier
+        await loadAdminUtils();
+        
         const months = await loadMonths();
         if (months.length) {
           document.getElementById('monthFilter').value = months[0].key;
@@ -262,6 +269,7 @@
         }
       } catch (err) {
         console.error('Initialisation admin.html :', err);
+        alert('Erreur lors du chargement de l\'interface. Veuillez recharger la page.');
       }
     })();
   </script>
