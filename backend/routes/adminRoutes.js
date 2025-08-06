@@ -6,6 +6,9 @@ const Response = require('../models/Response');
 const { createAdminBodyParser } = require('../middleware/bodyParser');
 const { csrfProtection, csrfTokenEndpoint } = require('../middleware/csrf');
 
+// Configuration constants
+const PIE_CHART_QUESTION = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
+
 // Apply admin-specific body parser (1MB limit) to all admin routes
 router.use(createAdminBodyParser());
 
@@ -28,7 +31,7 @@ router.get('/debug/questions', (req, res, next) => {
 }, async (req, res) => {
   try {
     // Configuration question pie chart (même logique que summary)
-    const PIE_Q = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
+    const PIE_Q = PIE_CHART_QUESTION;
     
     const docs = await Response.find()
       .select('responses.question')  // Suppression des noms utilisateurs
@@ -149,7 +152,7 @@ router.get('/summary', async (req, res) => {
     }
 
     // Configuration question pie chart (centralisée)
-    const PIE_Q = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
+    const PIE_Q = PIE_CHART_QUESTION;
     const piePipeline = [
       { $match: match },
       { $unwind: '$responses' },
