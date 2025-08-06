@@ -64,14 +64,51 @@
         { name: "Connexion à la nature", questions: [9] } // Q10: Photo avec herbe/arbre
       ];
 
-      // Fonction pour détecter et afficher une image Cloudinary
+      // Fonction pour détecter et afficher une image sécurisée
       function createAnswerContent(answer) {
         const container = document.createElement('span');
         
-        // Vérifier si c'est une URL d'image (Cloudinary ou autre)
-        const imageUrlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$|^https:\/\/res\.cloudinary\.com\/.+$/i;
+        // 🔒 SECURITY: Only allow trusted image domains (whitelist approach)
+        const TRUSTED_IMAGE_DOMAINS = [
+          'res.cloudinary.com',           // Cloudinary CDN (notre service upload)
+          'images.unsplash.com',          // Unsplash (si utilisé pour placeholder)
+          'via.placeholder.com',          // Placeholder service (si nécessaire)
+          // Ajouter d'autres domaines de confiance si nécessaire
+        ];
         
-        if (imageUrlPattern.test(answer)) {
+        // Strict validation: URL must be HTTPS and from trusted domain
+        function isTrustedImageUrl(url) {
+          if (!url || typeof url !== 'string') return false;
+          
+          try {
+            const urlObj = new URL(url);
+            
+            // 1. Force HTTPS only
+            if (urlObj.protocol !== 'https:') return false;
+            
+            // 2. Check if domain is in whitelist
+            const hostname = urlObj.hostname.toLowerCase();
+            const isTrustedDomain = TRUSTED_IMAGE_DOMAINS.some(domain => 
+              hostname === domain || hostname.endsWith('.' + domain)
+            );
+            if (!isTrustedDomain) return false;
+            
+            // 3. Verify file extension for images
+            const pathname = urlObj.pathname.toLowerCase();
+            const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+            const hasValidExtension = validExtensions.some(ext => 
+              pathname.includes(ext)
+            );
+            if (!hasValidExtension) return false;
+            
+            return true;
+          } catch (e) {
+            // Invalid URL format
+            return false;
+          }
+        }
+        
+        if (isTrustedImageUrl(answer)) {
           const img = document.createElement('img');
           img.src = answer;
           img.alt = 'Image partagée';
@@ -81,10 +118,13 @@
           img.style.margin = '10px 0';
           img.style.display = 'block';
           
-          // Gestion d'erreur si l'image ne charge pas
+          // 🔒 SECURITY: Enhanced error handling without exposing URLs
           img.onerror = function() {
-            container.textContent = `Image non disponible: ${answer}`;
+            container.innerHTML = '<em style="color: #888;">Image temporairement indisponible</em>';
           };
+          
+          // 🔒 SECURITY: Add CSP-friendly loading attribute
+          img.loading = 'lazy';
           
           container.appendChild(img);
         } else {
