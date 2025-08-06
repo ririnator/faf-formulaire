@@ -94,6 +94,9 @@ export class AdminAPI {
    * Effectue une requête API avec gestion automatique d'erreurs et CSRF
    */
   static async request(url, options = {}, errorMessage = 'Erreur de communication') {
+    // Afficher l'état de chargement
+    UI.showLoading(true, 'Traitement en cours...');
+    
     try {
       const fetchOptions = {
         credentials: 'include',
@@ -149,6 +152,9 @@ export class AdminAPI {
       console.error(`Erreur fetch ${url}:`, error);
       UI.showAlert(`${errorMessage}: ${error.message}`, 'error');
       return null;
+    } finally {
+      // Cacher l'état de chargement
+      UI.showLoading(false);
     }
   }
 
@@ -256,6 +262,36 @@ export const Utils = {
 // =============================================================================
 
 export const UI = {
+  /**
+   * Gestion des états de chargement
+   */
+  showLoading(show = true, message = 'Chargement en cours...') {
+    let overlay = document.getElementById('loadingOverlay');
+    
+    if (!overlay) {
+      // Créer l'overlay de chargement s'il n'existe pas
+      overlay = document.createElement('div');
+      overlay.id = 'loadingOverlay';
+      overlay.className = 'loading-overlay hidden';
+      overlay.innerHTML = `
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">${message}</div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+    
+    if (show) {
+      overlay.classList.remove('hidden');
+      // Mettre à jour le message si fourni
+      const textEl = overlay.querySelector('.loading-text');
+      if (textEl) textEl.textContent = message;
+    } else {
+      overlay.classList.add('hidden');
+    }
+  },
+
   /**
    * Gestion des messages d'alerte avec auto-hide
    */

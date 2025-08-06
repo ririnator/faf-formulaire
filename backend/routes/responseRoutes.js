@@ -26,18 +26,41 @@ router.post(
     ? undefined 
     : crypto.randomBytes(32).toString('hex');
 
-// → **NE PAS CRÉER** si un admin pour ce mois existe déjà
-  if (isAdmin) {
-      const already = await Response.exists({ month, isAdmin: true });
-      if (already) {
+  try {
+    let saved;
+    
+    // Pour les admin, utiliser une opération atomique pour éviter les race conditions
+    if (isAdmin) {
+      const result = await Response.findOneAndUpdate(
+        { month, isAdmin: true },
+        {
+          $setOnInsert: {
+            name,
+            responses,
+            month,
+            isAdmin: true,
+            token: null,
+            createdAt: new Date()
+          }
+        },
+        { 
+          upsert: true, 
+          new: true,
+          runValidators: true,
+          setDefaultsOnInsert: true
+        }
+      );
+
+      // Vérifier si le document a été créé ou s'il existait déjà
+      if (result.name !== name) {
         return res.status(409).json({
           message: 'Une réponse admin existe déjà pour ce mois.'
         });
       }
-  }
 
-    try {
-      // 4) création et sauvegarde
+      saved = result;
+    } else {
+      // Pour les utilisateurs normaux, création standard
       const newResponse = new Response({
         name,
         responses,
@@ -45,7 +68,8 @@ router.post(
         isAdmin,
         token
       });
-      await newResponse.save();
+      saved = await newResponse.save();
+    }
 
       // 5) on renvoie le lien privé dans la réponse JSON
       const link = token

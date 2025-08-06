@@ -4,65 +4,91 @@
   <meta charset="UTF-8">
   <title>Liste de toutes les réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/admin/mobile-responsive.css">
   <script type="module" src="/admin/faf-admin.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link rel="icon" href="/favicon.ico" />
 </head>
 <body class="bg-gray-50 p-6">
+  <!-- Skip link for keyboard navigation -->
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  
   <div class="container mx-auto">
-    <div class="flex justify-between items-center mb-6">
+    <nav class="admin-nav flex justify-between items-center mb-6" role="navigation" aria-label="Navigation administrateur">
       <a href="/admin" class="text-blue-600 hover:underline">← Retour au résumé</a>
       <a href="/logout" class="text-red-600 hover:underline">Déconnexion</a>
-    </div>
-    <h1 class="text-3xl font-bold text-center mb-6">Toutes les réponses reçues</h1>
+    </nav>
+    
+    <main id="main-content" role="main">
+      <h1 class="text-3xl font-bold text-center mb-6">Toutes les réponses reçues</h1>
 
     <!-- Message d'erreur/succès -->
-    <div id="alertMessage" class="hidden mb-4 p-4 rounded-lg"></div>
+    <div id="alertMessage" class="hidden mb-4 p-4 rounded-lg" 
+         role="alert" aria-live="assertive"></div>
 
     <!-- Search et Filter Section -->
-    <div class="mb-6 flex gap-4">
+    <div class="mb-6 flex gap-4" role="search">
       <div class="flex-1">
+        <label for="searchInput" class="sr-only">Rechercher par nom</label>
         <input type="text" id="searchInput" placeholder="Rechercher par nom..."
-               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+               aria-describedby="search-help">
+        <div id="search-help" class="sr-only">Tapez un nom pour filtrer les réponses</div>
       </div>
       <div>
-        <select id="sortSelect" class="px-4 py-2 border rounded-lg">
+        <label for="sortSelect" class="sr-only">Trier par</label>
+        <select id="sortSelect" class="px-4 py-2 border rounded-lg"
+                aria-describedby="sort-help">
           <option value="newest">Plus récentes</option>
           <option value="oldest">Plus anciennes</option>
         </select>
+        <div id="sort-help" class="sr-only">Choisir l'ordre de tri des réponses</div>
       </div>
     </div>
 
     <!-- Conteneur du tableau -->
-    <div class="overflow-x-auto">
-      <table class="min-w-full bg-white border table-fixed">
+    <div class="table-container overflow-x-auto">
+      <table class="min-w-full bg-white border table-fixed" role="table" aria-label="Liste des réponses reçues">
         <thead>
           <tr>
-            <th class="w-1/4 py-2 px-4 border-b text-left">Date</th>
-            <th class="w-2/4 py-2 px-4 border-b text-center">Nom</th>
-            <th class="w-1/4 py-2 px-4 border-b text-right">Actions</th>
+            <th class="w-1/4 py-2 px-4 border-b text-left" scope="col">Date</th>
+            <th class="w-2/4 py-2 px-4 border-b text-center" scope="col">Nom</th>
+            <th class="w-1/4 py-2 px-4 border-b text-right" scope="col">Actions</th>
           </tr>
         </thead>
         <tbody id="responsesTableBody"></tbody>
       </table>
 
       <!-- Pagination Controls -->
-      <div class="mt-4 flex items-center space-x-4">
-        <button id="prevBtn" class="px-3 py-1 border rounded">Précédent</button>
-        <span>Page <strong id="currentPage">1</strong> / <strong id="totalPages">1</strong></span>
-        <button id="nextBtn" class="px-3 py-1 border rounded">Suivant</button>
-      </div>
+      <nav class="pagination-controls mt-4 flex items-center space-x-4" 
+           role="navigation" aria-label="Pagination des réponses">
+        <button id="prevBtn" class="px-3 py-1 border rounded" 
+                aria-describedby="prev-help">Précédent</button>
+        <div id="prev-help" class="sr-only">Aller à la page précédente</div>
+        
+        <span aria-live="polite">
+          Page <strong id="currentPage">1</strong> / <strong id="totalPages">1</strong>
+        </span>
+        
+        <button id="nextBtn" class="px-3 py-1 border rounded"
+                aria-describedby="next-help">Suivant</button>
+        <div id="next-help" class="sr-only">Aller à la page suivante</div>
+      </nav>
     </div>
 
     <!-- Modal de détails -->
-    <div id="detailsModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-      <div class="bg-white p-6 rounded-lg w-1/2">
-        <h2 class="text-2xl font-semibold mb-4">Détails de la réponse</h2>
-        <div id="responseDetails"></div>
-        <button id="closeDetails" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Fermer</button>
+    <div id="detailsModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden"
+         role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="bg-white p-6 rounded-lg w-1/2" role="document">
+        <h2 id="modal-title" class="text-2xl font-semibold mb-4">Détails de la réponse</h2>
+        <div id="responseDetails" aria-live="polite"></div>
+        <button id="closeDetails" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                aria-describedby="close-help">Fermer</button>
+        <div id="close-help" class="sr-only">Fermer la fenêtre de détails</div>
       </div>
     </div>
-
+    
+    </main>
   </div>
 
   <script type="module">
