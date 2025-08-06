@@ -2,42 +2,20 @@
 
 const express = require('express');
 const crypto = require('crypto');
-const { body, validationResult } = require('express-validator');
 const router = express.Router();
 
 const Response = require('../models/Response');
+const { validateResponseStrict, handleValidationErrors, sanitizeResponse } = require('../middleware/validation');
+const { createFormBodyParser } = require('../middleware/bodyParser');
 
-// POST /api/response
+// POST /api/response with form-specific body parser (2MB limit for text data)
 router.post(
   '/',
-  [
-    // 1) règles de validation
-    body('name')
-      .trim()
-      .isLength({ min: 2 })
-      .withMessage('Le nom doit contenir au moins 2 caractères'),
-    body('responses')
-      .isArray({ min: 1 })
-      .withMessage('Il faut au moins une réponse'),
-    body('responses.*.question')
-      .notEmpty()
-      .withMessage('Chaque question doit être précisée'),
-    body('responses.*.answer')
-      .notEmpty()
-      .withMessage('Chaque réponse ne peut pas être vide'),
-    // honeypot (champ invisible) — facultatif ici
-    body('website')
-      .optional()
-      .isEmpty()
-      .withMessage('Spam détecté')
-  ],
+  createFormBodyParser(),
+  validateResponseStrict,
+  handleValidationErrors,
+  sanitizeResponse,
   async (req, res) => {
-    // 2) gestion des erreurs de validation
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      const firstError = errors.array()[0];
-      return res.status(400).json({ message: firstError.msg });
-    }
 
     // 3) normalisation des données
     const { name, responses } = req.body;

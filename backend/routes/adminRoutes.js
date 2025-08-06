@@ -3,6 +3,10 @@ const express  = require('express');
 const mongoose = require('mongoose');
 const router   = express.Router();
 const Response = require('../models/Response');
+const { createAdminBodyParser } = require('../middleware/bodyParser');
+
+// Apply admin-specific body parser (1MB limit) to all admin routes
+router.use(createAdminBodyParser());
 
 // Middleware : charge la réponse dans req.responseDoc
 router.param('id', async (req, res, next, id) => {

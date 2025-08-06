@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for routes/formRoutes.js</title>
+    <title>Code coverage report for routes/responseRoutes.refactored.js</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../prettify.css" />
     <link rel="stylesheet" href="../base.css" />
@@ -19,20 +19,20 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">routes</a> formRoutes.js</h1>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">routes</a> responseRoutes.refactored.js</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/15</span>
+                <span class='fraction'>0/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>0/2</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/15</span>
+                <span class='fraction'>0/13</span>
             </div>
         
             
@@ -95,29 +95,10 @@
 <a name='L30'></a><a href='#L30'>30</a>
 <a name='L31'></a><a href='#L31'>31</a>
 <a name='L32'></a><a href='#L32'>32</a>
-<a name='L33'></a><a href='#L33'>33</a>
-<a name='L34'></a><a href='#L34'>34</a>
-<a name='L35'></a><a href='#L35'>35</a>
-<a name='L36'></a><a href='#L36'>36</a>
-<a name='L37'></a><a href='#L37'>37</a>
-<a name='L38'></a><a href='#L38'>38</a>
-<a name='L39'></a><a href='#L39'>39</a>
-<a name='L40'></a><a href='#L40'>40</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L33'></a><a href='#L33'>33</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -125,60 +106,58 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = <span class="cstat-no" title="statement not covered" >require('express');</span>
 const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
-const Response = <span class="cstat-no" title="statement not covered" >require('../models/Response');</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >router.post('/response', <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    // Ici, req.body.responses doit être déjà un tableau d'objets { question, answer }
-    const { name, responses } = <span class="cstat-no" title="statement not covered" >req.body;</span>
-    
-    // Add required month field (same logic as responseRoutes.js)
-    const month = <span class="cstat-no" title="statement not covered" >new Date().toISOString().slice(0, 7);</span> // "YYYY-MM"
-    
-    // Basic admin detection (simplified version)
-    const isAdmin = <span class="cstat-no" title="statement not covered" >name &amp;&amp; name.trim().toLowerCase() === process.env.FORM_ADMIN_NAME?.toLowerCase();</span>
-    
-    // Generate token for non-admin users
-    const token = <span class="cstat-no" title="statement not covered" >isAdmin ? null : require('crypto').randomBytes(32).toString('hex');</span>
+const ResponseService = <span class="cstat-no" title="statement not covered" >require('../services/responseService');</span>
+const { validateResponse, handleValidationErrors } = <span class="cstat-no" title="statement not covered" >require('../middleware/validation');</span>
 &nbsp;
-    // Création du document avec le nouveau format
-    const responseDoc = <span class="cstat-no" title="statement not covered" >new Response({</span>
-      name,
-      responses,  // Déjà au bon format
-      month,
-      isAdmin,
-      token
-    });
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    await responseDoc.save();</span>
-<span class="cstat-no" title="statement not covered" >    res.json({ </span>
-      message: "Réponse enregistrée avec succès",
-      responseId: responseDoc._id.toString(),
-      ...(token &amp;&amp; { viewUrl: `${process.env.APP_BASE_URL || 'http://localhost:3000'}/view.html?token=${token}` })
-    });
-  } catch (error) {
-<span class="cstat-no" title="statement not covered" >    console.error("Erreur lors de l'enregistrement :", error);</span>
-<span class="cstat-no" title="statement not covered" >    res.status(500).json({ message: "Erreur lors de l'enregistrement de la réponse" });</span>
+// POST /api/response
+<span class="cstat-no" title="statement not covered" >router.post('/',</span>
+  validateResponse,
+  handleValidationErrors,
+<span class="fstat-no" title="function not covered" >  as</span>ync (req, res) =&gt; {
+<span class="cstat-no" title="statement not covered" >    try {</span>
+      const result = <span class="cstat-no" title="statement not covered" >await ResponseService.createResponse(req.body);</span>
+      
+<span class="cstat-no" title="statement not covered" >      res.status(201).json({</span>
+        message: 'Réponse enregistrée avec succès !',
+        link: result.link
+      });
+    } catch (err) {
+<span class="cstat-no" title="statement not covered" >      console.error('Erreur en sauvegardant la réponse :', err);</span>
+      
+<span class="cstat-no" title="statement not covered" >      if (err.message.includes('admin existe déjà')) {</span>
+<span class="cstat-no" title="statement not covered" >        return res.status(409).json({ message: err.message });</span>
+      }
+      
+<span class="cstat-no" title="statement not covered" >      res.status(500).json({ </span>
+        message: 'Erreur en sauvegardant la réponse' 
+      });
+    }
   }
-});
+);
 &nbsp;
 <span class="cstat-no" title="statement not covered" >module.exports = router;</span></pre></td></tr></table></pre>
 
