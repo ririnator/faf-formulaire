@@ -1,0 +1,15 @@
+{
+  "name": "frontend-tests",
+  "version": "1.0.0",
+  "description": "Frontend tests for FAF application",
+  "scripts": {
+    "test": "jest --config tests/jest.config.js",
+    "test:watch": "jest --config tests/jest.config.js --watch",
+    "test:coverage": "jest --config tests/jest.config.js --coverage"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.0.5",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5"
+  }
+}
