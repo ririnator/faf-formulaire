@@ -112,38 +112,66 @@ router.get('/summary', async (req, res) => {
       .aggregate(piePipeline, { allowDiskUse: true })
       .toArray();
 
-    const docs = await Response.find(match)
-      .select('name responses.question responses.answer')
-      .lean();
+    // Optimisation: Utiliser aggregation pipeline pour éviter O(n²)
+    const textPipeline = [
+      { $match: match },
+      { $unwind: '$responses' },
+      { $match: { 'responses.question': { $ne: PIE_Q } } },
+      {
+        $group: {
+          _id: '$responses.question',
+          items: { $push: { user: '$name', answer: '$responses.answer' } }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          question: '$_id',
+          items: 1
+        }
+      }
+    ];
+
+    const rawTextSummary = await mongoose.connection.db
+      .collection('responses')
+      .aggregate(textPipeline, { allowDiskUse: true })
+      .toArray();
 
     // Fonction pour normaliser les questions (éviter les divisions)
     const normalizeQuestion = (question) => {
+      if (!question || typeof question !== 'string') return '';
+      
       return question.trim()
         .replace(/\s+/g, ' ')  // Remplacer espaces multiples par un seul
         .toLowerCase()
-        .replace(/[^\w\s\u00C0-\u017F]/g, '') // Garder alphanumériques + accents
+        // Support Unicode étendu pour accents (Node.js 12+)
+        .replace(/[^\p{L}\p{N}\s]/gu, '') // Garder lettres Unicode + nombres + espaces
         .trim();
     };
 
+    // Regrouper questions similaires après aggregation (plus efficace)
     const textMap = {};
     const questionNormalizedMap = {}; // Map: normalized → première question originale
     
-    docs.forEach(doc => {
-      doc.responses.forEach(r => {
-        if (r.question === PIE_Q) return;
-        
-        const normalizedQ = normalizeQuestion(r.question);
-        
-        // Utiliser la première version de la question comme clé de référence
-        if (!questionNormalizedMap[normalizedQ]) {
-          questionNormalizedMap[normalizedQ] = r.question;
-        }
-        
-        const canonicalQ = questionNormalizedMap[normalizedQ];
-        textMap[canonicalQ] = textMap[canonicalQ] || [];
-        textMap[canonicalQ].push({ user: doc.name, answer: r.answer });
-      });
+    rawTextSummary.forEach(({ question, items }) => {
+      const normalizedQ = normalizeQuestion(question);
+      
+      // Ignorer questions vides après normalisation
+      if (!normalizedQ) {
+        console.warn(`⚠️  Question vide ignorée:`, question);
+        return;
+      }
+      
+      // Utiliser la première version de la question comme clé de référence
+      if (!questionNormalizedMap[normalizedQ]) {
+        questionNormalizedMap[normalizedQ] = question;
+      }
+      
+      const canonicalQ = questionNormalizedMap[normalizedQ];
+      textMap[canonicalQ] = textMap[canonicalQ] || [];
+      textMap[canonicalQ].push(...items); // Merger les items
     });
+    
     const textSummary = Object.entries(textMap)
       .map(([question, items]) => ({ question, items }));
 
