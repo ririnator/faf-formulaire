@@ -246,46 +246,54 @@ router.get('/summary', async (req, res) => {
       }
     }
 
-    // 🔧 FIX: Maintenir l'ordre correct des questions selon le formulaire
-    // 🔧 FIXED: Questions exactement comme dans index.html - copiées de la ligne 231-240 du form
-    const QUESTION_ORDER = [
-      "En rapide, comment ça va ?", // Q1 - PIE CHART (sera en premier)
-      "Possibilité d'ajouter un peu plus de détails à la question précédente :", // Q2
-      "Le pulse check mensuel... montre une photo de toi ce mois-ci", // Q3 - copié exactement du form
-      "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ?", // Q4 - copié exactement du form
-      "C'est quoi la reaction pic que tu utilises le plus en ce moment ?", // Q5 - copié exactement du form
-      "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ?", // Q6 - copié exactement du form
-      "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement)", // Q7 - copié exactement du form
-      "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ?", // Q8 - copié exactement du form
-      "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.)", // Q9 - copié exactement du form
-      "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre" // Q10 - copié exactement du form
-    ];
+    // Get question order from first submission in the period
+    let questionOrder = [];
+    if (pieSummary.length > 0) {
+      questionOrder.push(PIE_Q); // Pie chart question first
+    }
+    
+    // Find the oldest response in the period to get natural question order
+    const firstResponse = await Response.findOne(match).sort({ createdAt: 1 });
+    if (firstResponse) {
+      firstResponse.responses.forEach(r => {
+        if (r.question && r.question !== PIE_Q) {
+          const normalized = normalizeQuestion(r.question);
+          // Add question if not already in order (avoid duplicates)
+          const alreadyExists = questionOrder.some(q => normalizeQuestion(q) === normalized);
+          if (!alreadyExists) {
+            questionOrder.push(r.question);
+          }
+        }
+      });
+    }
 
-    // Utiliser la même normalisation que pour le regroupement des questions
-    const normalizeForComparison = normalizeQuestion;
-
-    // Combiner toutes les questions
+    // Combine all summary data
     const allSummary = [...pieSummary, ...textSummary];
     
-    // Trier selon l'ordre du formulaire
+    // Sort according to natural question order from first submission
     const sortedSummary = allSummary.sort((a, b) => {
-      const normalizedA = normalizeForComparison(a.question);
-      const normalizedB = normalizeForComparison(b.question);
+      const normalizedA = normalizeQuestion(a.question);
+      const normalizedB = normalizeQuestion(b.question);
       
-      // Chercher l'index dans QUESTION_ORDER
-      let indexA = QUESTION_ORDER.findIndex(q => normalizeForComparison(q) === normalizedA);
-      let indexB = QUESTION_ORDER.findIndex(q => normalizeForComparison(q) === normalizedB);
+      // Find index in natural question order
+      let indexA = questionOrder.findIndex(q => normalizeQuestion(q) === normalizedA);
+      let indexB = questionOrder.findIndex(q => normalizeQuestion(q) === normalizedB);
       
-      // Si question non trouvée, mettre à la fin
-      if (indexA === -1) indexA = QUESTION_ORDER.length;
-      if (indexB === -1) indexB = QUESTION_ORDER.length;
+      // If question not found in order, put at end
+      if (indexA === -1) indexA = questionOrder.length;
+      if (indexB === -1) indexB = questionOrder.length;
       
       return indexA - indexB;
     });
 
     // Debug pour vérifier l'ordre (dev uniquement)
     if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
-      console.log('📋 Ordre des questions dans le résumé:');
+      console.log('📋 Ordre des questions basé sur première soumission:');
+      questionOrder.forEach((q, i) => {
+        const shortQ = q.substring(0, 50) + (q.length > 50 ? '...' : '');
+        console.log(`  ${i + 1}. ${shortQ}`);
+      });
+      console.log('📋 Résumé final:');
       sortedSummary.forEach((item, index) => {
         const shortQ = item.question.substring(0, 50) + (item.question.length > 50 ? '...' : '');
         console.log(`  ${index + 1}. ${shortQ}`);
