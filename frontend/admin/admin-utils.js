@@ -164,14 +164,41 @@ function escapeHTML(text) {
 }
 
 /**
- * Décode les entités HTML (inverse d'escapeHTML)
+ * Décode uniquement les entités HTML sûres (liste blanche)
  * @param {string} text - Texte contenant des entités HTML
  * @returns {string} - Texte avec entités décodées
  */
 function unescapeHTML(text) {
-  const div = document.createElement('div');
-  div.innerHTML = text;
-  return div.textContent || div.innerText || '';
+  if (!text || typeof text !== 'string') return text || '';
+  
+  // Approche liste blanche : décoder uniquement les entités communes et sûres
+  const safeEntityMap = {
+    '&#x27;': "'",
+    '&#39;': "'",
+    '&apos;': "'",
+    '&quot;': '"',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&nbsp;': ' ',
+    '&eacute;': 'é',
+    '&egrave;': 'è',
+    '&ecirc;': 'ê',
+    '&agrave;': 'à',
+    '&acirc;': 'â',
+    '&ugrave;': 'ù',
+    '&ucirc;': 'û',
+    '&icirc;': 'î',
+    '&ocirc;': 'ô',
+    '&ccedil;': 'ç'
+  };
+  
+  let result = text;
+  for (const [entity, char] of Object.entries(safeEntityMap)) {
+    result = result.replace(new RegExp(entity, 'g'), char);
+  }
+  
+  return result;
 }
 
 /**
