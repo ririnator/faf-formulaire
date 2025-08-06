@@ -164,41 +164,28 @@ function escapeHTML(text) {
 }
 
 /**
- * Décode uniquement les entités HTML sûres (liste blanche)
+ * Décode les entités HTML en utilisant la constante partagée de core-utils
+ * Cette fonction utilise SAFE_HTML_ENTITIES si disponible, sinon fallback
  * @param {string} text - Texte contenant des entités HTML
  * @returns {string} - Texte avec entités décodées
  */
 function unescapeHTML(text) {
-  if (!text || typeof text !== 'string') return text || '';
-  
-  // Approche liste blanche : décoder uniquement les entités communes et sûres
-  const safeEntityMap = {
-    '&#x27;': "'",
-    '&#39;': "'",
-    '&apos;': "'",
-    '&quot;': '"',
-    '&amp;': '&',
-    '&lt;': '<',
-    '&gt;': '>',
-    '&nbsp;': ' ',
-    '&eacute;': 'é',
-    '&egrave;': 'è',
-    '&ecirc;': 'ê',
-    '&agrave;': 'à',
-    '&acirc;': 'â',
-    '&ugrave;': 'ù',
-    '&ucirc;': 'û',
-    '&icirc;': 'î',
-    '&ocirc;': 'ô',
-    '&ccedil;': 'ç'
-  };
-  
-  let result = text;
-  for (const [entity, char] of Object.entries(safeEntityMap)) {
-    result = result.replace(new RegExp(entity, 'g'), char);
+  // Utiliser la fonction de core-utils si disponible
+  if (typeof window !== 'undefined' && typeof window.unescapeHTML === 'function') {
+    return window.unescapeHTML(text);
   }
   
-  return result;
+  // Fallback basique si core-utils n'est pas chargé
+  if (!text || typeof text !== 'string') return text || '';
+  
+  return text
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
 }
 
 /**
