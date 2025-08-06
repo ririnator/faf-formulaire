@@ -42,6 +42,31 @@ app.get('/test-debug', (req, res) => {
 // 1) Enhanced Security headers with nonce-based CSP
 app.use(createSecurityMiddleware());
 
+// 1.5) UTF-8 encoding middleware for all responses
+app.use((req, res, next) => {
+  // Définir l'encodage UTF-8 par défaut pour toutes les réponses
+  const originalSend = res.send;
+  const originalJson = res.json;
+  
+  res.send = function(data) {
+    if (!res.get('Content-Type')) {
+      if (typeof data === 'string' && data.trim().startsWith('<')) {
+        res.set('Content-Type', 'text/html; charset=utf-8');
+      } else {
+        res.set('Content-Type', 'text/plain; charset=utf-8');
+      }
+    }
+    return originalSend.call(this, data);
+  };
+  
+  res.json = function(data) {
+    res.set('Content-Type', 'application/json; charset=utf-8');
+    return originalJson.call(this, data);
+  };
+  
+  next();
+});
+
 // 2) CORS – n'autorise que votre front
 app.use(cors({
   origin: [
@@ -102,7 +127,7 @@ app.get('/admin/gestion', ensureAdmin, (req, res) => {
 
 // Assets JavaScript admin - accessible si session admin active
 app.get('/admin/assets/admin-utils.js', ensureAdmin, (req, res) => {
-  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
   // Cache pour 1 heure en développement, 24h en production
   const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 3600;
   res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
