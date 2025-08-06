@@ -170,12 +170,7 @@ function escapeHTML(text) {
  * @returns {string} - Texte avec entités décodées
  */
 function unescapeHTML(text) {
-  // Utiliser la fonction de core-utils si disponible
-  if (typeof window !== 'undefined' && typeof window.unescapeHTML === 'function') {
-    return window.unescapeHTML(text);
-  }
-  
-  // Fallback basique si core-utils n'est pas chargé
+  // Fallback basique - ne pas utiliser window.unescapeHTML car cela créerait une boucle infinie
   if (!text || typeof text !== 'string') return text || '';
   
   return text
@@ -325,12 +320,6 @@ function createAnswersList(items, config = {}) {
 
   items.forEach(({ user, answer }) => {
     const li = document.createElement('li');
-    
-    // DEBUG: Log pour comprendre pourquoi les images d'août ne s'affichent pas
-    if (answer && (answer.includes('http') || answer.includes('cloudinary'))) {
-      console.log(`🖼️ Image candidate: ${user} -> ${answer.substring(0, 100)}...`);
-      console.log(`🔍 isTrustedImageUrl result:`, isTrustedImageUrl(answer));
-    }
     
     // 🔒 SECURITY: Use trusted image validation instead of regex
     const isImage = isTrustedImageUrl(answer);
