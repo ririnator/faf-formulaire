@@ -38,7 +38,7 @@
         <label for="option1">ça va</label>
       </div>
       <div class="radio-group">
-        <input type="radio" name="question1" id="option2" value="">
+        <input type="radio" name="question1" id="option2" value="a connu meilleur mois">
         <label for="option2" id="labelOption2"></label>
       </div>
       <div class="radio-group">
@@ -123,8 +123,9 @@
       const opt2 = document.getElementById('option2');
       const lbl2 = document.getElementById('labelOption2');
       if (opt2 && lbl2) {
-        opt2.value = `${prefix}${month}`;
-        lbl2.textContent = `${prefix}${month}`;
+        const fullText = `${prefix}${month}`;
+        opt2.value = fullText;
+        lbl2.textContent = fullText;
       }
     });
 
