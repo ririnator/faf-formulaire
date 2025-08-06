@@ -269,17 +269,18 @@ router.get('/summary', async (req, res) => {
     }
 
     // 🔧 FIX: Maintenir l'ordre correct des questions selon le formulaire
+    // 🔧 FIXED: Questions exactement comme dans index.html (sans : à la fin pour Q3-Q10)
     const QUESTION_ORDER = [
       "En rapide, comment ça va ?", // Q1 - PIE CHART (sera en premier)
       "Possibilité d'ajouter un peu plus de détails à la question précédente :", // Q2
-      "Le pulse check mensuel... montre une photo de toi ce mois-ci :", // Q3
-      "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ? :", // Q4
-      "C'est quoi la reaction pic que tu utilises le plus en ce moment ? :", // Q5
-      "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ? :", // Q6
-      "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement) :", // Q7
-      "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ? :", // Q8
-      "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.) :", // Q9
-      "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre :" // Q10
+      "Le pulse check mensuel... montre une photo de toi ce mois-ci", // Q3 - PAS DE : à la fin
+      "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ?", // Q4 - PAS DE : à la fin
+      "C'est quoi la reaction pic que tu utilises le plus en ce moment ?", // Q5 - PAS DE : à la fin
+      "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ?", // Q6 - PAS DE : à la fin
+      "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement)", // Q7 - PAS DE : à la fin
+      "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ?", // Q8 - PAS DE : à la fin
+      "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.)", // Q9 - PAS DE : à la fin
+      "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre" // Q10 - PAS DE : à la fin
     ];
 
     // Fonction pour normaliser une question pour comparaison
