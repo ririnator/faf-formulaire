@@ -1,29 +1,58 @@
 const { body, validationResult } = require('express-validator');
 
+const validateResponseStrict = [
+  body('name')
+    .trim()
+    .escape()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Le nom doit contenir entre 2 et 100 caractères'),
+  
+  body('responses')
+    .isArray({ min: 1, max: 20 })
+    .withMessage('Il faut entre 1 et 20 réponses'),
+  
+  body('responses.*.question')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('La question ne peut pas être nulle ou vide')
+    .trim()
+    .escape()
+    .notEmpty()
+    .isLength({ max: 500 })
+    .withMessage('Chaque question doit être précisée (max 500 caractères)'),
+  
+  body('responses.*.answer')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('La réponse ne peut pas être nulle ou vide')
+    .trim()
+    .escape()
+    .notEmpty()
+    .isLength({ max: 10000 })
+    .withMessage('Chaque réponse ne peut pas être vide (max 10000 caractères)'),
+
+  body('website')
+    .optional()
+    .isEmpty()
+    .withMessage('Spam détecté')
+];
+
 const validateResponse = [
   body('name')
     .trim()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('Le nom est requis et doit faire moins de 100 caractères'),
-  
+    .isLength({ min: 2 })
+    .withMessage('Le nom doit contenir au moins 2 caractères'),
   body('responses')
     .isArray({ min: 1 })
-    .withMessage('Les réponses doivent être un tableau non vide'),
-  
+    .withMessage('Il faut au moins une réponse'),
   body('responses.*.question')
-    .trim()
-    .isLength({ min: 1 })
-    .withMessage('Chaque question est requise'),
-  
+    .notEmpty()
+    .withMessage('Chaque question doit être précisée'),
   body('responses.*.answer')
-    .trim()
-    .isLength({ min: 1 })
-    .withMessage('Chaque réponse est requise'),
-
-  // Protection honeypot
+    .notEmpty()
+    .withMessage('Chaque réponse ne peut pas être vide'),
   body('website')
+    .optional()
     .isEmpty()
-    .withMessage('Champ honeypot détecté')
+    .withMessage('Spam détecté')
 ];
 
 const validateLogin = [
@@ -40,16 +69,36 @@ const validateLogin = [
 function handleValidationErrors(req, res, next) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    const firstError = errors.array()[0];
     return res.status(400).json({
-      error: 'Erreur de validation',
-      details: errors.array()
+      message: firstError.msg,
+      field: firstError.path
     });
+  }
+  next();
+}
+
+function sanitizeResponse(req, res, next) {
+  if (req.body.responses && Array.isArray(req.body.responses)) {
+    req.body.responses = req.body.responses
+      .filter(response => response !== null && response !== undefined) // Remove null/undefined elements
+      .map(response => {
+        if (typeof response !== 'object' || response === null) {
+          return { question: '', answer: '' };
+        }
+        return {
+          question: response.question != null ? response.question.toString().substring(0, 500) : '',
+          answer: response.answer != null ? response.answer.toString().substring(0, 10000) : ''
+        };
+      });
   }
   next();
 }
 
 module.exports = {
   validateResponse,
+  validateResponseStrict,
   validateLogin,
-  handleValidationErrors
+  handleValidationErrors,
+  sanitizeResponse
 };

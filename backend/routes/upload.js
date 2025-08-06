@@ -15,9 +15,22 @@ const storage = new CloudinaryStorage({
   }
 });
 
-// ← parser Multer branché sur Cloudinary
+// ← parser Multer branché sur Cloudinary avec limites optimisées
 const parser = multer({
-  storage
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit for images
+    fieldSize: 1024 * 1024,    // 1MB limit for form fields
+    files: 1                   // Only 1 file per upload
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow images
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Seuls les fichiers image sont autorisés'), false);
+    }
+  }
 });
 
 // ← Route POST /api/upload
