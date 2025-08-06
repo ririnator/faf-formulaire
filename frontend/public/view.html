@@ -48,7 +48,7 @@
       const token = location.pathname.split('/').pop();
       const res = await fetch(`/api/view/${token}`);
       if (!res.ok) {
-        document.body.innerHTML = '<p>Lien invalide ou expiré.</p>';
+        document.body.textContent = 'Lien invalide ou expiré.';
         return;
       }
       const { user, admin } = await res.json();
@@ -127,7 +127,10 @@
           
           // 🔒 SECURITY: Enhanced error handling without exposing URLs
           img.onerror = function() {
-            container.innerHTML = '<em style="color: #888;">Image temporairement indisponible</em>';
+            const errorMsg = document.createElement('em');
+            errorMsg.textContent = 'Image temporairement indisponible';
+            errorMsg.style.color = '#888';
+            container.appendChild(errorMsg);
           };
           
           // 🔒 SECURITY: Add CSP-friendly loading attribute
@@ -177,14 +180,18 @@
 
             // Votre réponse
             const yourAnswer = document.createElement('p');
-            yourAnswer.innerHTML = `<strong>Vous:</strong> `;
+            const yourLabel = document.createElement('strong');
+            yourLabel.textContent = 'Vous: ';
+            yourAnswer.appendChild(yourLabel);
             yourAnswer.appendChild(createAnswerContent(answer));
             yourAnswer.style.marginBottom = '10px';
 
             // Réponse admin
             const adminAnswerElement = document.createElement('p');
             adminAnswerElement.className = 'admin-answer';
-            adminAnswerElement.innerHTML = `<strong>Moi (Admin):</strong> `;
+            const adminLabel = document.createElement('strong');
+            adminLabel.textContent = 'Moi (Admin): ';
+            adminAnswerElement.appendChild(adminLabel);
             if (admin && admin.responses[questionIndex]) {
               const adminAnswerText = unescapeHTML(admin.responses[questionIndex].answer);
               adminAnswerElement.appendChild(createAnswerContent(adminAnswerText));
