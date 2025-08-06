@@ -17,11 +17,12 @@ function createSecurityMiddleware() {
     // This allows CSS and JavaScript to load without nonce requirements
     if (req.path.startsWith('/api/') || 
         req.path === '/' || 
+        req.path === '/admin' ||
+        req.path.startsWith('/admin/') ||
         req.path.endsWith('.html') || 
         req.path.endsWith('.css') || 
         req.path.endsWith('.js') ||
         req.path.includes('/frontend/') ||
-        req.path.includes('/admin/') ||
         req.path.startsWith('/css/') ||
         req.path.startsWith('/js/')) {
       
