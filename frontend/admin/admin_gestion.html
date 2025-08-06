@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Liste de toutes les réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/admin/assets/core-utils.js"></script>
+  <script type="module" src="/admin/faf-admin.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link rel="icon" href="/favicon.ico" />
 </head>
@@ -65,41 +65,21 @@
 
   </div>
 
-  <script>
-    // Chargement asynchrone d'admin-utils.js
-    async function loadAdminUtils() {
-      return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = '/admin/assets/admin-utils.js';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Impossible de charger admin-utils.js'));
-        document.head.appendChild(script);
-      });
-    }
+  <script type="module">
+    import { AdminAPI, Utils, UI } from '/admin/faf-admin.js';
 
     let currentPage = 1;
     const limit = 10;
     let allResponses = [];
 
-    // Fonction d'alerte avec hiérarchie de fallback améliorée
+    // Fonction d'alerte simplifiée utilisant le module FAF
     function safeAlert(message, type = 'error') {
-      // Priorité 1: showAlert (admin-utils.js) si disponible
-      if (typeof showAlert === 'function') {
-        return showAlert(message, type);
-      }
-      
-      // Priorité 2: coreAlert (core-utils.js) si disponible
-      if (typeof coreAlert === 'function') {
-        return coreAlert(message, type);
-      }
-      
-      // Priorité 3: alert basique
-      alert(`${type === 'error' ? '❌' : '✅'} ${message}`);
+      UI.showAlert(message, type);
     }
 
     // Charge une page donnée avec gestion d'erreur améliorée
     async function loadPage(page = 1) {
-      const data = await fetchWithErrorHandling(
+      const data = await AdminAPI.request(
         `/api/admin/responses?page=${page}&limit=${limit}`,
         {},
         'Impossible de charger les données'
@@ -136,7 +116,7 @@
         // Date
         const dateTd = document.createElement('td');
         dateTd.className = "py-2 px-4 border-b text-left";
-        dateTd.textContent = formatDateFR(doc.createdAt);
+        dateTd.textContent = Utils.formatDate(doc.createdAt);
         tr.appendChild(dateTd);
 
         // Nom (on ajoute "(Admin)" si nécessaire)
@@ -164,18 +144,18 @@
         delBtn.className = "bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600";
         delBtn.textContent = 'Supprimer';
         delBtn.addEventListener('click', async () => {
-          if (!confirm(`Supprimer la réponse de ${doc.name} du ${formatDateFR(doc.createdAt).split(' ')[0]} ?`)) {
+          if (!confirm(`Supprimer la réponse de ${doc.name} du ${Utils.formatDate(doc.createdAt).split(' ')[0]} ?`)) {
             return;
           }
           
-          const result = await fetchWithErrorHandling(
+          const result = await AdminAPI.request(
             `/api/admin/responses/${doc._id}`, 
             { method: 'DELETE' },
             'Erreur lors de la suppression'
           );
           
           if (result) {
-            showAlert(`Réponse de ${doc.name} supprimée avec succès`, 'success');
+            safeAlert(`Réponse de ${doc.name} supprimée avec succès`, 'success');
             
             // Logique de pagination améliorée
             // D'abord recharger la page courante pour voir s'il reste des éléments
@@ -220,7 +200,7 @@
       }
       
       // Recherche globale sur toutes les données
-      const data = await fetchWithErrorHandling(
+      const data = await AdminAPI.request(
         `/api/admin/responses?search=${encodeURIComponent(term)}&limit=100`,
         {},
         'Erreur lors de la recherche'
@@ -237,7 +217,7 @@
         document.getElementById('totalPages').textContent = 1;
         
         if (data.responses.length === 0) {
-          showAlert('Aucun résultat trouvé pour cette recherche', 'error');
+          safeAlert('Aucun résultat trouvé pour cette recherche', 'error');
         }
       }
     }, 300);
@@ -262,7 +242,7 @@
     (async () => {
       try {
         // Charger admin-utils.js en premier
-        await loadAdminUtils();
+        await AdminAPI.init();
         
         // Puis initialiser la page
         await loadPage(1);
