@@ -1,5 +1,6 @@
 // Tests pour l'ordre correct des questions dans l'interface admin
 const request = require('supertest');
+const { normalizeQuestion } = require('../utils/questionNormalizer');
 
 describe('📋 Admin Question Order Tests', () => {
   
@@ -20,10 +21,8 @@ describe('📋 Admin Question Order Tests', () => {
       "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre" // Q10 - PAS DE : à la fin
     ];
 
-    const normalizeForComparison = (question) => {
-      if (!question || typeof question !== 'string') return '';
-      return question.trim().replace(/\s+/g, ' ');
-    };
+    // Utilise la même fonction de normalisation que adminRoutes.js
+    const normalizeForComparison = normalizeQuestion;
 
     const sortQuestionsByFormOrder = (questions) => {
       return questions.sort((a, b) => {
