@@ -262,8 +262,6 @@
             ? `Votre lien privé : <a href="${resJ.link}" target="_blank">${resJ.link}</a>`
             : ''}
         `;
-        // Optionnel : reset du formulaire
-        document.getElementById('friendForm').reset();
       } catch (err) {
         console.error(err);
         feedback.textContent = '❌ ' + err.message;
