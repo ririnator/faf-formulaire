@@ -13,38 +13,41 @@ function generateNonce() {
 
 function createSecurityMiddleware() {
   return (req, res, next) => {
-    // Skip CSP for API endpoints - HOTFIX for empty responses
-    if (req.path.startsWith('/api/')) {
-      return next();
+    // Skip CSP completely for static content and HTML files
+    // This allows CSS and JavaScript to load without nonce requirements
+    if (req.path.startsWith('/api/') || 
+        req.path === '/' || 
+        req.path.endsWith('.html') || 
+        req.path.endsWith('.css') || 
+        req.path.endsWith('.js') ||
+        req.path.includes('/frontend/') ||
+        req.path.includes('/admin/') ||
+        req.path.startsWith('/css/') ||
+        req.path.startsWith('/js/')) {
+      
+      // Apply basic Helmet security without CSP for static files
+      helmet({
+        contentSecurityPolicy: false, // Completely disable CSP for static content
+        crossOriginEmbedderPolicy: false
+      })(req, res, next);
+      return;
     }
     
-    // Generate unique nonce for each request
+    // For other dynamic pages (if any), use nonce-based CSP
     const nonce = generateNonce();
-    
-    // Store nonce in res.locals for template access
     res.locals.nonce = nonce;
     
-    // Apply Helmet with nonce-based CSP only for HTML pages
     helmet({
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          styleSrc: [
-            "'self'", 
-            `'nonce-${nonce}'`,  // ✅ Nonce instead of unsafe-inline
-            "cdn.tailwindcss.com"
-          ],
-          scriptSrc: [
-            "'self'", 
-            `'nonce-${nonce}'`,  // ✅ Nonce instead of unsafe-inline
-            "cdn.tailwindcss.com", 
-            "cdn.jsdelivr.net"
-          ],
+          styleSrc: ["'self'", `'nonce-${nonce}'`, "cdn.tailwindcss.com"],
+          scriptSrc: ["'self'", `'nonce-${nonce}'`, "cdn.tailwindcss.com", "cdn.jsdelivr.net"],
           imgSrc: ["'self'", "res.cloudinary.com", "data:"],
           fontSrc: ["'self'"],
           connectSrc: ["'self'"],
           frameSrc: ["'none'"],
-        frameAncestors: ["'none'"]
+          frameAncestors: ["'none'"]
         }
       },
       crossOriginEmbedderPolicy: false
