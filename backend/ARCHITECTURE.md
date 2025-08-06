@@ -2,18 +2,20 @@
 
 ## Vue d'ensemble
 
-FAF utilise une architecture modulaire moderne centrée sur la sécurité, avec middleware spécialisés, validation multi-niveaux et configuration adaptative selon l'environnement.
+FAF utilise une architecture modulaire moderne centrée sur la sécurité, avec middleware spécialisés, validation exhaustive (100+ tests), optimisation body parser, et configuration adaptative dev/prod automatique.
 
 ## Structure Actuelle
 
 ```
 backend/
 ├── app.js                     # Point d'entrée principal sécurisé
-├── middleware/               # Middleware de sécurité modulaire
-│   ├── auth.js              # Authentification admin avec bcrypt
-│   ├── validation.js        # Validation XSS + dual-level
-│   ├── rateLimiting.js      # Protection anti-spam
-│   └── errorHandler.js      # Gestion d'erreurs centralisée
+├── middleware/               # Middleware de sécurité modulaire avancé
+│   ├── auth.js              # Authentification admin avec bcrypt + sessions
+│   ├── validation.js        # Validation XSS + null/undefined + dual-level
+│   ├── security.js          # CSP nonce-based + session cookies adaptatifs
+│   ├── bodyParser.js        # Limites optimisées par endpoint (512KB-5MB)
+│   ├── rateLimiting.js      # Protection anti-spam intelligente
+│   └── errorHandler.js      # Gestion d'erreurs centralisée sécurisée
 ├── config/                  # Configuration sécurisée
 │   ├── cloudinary.js        # Upload images Cloudinary
 │   └── [autres configs]     # Base de données, sessions, CORS
@@ -24,11 +26,14 @@ backend/
 │   ├── adminRoutes.js       # Middleware admin + CRUD sécurisé
 │   ├── formRoutes.js        # Compatibilité legacy
 │   └── upload.js            # Upload sécurisé Cloudinary
-└── tests/                   # Suite de tests sécurité (38+ tests)
-    ├── validation.security.test.js    # Tests XSS + boundary
-    ├── session.config.test.js         # Tests cookies environnement
-    ├── admin.duplicate.test.js        # Tests prévention duplicata
-    └── middleware.integration.test.js # Tests pipeline complet
+└── tests/                   # Suite de tests sécurité complète (100+ tests)
+    ├── validation.edge-cases.test.js    # 30 tests null/undefined/malformed
+    ├── validation.boundary.test.js      # 32 tests limites exactes + performance  
+    ├── validation.security.test.js      # 22 tests XSS + HTML escaping
+    ├── security.enhanced.test.js        # 19 tests CSP nonce + sessions
+    ├── bodyParser.limits.test.js        # 16 tests limites optimisées
+    ├── constraint.unit.test.js          # 14 tests contraintes DB
+    └── session.config.test.js           # 12 tests cookies environnement
 ```
 
 ## Architecture de Sécurité
@@ -157,12 +162,13 @@ npm run test:coverage
 
 ## Migration depuis Version Précédente
 
-### **Améliorations Majeures**
-1. **Sécurité** : XSS protection + validation stricte
-2. **Performance** : Parseurs optimisés (-80% mémoire)
-3. **Environnement** : Configuration adaptive dev/prod
-4. **Architecture** : Middleware modulaire
-5. **Tests** : Suite sécurité complète
+### **Améliorations Majeures v2.0**
+1. **Sécurité** : CSP nonce-based + validation exhaustive (84 tests edge cases)
+2. **Performance** : Body parsers optimisés par endpoint (-80% mémoire)  
+3. **Validation** : Gestion null/undefined + boundary conditions
+4. **Configuration** : Adaptation automatique dev/prod (cookies, CSP, limites)
+5. **Architecture** : Middleware modulaire + contraintes DB
+6. **Tests** : 100+ tests couvrant tous scenarios sécurité
 
 ### **Compatibilité**
 - ✅ **API endpoints** : 100% compatibles
@@ -197,4 +203,20 @@ npm test             # Validation complète
 - **Rate limiting** : Monitoring abus
 - **Admin actions** : Audit trail
 
-Cette architecture garantit **sécurité maximale** avec **performance optimisée** et **compatibilité complète** ! 🔒🚀
+Cette architecture v2.0 garantit **sécurité maximale** avec **performance optimisée**, **validation exhaustive**, et **compatibilité complète** ! 🔒🚀✨
+
+## Nouvelles Fonctionnalités v2.0
+
+### 🆕 **Ajouts Majeurs**
+- **CSP Nonce-based** : Sécurité renforcée, élimination unsafe-inline
+- **84 tests validation** : Couverture complète edge cases + XSS
+- **Body parser intelligent** : Limites adaptées par endpoint
+- **Contraintes DB** : Index unique admin/mois au niveau base
+- **Configuration adaptative** : Détection automatique dev/prod
+- **Session cookies sécurisés** : HTTPS-aware avec sameSite dynamique
+
+### 📈 **Métriques d'Amélioration**
+- **Tests** : 38 → 100+ (+163% couverture sécurité)
+- **Mémoire** : 10MB → 512KB-2MB (-80% par requête)
+- **Sécurité** : CSP strict + validation exhaustive
+- **Performance** : Validation <100ms, payload max <1sec

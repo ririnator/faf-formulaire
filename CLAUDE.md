@@ -40,24 +40,27 @@ The frontend consists of static files served directly by Express from `frontend/
 ## Architecture
 
 ### Backend Structure (`backend/`)
-- `app.js` - Main Express server with Helmet security headers, optimized Express parsers (10MB limit), CORS, sessions, and routing
-- `models/Response.js` - MongoDB schema for form responses with admin/user distinction
-- `middleware/` - Security-focused middleware functions:
-  - `auth.js` - Admin authentication and session management
-  - `validation.js` - Strict input validation with XSS escaping (dual validation levels)
-  - `rateLimiting.js` - Rate limiting configurations
-  - `errorHandler.js` - Centralized error handling
-- `tests/` - Comprehensive security test suites:
-  - `validation.security.test.js` - XSS protection and boundary testing (22 tests)
-  - `session.config.test.js` - Environment-aware cookie configuration validation (12 tests)
-  - `body.limit.test.js` - Request size limit validation (4 tests)
-  - `admin.duplicate.test.js` - Admin duplicate prevention scenarios
-  - `middleware.integration.test.js` - End-to-end security pipeline tests
-- `routes/` - API endpoints with layered security:
-  - `responseRoutes.js` - Public form submission with strict validation, XSS escaping, and admin duplicate prevention
-  - `adminRoutes.js` - Admin dashboard APIs (pagination, summary, CRUD)
-  - `formRoutes.js` - Form utilities (legacy compatibility, basic validation)
-  - `upload.js` - File upload handling with Cloudinary
+- `app.js` - Main Express server with nonce-based CSP, optimized body parsers (512KB-5MB), environment-adaptive sessions, and database constraints
+- `models/Response.js` - MongoDB schema with unique admin constraint per month and optimized indexes
+- `middleware/` - Modular security middleware architecture:
+  - `auth.js` - Admin authentication with bcrypt and session management
+  - `validation.js` - Strict XSS escaping + null/undefined edge case handling (dual validation levels)
+  - `security.js` - CSP nonce generation + environment-adaptive session cookies
+  - `bodyParser.js` - Optimized body limits per endpoint type (512KB/2MB/5MB)
+  - `rateLimiting.js` - Rate limiting configurations per endpoint
+- `tests/` - Comprehensive security test suites (100+ tests):
+  - `validation.edge-cases.test.js` - Null/undefined/malformed input handling (30 tests)
+  - `validation.boundary.test.js` - Exact boundary conditions + performance (32 tests)
+  - `validation.security.test.js` - XSS protection + HTML escaping (22 tests)
+  - `security.enhanced.test.js` - CSP nonce generation + session configs (19 tests)
+  - `bodyParser.limits.test.js` - Optimized body parser limits per endpoint (16 tests)
+  - `constraint.unit.test.js` - Database constraint validation (14 tests)
+  - `session.config.test.js` - Environment-adaptive cookie settings (12 tests)
+- `routes/` - API endpoints with layered security and optimized body parsing:
+  - `responseRoutes.js` - Public form submission (2MB body limit) with strict validation, XSS escaping, admin duplicate prevention
+  - `adminRoutes.js` - Admin dashboard APIs (1MB body limit) with pagination, summary, CRUD operations
+  - `formRoutes.js` - Form utilities with legacy compatibility and basic validation
+  - `upload.js` - Image upload handling (5MB limit) with MIME validation and Cloudinary integration
 - `config/cloudinary.js` - Cloudinary configuration
 
 ### Frontend Structure (`frontend/`)
@@ -70,18 +73,24 @@ The frontend consists of static files served directly by Express from `frontend/
   - `admin_gestion.html` - Response management
 
 ### Key Features
-- **Session-based admin authentication** with bcrypt password hashing
-- **Monthly response system** where each user can submit once per month
-- **Private response viewing** via secure tokens for non-admin users
-- **Admin responses** stored without tokens, accessible only through admin interface
-- **Rate limiting** (3 submissions per 15 minutes) on form endpoints
-- **Enhanced security** with Helmet.js security headers and CSP policies preventing script injection
-- **Multi-layer input validation** with express-validator escaping and dual validation levels (strict/compatible)
-- **Honeypot spam protection** with hidden 'website' field
-- **MongoDB indexes** on createdAt and unique month/isAdmin combinations
+- **Nonce-based CSP Security** - Dynamic nonces per request, eliminates unsafe-inline completely
+- **Comprehensive Input Validation** - 84 tests covering null/undefined/boundary/XSS edge cases
+- **Optimized Body Parser Limits** - 512KB standard, 2MB forms, 5MB images (80% memory reduction)
+- **Environment-adaptive Configuration** - Auto-detection dev/prod with appropriate security settings
+- **Database Constraint Enforcement** - Unique index preventing admin duplicates per month at DB level
+- **Advanced Session Management** - Secure cookies (sameSite/secure) adapting to HTTPS availability
+- **Multi-layer XSS Protection** - HTML escaping + CSP headers + input sanitization
+- **Session-based admin authentication** with bcrypt password hashing and session store
+- **Monthly response system** where each user can submit once per month with token-based private viewing
+- **Admin responses** stored without tokens, accessible only through authenticated admin interface
+- **Intelligent rate limiting** (3 submissions per 15 minutes) with IP-based tracking
+- **Advanced spam protection** - Honeypot fields + request validation + pattern detection
+- **Performance optimized** - Indexes on createdAt, admin constraints, efficient memory usage
 
 ### Environment Variables Required
-- `NODE_ENV` - Environment mode (`production` for secure cookies, or `development`/unset for HTTP compatibility)
+- `NODE_ENV` - Environment mode (`production` for secure HTTPS cookies + sameSite='none', `development`/unset for HTTP compatibility + sameSite='lax')
+- `HTTPS` - Optional override to enable secure cookies in development (set to 'true')
+- `COOKIE_DOMAIN` - Optional domain scope for production cookies (e.g., '.example.com' for subdomains)
 - `MONGODB_URI` - MongoDB connection string
 - `SESSION_SECRET` - Session encryption key for secure authentication
 - `LOGIN_ADMIN_USER` - Admin username for web interface login

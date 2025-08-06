@@ -7,7 +7,6 @@ const path          = require('path');
 const session       = require('express-session');
 const cors          = require('cors');
 const helmet        = require('helmet');
-const MongoStore    = require('connect-mongo');
 
 const formRoutes     = require('./routes/formRoutes');
 const responseRoutes = require('./routes/responseRoutes');
@@ -15,25 +14,14 @@ const adminRoutes    = require('./routes/adminRoutes');
 const uploadRoutes   = require('./routes/upload');
 const Response       = require('./models/Response');
 const { ensureAdmin, authenticateAdmin, destroySession } = require('./middleware/auth');
+const { createSecurityMiddleware, createSessionOptions } = require('./middleware/security');
+const { createStandardBodyParser, createPayloadErrorHandler } = require('./middleware/bodyParser');
 
 const app  = express();
 const port = process.env.PORT || 3000;
 
-// 1) Security headers
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "cdn.tailwindcss.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "cdn.tailwindcss.com", "cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "res.cloudinary.com", "data:"],
-      fontSrc: ["'self'"],
-      connectSrc: ["'self'"],
-      frameSrc: ["'none'"]
-    }
-  },
-  crossOriginEmbedderPolicy: false
-}));
+// 1) Enhanced Security headers with nonce-based CSP
+app.use(createSecurityMiddleware());
 
 // 2) CORS – n'autorise que votre front
 app.use(cors({
@@ -45,35 +33,30 @@ app.use(cors({
 }));
 app.set('trust proxy', 1);
 
-// 3) Sessions
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    collectionName: 'sessions',
-    ttl: 14 * 24 * 60 * 60,    // 14 jours
-    autoRemove: 'native'
-  }),
-  cookie: {
-    maxAge: 1000 * 60 * 60, // 1 heure
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    secure: process.env.NODE_ENV === 'production'
-  }
-}));
+// 3) Enhanced Sessions with better dev/prod handling
+app.use(session(createSessionOptions()));
 
-// 4) Parsers
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+// 4) Optimized Body Parsers (512KB standard limit)
+app.use(createStandardBodyParser());
+app.use(createPayloadErrorHandler());
 
 // 5) Connexion à MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log("Connecté à la base de données");
+    
+    // Index for performance (chronological sorting)
     await mongoose.connection.collection('responses')
       .createIndex({ createdAt: -1 });
     console.log("Index créé sur responses.createdAt");
+    
+    // Unique constraint to prevent admin duplicates per month
+    await mongoose.connection.collection('responses')
+      .createIndex(
+        { month: 1, isAdmin: 1 }, 
+        { unique: true, partialFilterExpression: { isAdmin: true } }
+      );
+    console.log("Index unique créé sur responses.{month, isAdmin} avec filtre admin");
   })
   .catch(err => console.error("Erreur de connexion à la DB :", err));
 

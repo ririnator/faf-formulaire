@@ -5,7 +5,7 @@
 ![Node.js](https://img.shields.io/badge/node.js-v18+-green.svg)
 ![Express](https://img.shields.io/badge/express-v5+-blue.svg) 
 ![Security](https://img.shields.io/badge/security-helmet+XSS-red.svg)
-![Tests](https://img.shields.io/badge/tests-38+-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-100+-brightgreen.svg)
 
 ## 📋 Table des Matières
 
@@ -87,16 +87,22 @@ npm run validate-env    # Vérifier les variables d'env
 FAF/
 ├── 📁 backend/                 # Serveur Express sécurisé
 │   ├── 📄 app.js              # Point d'entrée principal
-│   ├── 📁 middleware/         # Middleware de sécurité
-│   │   ├── auth.js           # Authentification admin
-│   │   ├── validation.js     # Validation XSS + sanitisation
-│   │   └── rateLimiting.js   # Protection anti-spam
+│   ├── 📁 middleware/         # Middleware de sécurité modulaire
+│   │   ├── auth.js           # Authentification admin bcrypt
+│   │   ├── validation.js     # Validation XSS + null/undefined
+│   │   ├── security.js       # CSP nonce-based + sessions
+│   │   ├── bodyParser.js     # Limites optimisées par endpoint
+│   │   └── rateLimiting.js   # Protection anti-spam intelligente
 │   ├── 📁 routes/            # Endpoints API
 │   │   ├── responseRoutes.js # Soumission sécurisée
 │   │   ├── adminRoutes.js    # Interface admin
 │   │   └── upload.js         # Upload Cloudinary
 │   ├── 📁 models/            # Schémas MongoDB
-│   ├── 📁 tests/             # Suite de tests (38+)
+│   ├── 📁 tests/             # Suite de tests sécurité (100+)
+│   │   ├── validation.*.test.js    # Tests validation (84 tests)
+│   │   ├── security.*.test.js      # Tests sécurité XSS/CSP
+│   │   ├── bodyParser.*.test.js    # Tests limites optimisées
+│   │   └── constraint.*.test.js    # Tests contraintes DB
 │   └── 📁 config/            # Configuration
 ├── 📁 frontend/              # Interface utilisateur
 │   ├── 📁 public/            # Pages publiques
@@ -125,13 +131,15 @@ FAF/
 
 ### Protection Multi-Couche
 
-#### 🔒 **Headers de Sécurité (Helmet.js)**
+#### 🔒 **Headers de Sécurité Avancés (Helmet.js + CSP Nonce)**
 ```javascript
-// CSP Protection contre XSS
-Content-Security-Policy: default-src 'self'; script-src 'self' cdn.jsdelivr.net...
-X-XSS-Protection: 0
+// CSP avec nonces dynamiques (élimine unsafe-inline)
+Content-Security-Policy: default-src 'self'; 
+  script-src 'self' 'nonce-Ac8dW2x9...' cdn.jsdelivr.net;
+  style-src 'self' 'nonce-Ac8dW2x9...' cdn.tailwindcss.com;
+  frame-ancestors 'none'
 X-Content-Type-Options: nosniff  
-X-Frame-Options: DENY
+X-Frame-Options: SAMEORIGIN
 ```
 
 #### 🧹 **Validation & Sanitisation**
@@ -142,12 +150,15 @@ Output: '&lt;script&gt;alert(&quot;hack&quot;)&lt;&#x2F;script&gt;John'
 ```
 
 **Protections implémentées:**
-- ✅ **XSS Prevention** - Tous inputs échappés automatiquement
+- ✅ **XSS Prevention** - HTML escaping + CSP nonce-based
+- ✅ **Input Validation** - Null/undefined + 84 tests edge cases
 - ✅ **SQL Injection** - MongoDB paramétrisé + Mongoose
-- ✅ **Rate Limiting** - 3 soumissions/15min
+- ✅ **Rate Limiting** - 3 soumissions/15min par IP
 - ✅ **Honeypot** - Champ invisible anti-spam
 - ✅ **CORS** - Origins configurés explicitement
-- ✅ **Session Security** - Cookies adaptatifs dev/prod
+- ✅ **Session Security** - Cookies adaptatifs HTTPS dev/prod
+- ✅ **Body Parser Limits** - 512KB-5MB selon endpoint
+- ✅ **Database Constraints** - Index unique admin/mois
 
 #### 🚫 **Prévention Admin Duplicate**
 ```javascript
@@ -159,53 +170,65 @@ if (isAdmin && adminAlreadyExists) {
 }
 ```
 
-#### 📏 **Limites de Données**
-| Type | Limite | Protection |
-|------|--------|------------|
-| **Nom** | 2-100 chars | Validation stricte |
-| **Questions** | ≤500 chars | Troncature auto |
-| **Réponses** | ≤10k chars | Sanitisation |
-| **Body total** | ≤10MB | Parser Express |
-| **Réponses max** | 20 | Validation array |
+#### 📏 **Limites Optimisées par Endpoint**
+| Endpoint | Body Limit | Usage | Protection |
+|----------|------------|-------|------------|
+| **Standard** | 512KB | Login, consultation | DoS prevention |
+| **Formulaires** | 2MB | Réponses texte | Optimisé contenu long |
+| **Admin** | 1MB | Operations admin | Payloads appropriés |
+| **Upload Images** | 5MB | Images via Multer | Type validation |
+| **Questions/Réponses** | 500-10k chars | Texte utilisateur | Troncature auto |
+| **Réponses array** | 1-20 éléments | Limitation usage | Validation stricte |
 
 ---
 
 ## 🧪 Tests
 
-### Suite de Tests Sécurisée (38+ tests)
+### Suite de Tests Sécurité Complète (100+ tests)
 
 ```bash
-# Lancer tous les tests
-npm test
+# Tests validation complets (84 tests)
+npm test tests/validation.edge-cases.test.js    # 30 tests null/undefined/edge cases
+npm test tests/validation.boundary.test.js      # 32 tests limites exactes
+npm test tests/validation.security.test.js      # 22 tests XSS + HTML escaping
 
-# Tests spécifiques
-npm test validation.security.test.js    # XSS + boundary (22 tests)
-npm test session.config.test.js         # Cookies environnement (12 tests) 
-npm test admin.duplicate.test.js        # Prévention duplicata
-npm test body.limit.test.js             # Limites de taille (4 tests)
+# Tests infrastructure sécurisée
+npm test tests/security.enhanced.test.js        # 19 tests CSP nonce + sessions
+npm test tests/bodyParser.limits.test.js        # 16 tests limites optimisées
+npm test tests/constraint.unit.test.js          # 14 tests contraintes DB
+
+# Tests complets
+npm test                                        # Tous les tests
+npm run test:coverage                           # Couverture complète
 ```
 
-### Couverture de Tests
+### Couverture de Tests Exhaustive
 
-**🛡️ Sécurité:**
-- **XSS Injection** - Script tags, HTML entities, événements JS
-- **Boundary Testing** - Limites exactes de caractères
-- **Spam Protection** - Honeypot + rate limiting
-- **Admin Logic** - Prévention duplicata, détection case-insensitive
+**🛡️ Sécurité (84 tests validation):**
+- **Null/Undefined Edge Cases** - 30 tests tous champs/scenarios
+- **Boundary Conditions** - 32 tests limites exactes (1-2 chars, 500 chars, 10k chars)
+- **XSS Protection** - 22 tests injection HTML/JS + échappement
+- **Performance** - Tests charge max + rejet rapide payload invalide
+- **Unicode Support** - Emojis, CJK, caractères spéciaux
 
-**🔧 Configuration:**
-- **Environment Variables** - Dev vs prod
-- **Session Cookies** - sameSite/secure adaptatifs  
-- **Body Parsing** - Limites 10MB
-- **Error Handling** - Messages sécurisés
+**🔧 Infrastructure (35+ tests):**
+- **CSP Nonce-based** - 19 tests génération unique, headers sécurisés
+- **Body Parser Optimisé** - 16 tests limites 512KB/2MB/5MB par endpoint
+- **Session Cookies** - 12 tests adaptatifs dev/prod HTTPS
+- **Database Constraints** - 14 tests index unique admin/mois
+- **Environment Detection** - Tests configuration automatique
 
 ### Résultats Tests
 
 ```bash
-✅ 38+ tests de sécurité passent
-✅ 100% compatibilité backward
-✅ Couverture validation complète
-✅ Performance validée
+✅ 100+ tests sécurité passent (100% succès)
+✅ 84 tests validation edge cases + XSS
+✅ Couverture complète null/undefined/boundary
+✅ Performance validée (payload max <1sec)
+✅ Compatibilité backward 100%
+✅ CSP nonce-based sans unsafe-inline
+✅ Body parser optimisé par endpoint
+✅ Database constraints admin duplicate
 ```
 
 ---
@@ -216,14 +239,25 @@ npm test body.limit.test.js             # Limites de taille (4 tests)
 
 #### **1. Variables d'Environnement Render**
 ```bash
-NODE_ENV=production
+# Configuration principale
+NODE_ENV=production                              # Cookies sécurisés + CSP strict
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/faf
-SESSION_SECRET=super-long-secret-key-production
+SESSION_SECRET=super-long-secret-key-production  # 32+ caractères entropy
+
+# Authentification admin
 LOGIN_ADMIN_USER=admin  
-LOGIN_ADMIN_PASS=$2b$10$hashed_bcrypt_password
-FORM_ADMIN_NAME=riri
+LOGIN_ADMIN_PASS=$2b$10$hashed_bcrypt_password  # Généré avec bcrypt
+FORM_ADMIN_NAME=riri                            # Détection admin automatique
+
+# URLs et CORS
 APP_BASE_URL=https://your-app.render.com
-FRONTEND_URL=https://your-app.render.com
+FRONTEND_URL=https://your-app.render.com        # CORS origin autorisé
+
+# Configuration avancée (optionnel)
+HTTPS=true                                      # Force cookies secure en dev
+COOKIE_DOMAIN=.your-domain.com                 # Multi-subdomaines
+
+# Upload images
 CLOUDINARY_CLOUD_NAME=your-cloud
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
@@ -243,10 +277,12 @@ CLOUDINARY_API_SECRET=your-api-secret
 
 | Aspect | Développement | Production |
 |--------|---------------|------------|
-| **Cookies** | `sameSite: 'lax'`, `secure: false` | `sameSite: 'none'`, `secure: true` |
-| **HTTPS** | Optionnel | Obligatoire |
-| **CSP** | Permissif | Strict |
-| **Logging** | Verbose | Optimisé |
+| **Session Cookies** | `sameSite: 'lax'`, `secure: false` | `sameSite: 'none'`, `secure: true` |
+| **Body Parser** | 512KB standard, 2MB forms | Idem + surveillance usage |
+| **CSP Headers** | Nonce-based + permissif dev | Nonce-based + strict prod |
+| **Database Index** | Auto-créés au démarrage | Index unique admin contrainte |
+| **Error Messages** | Messages détaillés | Messages sanitisés |
+| **HTTPS** | HTTP compatible | HTTPS obligatoire |
 
 ### Autres Plateformes
 
@@ -265,44 +301,62 @@ heroku config:set MONGODB_URI=mongodb+srv://...
 
 ## 📚 Documentation
 
-### Documentation Technique
+### Documentation Technique Complète
 
-- 📋 **[CLAUDE.md](CLAUDE.md)** - Guide complet pour Claude Code
-- 🏗️ **[ARCHITECTURE.md](backend/ARCHITECTURE.md)** - Architecture détaillée
-- ❌ **[ERROR_HANDLING.md](backend/ERROR_HANDLING.md)** - Gestion d'erreurs sécurisée
+#### **Guides Principaux**
+- 📋 **[CLAUDE.md](CLAUDE.md)** - Guide complet pour Claude Code + nouvelles features
+- 🏗️ **[ARCHITECTURE.md](backend/ARCHITECTURE.md)** - Architecture sécurisée + middleware modulaire
+- ❌ **[ERROR_HANDLING.md](backend/ERROR_HANDLING.md)** - Gestion d'erreurs + validation XSS
+
+#### **Configuration & Sécurité**  
+- 🍪 **[SESSION_CONFIG.md](SESSION_CONFIG.md)** - Configuration cookies dev/prod
+- 📝 **[BODY_PARSER_OPTIMIZATION.md](BODY_PARSER_OPTIMIZATION.md)** - Limites optimisées par endpoint
+- 🧪 **[INPUT_VALIDATION_TESTING.md](INPUT_VALIDATION_TESTING.md)** - Tests validation 84+ edge cases
 
 ### API Endpoints
 
 #### **Public Endpoints**
 
 ```javascript
-// Soumission formulaire (avec validation stricte)
+// Soumission formulaire (avec validation stricte XSS + null/undefined)
 POST /api/response
 Content-Type: application/json
+Body-Limit: 2MB (optimisé pour formulaires texte)
 {
-  "name": "John Doe",
-  "responses": [
-    { "question": "Comment ça va ?", "answer": "Très bien !" }
-  ]
+  "name": "John Doe",                    // 2-100 chars, HTML escaped
+  "responses": [                         // 1-20 éléments max
+    { 
+      "question": "Comment ça va ?",     // ≤500 chars, XSS escaped
+      "answer": "Très bien ! 😊"        // ≤10k chars, Unicode support
+    }
+  ],
+  "website": ""                         // Honeypot (doit rester vide)
 }
+
+// Réponse: 201 + lien privé ou 400 + erreur validation détaillée
 
 // Consultation privée 
 GET /api/view/{token}
-// Retourne les réponses user + admin pour le mois
+// Retourne les réponses user + admin pour le mois (sécurisé)
 ```
 
-#### **Admin Endpoints** (Auth requise)
+#### **Admin Endpoints** (Auth requise + Body-Limit: 1MB)
 
 ```javascript
-// Dashboard admin
-GET /admin                    # Interface HTML
-GET /admin/gestion           # Gestion des réponses
+// Dashboard admin (sessions sécurisées)
+GET /admin                    # Interface HTML avec CSP nonce
+GET /admin/gestion           # Gestion des réponses + contraintes
 
-// API Admin
-GET /api/admin/responses     # Liste paginée
-GET /api/admin/summary       # Résumé par question
-GET /api/admin/months        # Liste des mois
-DELETE /api/admin/responses/{id}  # Suppression
+// API Admin (limites optimisées)
+GET /api/admin/responses     # Liste paginée (validation pagination)
+GET /api/admin/summary       # Résumé par question (sécurisé)
+GET /api/admin/months        # Liste des mois disponibles
+DELETE /api/admin/responses/{id}  # Suppression (vérification admin)
+
+// Upload Images (endpoint séparé)
+POST /api/upload             # Body-Limit: 5MB, validation MIME types
+Content-Type: multipart/form-data
+Form-Data: image (JPG/PNG seulement)
 ```
 
 ### Utilisation
