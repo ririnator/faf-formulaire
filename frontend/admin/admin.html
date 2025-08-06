@@ -6,7 +6,7 @@
   <title>Interface d'administration – Résumé des réponses</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-  <script src="/admin/assets/core-utils.js"></script>
+  <script type="module" src="/admin/faf-admin.js"></script>
 
   <style>
     /* overlay full‐screen */
@@ -75,17 +75,8 @@
     <div id="summaryContainer"></div>
   </div>
 
-  <script>
-    // Chargement asynchrone d'admin-utils.js
-    async function loadAdminUtils() {
-      return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = '/admin/assets/admin-utils.js';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Impossible de charger admin-utils.js'));
-        document.head.appendChild(script);
-      });
-    }
+  <script type="module">
+    import { AdminAPI, Utils, UI, Charts } from '/admin/faf-admin.js';
 
     // Configuration constantes
     const CONFIG = {
@@ -109,25 +100,14 @@
     // Initialiser les variables CSS à partir de CONFIG
     document.documentElement.style.setProperty('--lightbox-z-index', CONFIG.lightbox.zIndex);
 
-    // Fonction d'alerte avec hiérarchie de fallback améliorée
+    // Fonction d'alerte simplifiée utilisant le module FAF
     function safeAlert(message, type = 'error') {
-      // Priorité 1: showAlert (admin-utils.js) si disponible
-      if (typeof showAlert === 'function') {
-        return showAlert(message, type);
-      }
-      
-      // Priorité 2: coreAlert (core-utils.js) si disponible
-      if (typeof coreAlert === 'function') {
-        return coreAlert(message, type);
-      }
-      
-      // Priorité 3: alert basique
-      alert(`${type === 'error' ? '❌' : '✅'} ${message}`);
+      UI.showAlert(message, type);
     }
 
     // 1. Charger la liste des mois
     async function loadMonths() {
-      const months = await fetchWithErrorHandling(
+      const months = await AdminAPI.request(
         '/api/admin/months',
         { headers: { 'Content-Type': 'application/json' } },
         'Impossible de charger la liste des mois'
@@ -150,7 +130,7 @@
       const month = document.getElementById('monthFilter').value;
       if (!month) return;
       
-      const summary = await fetchWithErrorHandling(
+      const summary = await AdminAPI.request(
         `/api/admin/summary?month=${month}`,
         { headers: { 'Content-Type': 'application/json' } },
         'Impossible de charger le résumé'
@@ -179,19 +159,19 @@
       // Titre (décoder les entités HTML)
       const h2 = document.createElement('h2');
       h2.className = "text-lg font-bold mb-2";
-      h2.textContent = window.unescapeHTML ? window.unescapeHTML(question) : question;
+      h2.textContent = Utils.unescapeHTML(question);
       card.appendChild(h2);
 
       if (question === CONFIG.pieQuestion) {
         // Graphique en camembert
-        const chartWrapper = createPieChart(items, {
+        const chartWrapper = Charts.createPieChart(items, {
           chartWidth: CONFIG.chart.width,
           chartHeight: CONFIG.chart.height
         });
         card.appendChild(chartWrapper);
       } else {
         // Liste textuelle ou images
-        const answersList = createAnswersList(items, CONFIG.image);
+        const answersList = Charts.createAnswersList(items, CONFIG.image);
         card.appendChild(answersList);
       }
 
@@ -204,8 +184,8 @@
 
     (async () => {
       try {
-        // Charger admin-utils.js en premier
-        await loadAdminUtils();
+        // Initialiser l'API FAF
+        await AdminAPI.init();
         
         const months = await loadMonths();
         if (months.length) {
