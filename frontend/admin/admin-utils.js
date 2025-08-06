@@ -164,6 +164,44 @@ function escapeHTML(text) {
 }
 
 /**
+ * Décode uniquement les entités HTML sûres (liste blanche)
+ * @param {string} text - Texte contenant des entités HTML
+ * @returns {string} - Texte avec entités décodées
+ */
+function unescapeHTML(text) {
+  if (!text || typeof text !== 'string') return text || '';
+  
+  // Approche liste blanche : décoder uniquement les entités communes et sûres
+  const safeEntityMap = {
+    '&#x27;': "'",
+    '&#39;': "'",
+    '&apos;': "'",
+    '&quot;': '"',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&nbsp;': ' ',
+    '&eacute;': 'é',
+    '&egrave;': 'è',
+    '&ecirc;': 'ê',
+    '&agrave;': 'à',
+    '&acirc;': 'â',
+    '&ugrave;': 'ù',
+    '&ucirc;': 'û',
+    '&icirc;': 'î',
+    '&ocirc;': 'ô',
+    '&ccedil;': 'ç'
+  };
+  
+  let result = text;
+  for (const [entity, char] of Object.entries(safeEntityMap)) {
+    result = result.replace(new RegExp(entity, 'g'), char);
+  }
+  
+  return result;
+}
+
+/**
  * Formate une date au format français
  * @param {string|Date} date - Date à formater
  * @returns {string} - Date formatée
@@ -303,7 +341,8 @@ function createAnswersList(items, config = {}) {
       li.appendChild(img);
       li.appendChild(document.createTextNode(` ${user}`));
     } else {
-      li.textContent = `${user} : ${answer}`;
+      // Décoder les entités HTML pour un affichage correct
+      li.textContent = `${user} : ${unescapeHTML(answer)}`;
     }
 
     ul.appendChild(li);
@@ -377,6 +416,7 @@ if (typeof module !== 'undefined' && module.exports) {
     fetchWithErrorHandling,
     fetchCSRFToken,
     escapeHTML,
+    unescapeHTML,
     formatDateFR,
     debounce,
     createPieChart,
