@@ -99,6 +99,14 @@ app.get('/admin', ensureAdmin, (req, res) => {
 app.get('/admin/gestion', ensureAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin/admin_gestion.html'));
 });
+
+// Assets JavaScript admin - accessible si session admin active
+app.get('/admin/assets/admin-utils.js', ensureAdmin, (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../frontend/admin/admin-utils.js'));
+});
+
+// Autres assets admin (CSS, images, etc.)
 app.use('/admin/assets', ensureAdmin,
   express.static(path.join(__dirname, '../frontend/admin'))
 );
