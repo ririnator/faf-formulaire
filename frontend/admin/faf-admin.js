@@ -190,9 +190,18 @@ export const Utils = {
    * Échappe les caractères HTML pour éviter XSS
    */
   escapeHTML(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (!text || typeof text !== 'string') return text || '';
+    
+    const escapeMap = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+      '/': '&#x2F;'
+    };
+    
+    return text.replace(/[&<>"'\/]/g, (char) => escapeMap[char]);
   },
 
   /**
@@ -274,12 +283,21 @@ export const UI = {
       overlay = document.createElement('div');
       overlay.id = 'loadingOverlay';
       overlay.className = 'loading-overlay hidden';
-      overlay.innerHTML = `
-        <div class="loading-content">
-          <div class="loading-spinner"></div>
-          <div class="loading-text">${message}</div>
-        </div>
-      `;
+      
+      // Créer le contenu sans innerHTML pour éviter XSS
+      const content = document.createElement('div');
+      content.className = 'loading-content';
+      
+      const spinner = document.createElement('div');
+      spinner.className = 'loading-spinner';
+      content.appendChild(spinner);
+      
+      const text = document.createElement('div');
+      text.className = 'loading-text';
+      text.textContent = message;
+      content.appendChild(text);
+      
+      overlay.appendChild(content);
       document.body.appendChild(overlay);
     }
     
