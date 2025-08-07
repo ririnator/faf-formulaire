@@ -179,8 +179,15 @@ export const Utils = {
     if (!text || typeof text !== 'string') return text || '';
     
     let result = text;
-    for (const [entity, char] of Object.entries(SAFE_HTML_ENTITIES)) {
-      result = result.replace(new RegExp(entity, 'g'), char);
+    // Compatibilité Safari : éviter Object.entries() et for...of
+    const entities = SAFE_HTML_ENTITIES;
+    for (let entity in entities) {
+      if (entities.hasOwnProperty(entity)) {
+        const char = entities[entity];
+        // Échapper les caractères spéciaux regex
+        const escapedEntity = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        result = result.replace(new RegExp(escapedEntity, 'g'), char);
+      }
     }
     
     return result;
