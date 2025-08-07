@@ -57,7 +57,9 @@ describe('🔧 FAF Admin Module Tests', () => {
     test('should maintain XSS protection patterns', () => {
       expect(moduleContent).toContain('textContent');
       expect(moduleContent).toContain('createElement');
-      expect(moduleContent).not.toContain('innerHTML');
+      // innerHTML ne doit apparaître que dans les commentaires, pas dans le code actif
+      const codeWithoutComments = moduleContent.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+      expect(codeWithoutComments).not.toContain('innerHTML');
     });
 
     test('should have HTTPS-only image validation', () => {
