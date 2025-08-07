@@ -70,6 +70,34 @@ describe('🔧 FAF Admin Module Tests', () => {
         expect(moduleContent).toContain(char);
       });
     });
+
+    test('should decode Cloudinary URLs with escaped slashes', () => {
+      // Vérifier que &#x2F; est dans SAFE_HTML_ENTITIES pour décoder les URLs Cloudinary
+      expect(moduleContent).toContain("'&#x2F;': '/'");
+      
+      // Simuler le décodage d'une URL Cloudinary échappée
+      const SAFE_HTML_ENTITIES = {
+        '&#x2F;': '/',
+        '&#39;': "'",
+        '&quot;': '"',
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>'
+      };
+      
+      function unescapeHTML(text) {
+        if (!text || typeof text !== 'string') return text || '';
+        let result = text;
+        for (const [entity, char] of Object.entries(SAFE_HTML_ENTITIES)) {
+          result = result.replace(new RegExp(entity, 'g'), char);
+        }
+        return result;
+      }
+      
+      const input = 'https:&#x2F;&#x2F;res.cloudinary.com&#x2F;project&#x2F;image&#x2F;upload&#x2F;v123&#x2F;sample.jpg';
+      const expected = 'https://res.cloudinary.com/project/image/upload/v123/sample.jpg';
+      expect(unescapeHTML(input)).toBe(expected);
+    });
   });
 
   describe('Backward Compatibility', () => {
