@@ -10,6 +10,233 @@ const { normalizeQuestion } = require('../utils/questionNormalizer');
 // Configuration constants
 const PIE_CHART_QUESTION = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
 
+// Monthly question order cache to avoid repeated DB queries
+const questionOrderCache = new Map(); // Key: "YYYY-MM", Value: { order: [...], timestamp: Date }
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
+const MAX_CACHE_SIZE = 50; // Prevent memory leaks from unlimited month caching
+
+/**
+ * Cache cleanup utility to prevent memory leaks
+ * Removes expired entries and enforces size limits
+ */
+function cleanupCache() {
+  const now = Date.now();
+  let removedCount = 0;
+  
+  // Remove expired entries
+  for (const [key, value] of questionOrderCache.entries()) {
+    if ((now - value.timestamp) > CACHE_TTL) {
+      questionOrderCache.delete(key);
+      removedCount++;
+    }
+  }
+  
+  // Enforce max cache size (LRU-style cleanup)
+  if (questionOrderCache.size > MAX_CACHE_SIZE) {
+    const entries = Array.from(questionOrderCache.entries());
+    // Sort by timestamp (oldest first)
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    
+    const toRemove = entries.slice(0, questionOrderCache.size - MAX_CACHE_SIZE);
+    toRemove.forEach(([key]) => {
+      questionOrderCache.delete(key);
+      removedCount++;
+    });
+  }
+  
+  if (removedCount > 0) {
+    console.log(`🧹 Cache cleanup: removed ${removedCount} entries, size: ${questionOrderCache.size}`);
+  }
+}
+
+// Periodic cache cleanup every 5 minutes
+setInterval(cleanupCache, 5 * 60 * 1000);
+
+/**
+ * Pre-warm cache for current month to improve initial performance
+ * Called on server startup and monthly
+ */
+async function preWarmCurrentMonth() {
+  try {
+    const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+    const match = {
+      createdAt: {
+        $gte: new Date(currentMonth + '-01'),
+        $lt: new Date(new Date(currentMonth + '-01').getFullYear(), 
+                     new Date(currentMonth + '-01').getMonth() + 1, 1)
+      }
+    };
+    
+    // Check if current month already cached
+    if (!questionOrderCache.has(currentMonth)) {
+      console.log(`🔥 Pre-warming cache for current month: ${currentMonth}`);
+      await getQuestionOrderForMonth(currentMonth, match, PIE_CHART_QUESTION);
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to pre-warm cache:', error.message);
+  }
+}
+
+// Pre-warm on startup (after 10s to allow DB connection)
+setTimeout(preWarmCurrentMonth, 10000);
+
+// Pre-warm monthly (on the 1st of each month at 1 AM)
+const now = new Date();
+const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 1, 0, 0);
+const timeToNextMonth = nextMonth.getTime() - now.getTime();
+setTimeout(() => {
+  preWarmCurrentMonth();
+  // Then repeat monthly
+  setInterval(preWarmCurrentMonth, 30 * 24 * 60 * 60 * 1000); // 30 days
+}, timeToNextMonth);
+
+/**
+ * Retrieves cached question order or fetches from database
+ * Implements intelligent caching with TTL to optimize performance
+ * 
+ * @param {string} monthKey - Month identifier (YYYY-MM or 'all')
+ * @param {Object} match - MongoDB match query for filtering responses
+ * @param {string} PIE_Q - The pie chart question to prioritize first
+ * @returns {Promise<string[]>} Array of questions in natural form order
+ */
+async function getQuestionOrderForMonth(monthKey, match, PIE_Q) {
+  const startTime = Date.now();
+  const now = Date.now();
+  const cached = questionOrderCache.get(monthKey);
+  
+  const logContext = {
+    month: monthKey,
+    cacheSize: questionOrderCache.size,
+    operation: 'getQuestionOrder'
+  };
+  
+  // Return cached order if valid and not expired
+  if (cached && (now - cached.timestamp) < CACHE_TTL) {
+    const cacheAge = Math.round((now - cached.timestamp) / 1000);
+    console.log(`📋 Cache HIT for ${monthKey} (age: ${cacheAge}s, questions: ${cached.order.length})`);
+    return cached.order;
+  }
+  
+  console.log(`📋 Cache MISS for ${monthKey}, fetching from database...`);
+  
+  // Fetch from database with performance tracking
+  let questionOrder = [];
+  let dbQueries = 0;
+  
+  try {
+    // Add PIE_Q first if it exists in the dataset
+    dbQueries++;
+    const hasPieData = await mongoose.connection.db
+      .collection('responses')
+      .countDocuments({ 
+        ...match, 
+        'responses.question': PIE_Q 
+      });
+    
+    if (hasPieData > 0) {
+      questionOrder.push(PIE_Q);
+      console.log(`📊 PIE_Q found in dataset (${hasPieData} responses)`);
+    }
+    
+    // Find first response for natural order
+    dbQueries++;
+    const firstResponse = await Response.findOne(match).sort({ createdAt: 1 });
+    
+    if (!firstResponse) {
+      console.warn(`⚠️ No responses found for month ${monthKey}`, logContext);
+      return questionOrder; // Return empty or PIE_Q only
+    }
+    
+    const responseInfo = {
+      id: firstResponse._id,
+      user: firstResponse.name,
+      createdAt: firstResponse.createdAt,
+      responseCount: firstResponse.responses?.length || 0
+    };
+    
+    console.log(`📋 Using first response as order reference:`, responseInfo);
+    
+    if (firstResponse.responses?.length) {
+      const validResponses = firstResponse.responses.filter(r => 
+        r && typeof r.question === 'string' && r.question.trim()
+      );
+      
+      const invalidCount = firstResponse.responses.length - validResponses.length;
+      if (invalidCount > 0) {
+        console.warn(`⚠️ Filtered out ${invalidCount} invalid questions from first response`, {
+          ...logContext,
+          responseId: firstResponse._id,
+          totalQuestions: firstResponse.responses.length,
+          validQuestions: validResponses.length
+        });
+      }
+      
+      if (validResponses.length > 0) {
+        let addedCount = 0;
+        let skippedCount = 0;
+        
+        validResponses.forEach((r, index) => {
+          if (r.question !== PIE_Q) {
+            const normalized = normalizeQuestion(r.question);
+            if (normalized) {
+              const alreadyExists = questionOrder.some(q => normalizeQuestion(q) === normalized);
+              if (!alreadyExists) {
+                questionOrder.push(r.question);
+                addedCount++;
+              } else {
+                skippedCount++;
+              }
+            }
+          }
+        });
+        
+        console.log(`📋 Question order established: ${addedCount} added, ${skippedCount} skipped duplicates`);
+      } else {
+        console.warn(`⚠️ First response has no valid questions`, {
+          ...logContext,
+          responseId: firstResponse._id
+        });
+      }
+    }
+    
+    // Cache the result with metadata
+    questionOrderCache.set(monthKey, {
+      order: questionOrder,
+      timestamp: now,
+      source: 'database',
+      dbQueries,
+      firstResponseId: firstResponse._id
+    });
+    
+    const duration = Date.now() - startTime;
+    console.log(`📋 Question order cached for ${monthKey}:`, {
+      questionsCount: questionOrder.length,
+      duration: `${duration}ms`,
+      dbQueries,
+      cacheSize: questionOrderCache.size
+    });
+    
+    return questionOrder;
+    
+  } catch (error) {
+    console.error(`❌ Error fetching question order for ${monthKey}:`, {
+      ...logContext,
+      error: error.message,
+      stack: error.stack,
+      duration: `${Date.now() - startTime}ms`
+    });
+    
+    // Return cached data if available, even if expired, as fallback
+    if (cached) {
+      console.warn(`⚠️ Using expired cache as fallback for ${monthKey}`);
+      return cached.order;
+    }
+    
+    // Last resort: return empty array or PIE_Q only
+    return questionOrder.length > 0 ? questionOrder : [];
+  }
+}
+
 // Apply admin-specific body parser (1MB limit) to all admin routes
 router.use(createAdminBodyParser());
 
@@ -139,8 +366,38 @@ router.route('/responses/:id')
     }
   });
 
-// GET /api/admin/summary?month=YYYY-MM
-// inchangé
+/**
+ * GET /api/admin/summary?month=YYYY-MM
+ * 
+ * Dynamic Question Ordering Algorithm:
+ * =====================================
+ * 
+ * PROBLEM: Previously used hardcoded QUESTION_ORDER array that required manual maintenance
+ * and could desync from actual form questions.
+ * 
+ * SOLUTION: Dynamic ordering based on natural form submission order
+ * 
+ * Algorithm Steps:
+ * 1. Check cache for month-specific question order (10min TTL)
+ * 2. If cache miss, find oldest response for the month
+ * 3. Use that response's question order as the canonical ordering
+ * 4. Always prioritize PIE_Q (pie chart question) first
+ * 5. Group similar questions using normalizeQuestion() for deduplication
+ * 6. Cache result to avoid repeated DB queries
+ * 7. Fallback to textSummary order if no valid first response found
+ * 
+ * Benefits:
+ * - Zero maintenance: automatically adapts to form changes
+ * - Performance: cached results reduce DB load
+ * - Robust: handles corrupted/invalid data gracefully
+ * - Consistent: same order across multiple API calls
+ * 
+ * Cache Strategy:
+ * - Key: month string (e.g. "2025-01" or "all")  
+ * - TTL: 10 minutes (balances performance vs data freshness)
+ * - Fallback: expired cache used if DB error occurs
+ * - Metadata: tracks source, query count, performance metrics
+ */
 router.get('/summary', async (req, res) => {
   try {
     const match = {};
@@ -198,9 +455,10 @@ router.get('/summary', async (req, res) => {
       .aggregate(textPipeline, { allowDiskUse: true })
       .toArray();
 
-    // Note: normalizeQuestion est maintenant importée du module utils/questionNormalizer
-
-    // Regrouper questions similaires après aggregation (plus efficace)
+    // STEP 1: Question Deduplication and Normalization
+    // ================================================
+    // Group similar questions (with accents, spacing variations) into canonical form
+    // Uses normalizeQuestion() to handle French accents, extra spaces, punctuation variations
     const textMap = {};
     const questionNormalizedMap = {}; // Map: normalized → première question originale
     
@@ -246,46 +504,61 @@ router.get('/summary', async (req, res) => {
       }
     }
 
-    // 🔧 FIX: Maintenir l'ordre correct des questions selon le formulaire
-    // 🔧 FIXED: Questions exactement comme dans index.html - copiées de la ligne 231-240 du form
-    const QUESTION_ORDER = [
-      "En rapide, comment ça va ?", // Q1 - PIE CHART (sera en premier)
-      "Possibilité d'ajouter un peu plus de détails à la question précédente :", // Q2
-      "Le pulse check mensuel... montre une photo de toi ce mois-ci", // Q3 - copié exactement du form
-      "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ?", // Q4 - copié exactement du form
-      "C'est quoi la reaction pic que tu utilises le plus en ce moment ?", // Q5 - copié exactement du form
-      "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ?", // Q6 - copié exactement du form
-      "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement)", // Q7 - copié exactement du form
-      "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ?", // Q8 - copié exactement du form
-      "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.)", // Q9 - copié exactement du form
-      "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre" // Q10 - copié exactement du form
-    ];
+    // STEP 2: Dynamic Question Ordering 
+    // =================================
+    // Get natural question order from first submission (cached for performance)
+    // This replaces the hardcoded QUESTION_ORDER array for zero-maintenance ordering
+    const monthKey = req.query.month || 'all';
+    let questionOrder = await getQuestionOrderForMonth(monthKey, match, PIE_Q);
+    
+    // STEP 3: Fallback Strategy
+    // ========================= 
+    // If no valid first response found, use textSummary order as emergency fallback
+    if (questionOrder.length <= (pieSummary.length > 0 ? 1 : 0)) {
+      console.warn('⚠️ No question order found from cache/first response, using textSummary fallback');
+      textSummary.forEach(({ question }) => {
+        if (question && question !== PIE_Q) {
+          const normalized = normalizeQuestion(question);
+          if (normalized) {
+            const alreadyExists = questionOrder.some(q => normalizeQuestion(q) === normalized);
+            if (!alreadyExists) {
+              questionOrder.push(question);
+            }
+          }
+        }
+      });
+    }
 
-    // Utiliser la même normalisation que pour le regroupement des questions
-    const normalizeForComparison = normalizeQuestion;
-
-    // Combiner toutes les questions
+    // STEP 4: Final Assembly and Sorting
+    // ==================================
+    // Combine PIE chart data (always first) with text questions in natural form order
     const allSummary = [...pieSummary, ...textSummary];
     
-    // Trier selon l'ordre du formulaire
+    // Apply the dynamic ordering: sort by position in natural form order
+    // Questions not found in reference order are placed at the end
     const sortedSummary = allSummary.sort((a, b) => {
-      const normalizedA = normalizeForComparison(a.question);
-      const normalizedB = normalizeForComparison(b.question);
+      const normalizedA = normalizeQuestion(a.question);
+      const normalizedB = normalizeQuestion(b.question);
       
-      // Chercher l'index dans QUESTION_ORDER
-      let indexA = QUESTION_ORDER.findIndex(q => normalizeForComparison(q) === normalizedA);
-      let indexB = QUESTION_ORDER.findIndex(q => normalizeForComparison(q) === normalizedB);
+      // Find position in the determined question order
+      let indexA = questionOrder.findIndex(q => normalizeQuestion(q) === normalizedA);
+      let indexB = questionOrder.findIndex(q => normalizeQuestion(q) === normalizedB);
       
-      // Si question non trouvée, mettre à la fin
-      if (indexA === -1) indexA = QUESTION_ORDER.length;
-      if (indexB === -1) indexB = QUESTION_ORDER.length;
+      // Unknown questions go to end (maintains stability)
+      if (indexA === -1) indexA = questionOrder.length;
+      if (indexB === -1) indexB = questionOrder.length;
       
-      return indexA - indexB;
+      return indexA - indexB; // Sort by natural form position
     });
 
     // Debug pour vérifier l'ordre (dev uniquement)
     if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
-      console.log('📋 Ordre des questions dans le résumé:');
+      console.log('📋 Ordre des questions basé sur première soumission:');
+      questionOrder.forEach((q, i) => {
+        const shortQ = q.substring(0, 50) + (q.length > 50 ? '...' : '');
+        console.log(`  ${i + 1}. ${shortQ}`);
+      });
+      console.log('📋 Résumé final:');
       sortedSummary.forEach((item, index) => {
         const shortQ = item.question.substring(0, 50) + (item.question.length > 50 ? '...' : '');
         console.log(`  ${index + 1}. ${shortQ}`);

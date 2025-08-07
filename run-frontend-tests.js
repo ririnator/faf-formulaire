@@ -12,10 +12,13 @@ const args = process.argv.slice(2);
 const isWatch = args.includes('--watch');
 const isCoverage = args.includes('--coverage');
 
+// Filtrer les arguments non-flags pour les passer à Jest
+const testFiles = args.filter(arg => !arg.startsWith('--'));
+
 // Commande Jest avec configuration frontend
 const jestArgs = [
-  '--config', 'frontend/tests/jest.config.js',
-  '--rootDir', '.'
+  '--config', path.join(__dirname, 'frontend/tests/jest.config.js'),
+  '--rootDir', __dirname
 ];
 
 if (isWatch) {
@@ -29,13 +32,18 @@ if (isCoverage) {
 // Ajouter verbose par défaut
 jestArgs.push('--verbose');
 
+// Ajouter les fichiers de test spécifiques si fournis
+if (testFiles.length > 0) {
+  jestArgs.push(...testFiles.map(f => `frontend/tests/${f}`));
+}
+
 console.log('🧪 Lancement des tests frontend...\n');
 console.log(`Commande: npx jest ${jestArgs.join(' ')}\n`);
 
-// Lancer Jest
+// Lancer Jest depuis le répertoire racine
 const jest = spawn('npx', ['jest', ...jestArgs], {
   stdio: 'inherit',
-  cwd: process.cwd()
+  cwd: __dirname
 });
 
 jest.on('error', (error) => {

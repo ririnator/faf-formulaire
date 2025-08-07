@@ -1,5 +1,5 @@
 module.exports = {
-  testEnvironment: 'jsdom',
+  testEnvironment: 'node',
   testMatch: [
     '**/frontend/tests/**/*.test.js'
   ],
@@ -21,8 +21,8 @@ module.exports = {
   // Timeouts pour tests d'intégration
   testTimeout: 10000,
   
-  // Mock des modules externes
-  moduleNameMapping: {
+  // Mock des modules externes (supprimé car non supporté dans Jest 30)
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/frontend/$1'
   }
 };
