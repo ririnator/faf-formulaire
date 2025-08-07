@@ -174,6 +174,7 @@ export class AdminAPI {
 export const Utils = {
   /**
    * Décode les entités HTML en utilisant une liste blanche sécurisée
+   * Version améliorée pour Safari avec gestion des URLs Cloudinary
    */
   unescapeHTML(text) {
     if (!text || typeof text !== 'string') return text || '';
@@ -181,12 +182,37 @@ export const Utils = {
     let result = text;
     // Compatibilité Safari : éviter Object.entries() et for...of
     const entities = SAFE_HTML_ENTITIES;
+    
+    // Safari Fix: Décodage spécifique des URLs Cloudinary en premier
+    if (result.includes('res.cloudinary.com') || result.includes('cloudinary.com')) {
+      // Décoder spécifiquement les slashes pour les URLs
+      result = result.replace(/&#x2F;/g, '/');
+      result = result.replace(/&#47;/g, '/');
+      result = result.replace(/&sol;/g, '/');
+    }
+    
     for (let entity in entities) {
       if (entities.hasOwnProperty(entity)) {
         const char = entities[entity];
         // Échapper les caractères spéciaux regex
         const escapedEntity = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         result = result.replace(new RegExp(escapedEntity, 'g'), char);
+      }
+    }
+    
+    // Safari Fix: Nettoyage final des URLs
+    if (result.includes('cloudinary.com')) {
+      // Supprimer les espaces en début/fin d'URL
+      result = result.trim();
+      // Valider que l'URL est bien formée
+      try {
+        const url = new URL(result);
+        if (url.hostname.includes('cloudinary.com')) {
+          result = url.toString();
+        }
+      } catch (e) {
+        // Si l'URL n'est pas valide, laisser tel quel
+        console.warn('🔧 Safari - URL Cloudinary malformée:', result);
       }
     }
     
@@ -363,16 +389,42 @@ export const UI = {
     const closeBtn = document.createElement('div');
     closeBtn.className = 'close-btn';
     closeBtn.textContent = '×';
-    closeBtn.onclick = () => document.body.removeChild(overlay);
+    closeBtn.onclick = () => {
+      if (overlay.parentNode) {
+        document.body.removeChild(overlay);
+      }
+    };
     overlay.appendChild(closeBtn);
 
-    // Image agrandie
+    // Image agrandie avec corrections Safari
     const bigImg = document.createElement('img');
-    bigImg.src = imageSrc;
-    bigImg.alt = imageAlt;
+    
+    // Safari Fix: Utiliser setAttribute() et paramètres CORS
+    bigImg.setAttribute('src', imageSrc);
+    bigImg.setAttribute('alt', imageAlt);
+    bigImg.setAttribute('crossorigin', 'anonymous');
+    bigImg.setAttribute('loading', 'eager');
+    
     bigImg.style.maxWidth = config.maxWidth || '90%';
     bigImg.style.maxHeight = config.maxHeight || '90%';
     bigImg.style.objectFit = 'contain';
+    
+    // Safari Fix: Gestion d'erreur pour lightbox
+    bigImg.onerror = () => {
+      console.error('🚨 Safari - Lightbox image failed:', imageSrc);
+      // Remplacer par un message d'erreur plutôt qu'une image fallback
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'text-white text-center p-8';
+      errorDiv.innerHTML = `
+        <div class="text-4xl mb-4">⚠️</div>
+        <div class="text-xl mb-2">Image indisponible</div>
+        <div class="text-sm opacity-75">${caption || imageAlt}</div>
+        <div class="text-xs opacity-50 mt-4">Safari - Problème de chargement Cloudinary</div>
+      `;
+      bigImg.style.display = 'none';
+      overlay.insertBefore(errorDiv, bigImg);
+    };
+    
     overlay.appendChild(bigImg);
 
     // Légende si fournie
@@ -384,10 +436,21 @@ export const UI = {
       overlay.appendChild(captionDiv);
     }
 
-    // Fermeture par clic en dehors de l'image
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) document.body.removeChild(overlay);
+    // Fermeture par clic en dehors de l'image (Safari compatible)
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay && overlay.parentNode) {
+        document.body.removeChild(overlay);
+      }
     });
+
+    // Fermeture par touche Escape (Safari)
+    const escapeHandler = function(e) {
+      if (e.key === 'Escape' && overlay.parentNode) {
+        document.body.removeChild(overlay);
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
 
     document.body.appendChild(overlay);
   }
@@ -463,28 +526,52 @@ export const Charts = {
       const isImage = Utils.isTrustedImageUrl(decodedAnswer);
 
       if (isImage) {
-        // Miniature cliquable
+        // Miniature cliquable avec corrections Safari
         const img = document.createElement('img');
-        img.src = decodedAnswer; // Utiliser l'URL décodée
-        img.alt = `Image de ${user}`;
+        
+        // Safari Fix 1: Utiliser setAttribute() au lieu d'assignation directe
+        img.setAttribute('src', decodedAnswer);
+        img.setAttribute('alt', `Image de ${user}`);
         img.className = `${config.thumbnailSize || 'w-16 h-16'} object-cover inline-block mr-2 border cursor-pointer`;
         
-        // Gestion erreur de chargement image avec fallback configuré
-        img.onerror = function() {
-          if (!this.dataset.fallbackApplied) {
-            this.dataset.fallbackApplied = 'true';
-            this.src = config.fallbackSvg || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAyOEMyNiAyNiAyOCAyNiAzMCAyOEMzMiAzMCAzNCAzMCAzNiAyOEMzOCAyNiA0MCAyNiA0MiAyOFY0MEgyMlYyOFoiIGZpbGw9IiNEMUQ1REIiLz4KPHA+SW1hZ2UgaW5kaXNwb25pYmxlPC9wPgo8L3N2Zz4K';
-            this.alt = `Image indisponible (${user})`;
-            this.title = 'Image Cloudinary inaccessible';
-          }
+        // Safari Fix 2: Ajouter crossorigin pour les domaines tiers
+        img.setAttribute('crossorigin', 'anonymous');
+        
+        // Safari Fix 3: Force le chargement immédiat
+        img.setAttribute('loading', 'eager');
+        
+        // Safari Fix 4: Gestion erreur améliorée avec timeout
+        let errorHandled = false;
+        const handleError = function() {
+          if (errorHandled) return;
+          errorHandled = true;
+          
+          console.warn('🚨 Safari - Image Cloudinary failed to load:', decodedAnswer);
+          this.setAttribute('src', config.fallbackSvg || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAyOEMyNiAyNiAyOCAyNiAzMCAyOEMzMiAzMCAzNCAzMCAzNiAyOEMzOCAyNiA0MCAyNiA0MiAyOFY0MEgyMlYyOFoiIGZpbGw9IiNEMUQ1REIiLz4KPHA+SW1hZ2UgaW5kaXNwb25pYmxlPC9wPgo8L3N2Zz4K');
+          this.setAttribute('alt', `Image indisponible (${user})`);
+          this.setAttribute('title', 'Image Cloudinary inaccessible sur Safari');
         };
+        
+        img.onerror = handleError;
+        
+        // Safari Fix 5: Timeout de sécurité (Safari peut ne pas déclencher onerror)
+        setTimeout(() => {
+          if (!img.complete && !errorHandled) {
+            console.warn('⏰ Safari - Image timeout:', decodedAnswer);
+            handleError.call(img);
+          }
+        }, 5000);
 
-        // Ouverture de la lightbox quand on clique
+        // Ouverture de la lightbox avec vérification de l'image
         img.onclick = () => {
-          UI.createLightbox(decodedAnswer, img.alt, user, {
-            maxWidth: config.lightboxMaxSize || '90%',
-            maxHeight: config.lightboxMaxSize || '90%'
-          });
+          if (!errorHandled && img.complete && img.naturalHeight !== 0) {
+            UI.createLightbox(decodedAnswer, img.alt, user, {
+              maxWidth: config.lightboxMaxSize || '90%',
+              maxHeight: config.lightboxMaxSize || '90%'
+            });
+          } else {
+            UI.showAlert(`Image indisponible pour ${user}`, 'error');
+          }
         };
 
         li.appendChild(img);

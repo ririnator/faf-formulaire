@@ -44,7 +44,7 @@ function createSecurityMiddleware() {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", `'nonce-${nonce}'`, "cdn.tailwindcss.com"],
           scriptSrc: ["'self'", `'nonce-${nonce}'`, "cdn.tailwindcss.com", "cdn.jsdelivr.net"],
-          imgSrc: ["'self'", "res.cloudinary.com", "data:"],
+          imgSrc: ["'self'", "res.cloudinary.com", "*.cloudinary.com", "data:"],
           fontSrc: ["'self'"],
           connectSrc: ["'self'"],
           frameSrc: ["'none'"],
