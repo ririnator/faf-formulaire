@@ -57,7 +57,9 @@ describe('🔧 FAF Admin Module Tests', () => {
     test('should maintain XSS protection patterns', () => {
       expect(moduleContent).toContain('textContent');
       expect(moduleContent).toContain('createElement');
-      expect(moduleContent).not.toContain('innerHTML');
+      // innerHTML ne doit apparaître que dans les commentaires, pas dans le code actif
+      const codeWithoutComments = moduleContent.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+      expect(codeWithoutComments).not.toContain('innerHTML');
     });
 
     test('should have HTTPS-only image validation', () => {
@@ -69,6 +71,38 @@ describe('🔧 FAF Admin Module Tests', () => {
       frenchChars.forEach(char => {
         expect(moduleContent).toContain(char);
       });
+    });
+
+    test('should decode Cloudinary URLs with escaped slashes', () => {
+      // Vérifier que &#x2F; est dans SAFE_HTML_ENTITIES pour décoder les URLs Cloudinary
+      expect(moduleContent).toContain("'&#x2F;': '/'");
+      
+      // Simuler le décodage d'une URL Cloudinary échappée
+      const SAFE_HTML_ENTITIES = {
+        '&#x2F;': '/',
+        '&#39;': "'",
+        '&quot;': '"',
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>'
+      };
+      
+      function unescapeHTML(text) {
+        if (!text || typeof text !== 'string') return text || '';
+        let result = text;
+        for (let entity in SAFE_HTML_ENTITIES) {
+          if (SAFE_HTML_ENTITIES.hasOwnProperty(entity)) {
+            const char = SAFE_HTML_ENTITIES[entity];
+            const escapedEntity = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            result = result.replace(new RegExp(escapedEntity, 'g'), char);
+          }
+        }
+        return result;
+      }
+      
+      const input = 'https:&#x2F;&#x2F;res.cloudinary.com&#x2F;project&#x2F;image&#x2F;upload&#x2F;v123&#x2F;sample.jpg';
+      const expected = 'https://res.cloudinary.com/project/image/upload/v123/sample.jpg';
+      expect(unescapeHTML(input)).toBe(expected);
     });
   });
 

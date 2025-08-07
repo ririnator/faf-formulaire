@@ -72,8 +72,9 @@ router.post(
     }
 
       // 5) on renvoie le lien privé dans la réponse JSON
+      const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
       const link = token
-        ? `${process.env.APP_BASE_URL}/view/${token}`
+        ? `${baseUrl}/view/${token}`
         : null;
 
       return res.status(201).json({

@@ -9,6 +9,7 @@
 
 // Constante partagée pour le décodage sécurisé des entités HTML
 export const SAFE_HTML_ENTITIES = {
+  '&#x2F;': '/',  // Ajout pour décoder les slashes dans les URLs Cloudinary
   '&#x27;': "'",
   '&#39;': "'",
   '&apos;': "'",
@@ -178,8 +179,15 @@ export const Utils = {
     if (!text || typeof text !== 'string') return text || '';
     
     let result = text;
-    for (const [entity, char] of Object.entries(SAFE_HTML_ENTITIES)) {
-      result = result.replace(new RegExp(entity, 'g'), char);
+    // Compatibilité Safari : éviter Object.entries() et for...of
+    const entities = SAFE_HTML_ENTITIES;
+    for (let entity in entities) {
+      if (entities.hasOwnProperty(entity)) {
+        const char = entities[entity];
+        // Échapper les caractères spéciaux regex
+        const escapedEntity = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        result = result.replace(new RegExp(escapedEntity, 'g'), char);
+      }
     }
     
     return result;
@@ -189,9 +197,18 @@ export const Utils = {
    * Échappe les caractères HTML pour éviter XSS
    */
   escapeHTML(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (!text || typeof text !== 'string') return text || '';
+    
+    const escapeMap = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+      '/': '&#x2F;'
+    };
+    
+    return text.replace(/[&<>"'\/]/g, (char) => escapeMap[char]);
   },
 
   /**
@@ -273,12 +290,21 @@ export const UI = {
       overlay = document.createElement('div');
       overlay.id = 'loadingOverlay';
       overlay.className = 'loading-overlay hidden';
-      overlay.innerHTML = `
-        <div class="loading-content">
-          <div class="loading-spinner"></div>
-          <div class="loading-text">${message}</div>
-        </div>
-      `;
+      
+      // Créer le contenu sans innerHTML pour éviter XSS
+      const content = document.createElement('div');
+      content.className = 'loading-content';
+      
+      const spinner = document.createElement('div');
+      spinner.className = 'loading-spinner';
+      content.appendChild(spinner);
+      
+      const text = document.createElement('div');
+      text.className = 'loading-text';
+      text.textContent = message;
+      content.appendChild(text);
+      
+      overlay.appendChild(content);
       document.body.appendChild(overlay);
     }
     
@@ -424,12 +450,22 @@ export const Charts = {
     items.forEach(({ user, answer }) => {
       const li = document.createElement('li');
       
-      const isImage = Utils.isTrustedImageUrl(answer);
+      // DEBUG: Log pour tracer le problème
+      console.log('🔍 DEBUG createAnswersList:', {
+        user,
+        originalAnswer: answer,
+        decodedAnswer: Utils.unescapeHTML(answer),
+        isImage: Utils.isTrustedImageUrl(Utils.unescapeHTML(answer))
+      });
+      
+      // Décoder les entités HTML AVANT la détection d'image
+      const decodedAnswer = Utils.unescapeHTML(answer);
+      const isImage = Utils.isTrustedImageUrl(decodedAnswer);
 
       if (isImage) {
         // Miniature cliquable
         const img = document.createElement('img');
-        img.src = answer;
+        img.src = decodedAnswer; // Utiliser l'URL décodée
         img.alt = `Image de ${user}`;
         img.className = `${config.thumbnailSize || 'w-16 h-16'} object-cover inline-block mr-2 border cursor-pointer`;
         
@@ -445,7 +481,7 @@ export const Charts = {
 
         // Ouverture de la lightbox quand on clique
         img.onclick = () => {
-          UI.createLightbox(answer, img.alt, user, {
+          UI.createLightbox(decodedAnswer, img.alt, user, {
             maxWidth: config.lightboxMaxSize || '90%',
             maxHeight: config.lightboxMaxSize || '90%'
           });
@@ -454,8 +490,8 @@ export const Charts = {
         li.appendChild(img);
         li.appendChild(document.createTextNode(` ${user}`));
       } else {
-        // Décoder les entités HTML pour un affichage correct
-        li.textContent = `${user} : ${Utils.unescapeHTML(answer)}`;
+        // Afficher le texte décodé
+        li.textContent = `${user} : ${decodedAnswer}`;
       }
 
       ul.appendChild(li);

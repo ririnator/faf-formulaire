@@ -119,12 +119,15 @@ The frontend consists of static files served directly by Express from `frontend/
 - **Enhanced Error Handling** - Hierarchical fallback system + centralized error middleware
 - **CSRF Protection** - Token-based CSRF protection middleware
 - **Parameter Validation** - URL parameter validation and sanitization middleware
+- **Dynamic Question Ordering** - Zero-maintenance algorithm using first submission's natural order (replaces hardcoded arrays)
+- **Intelligent Caching System** - 10-minute TTL with memory leak prevention, pre-warming, and automatic cleanup
+- **Structured Logging** - Context-aware debugging with performance metrics and error resilience
 - **Frontend Testing Infrastructure** - Dedicated frontend test suite with Jest configuration
 - **Dynamic Option Testing** - Integration testing for dynamic form options
 - **Session-based admin authentication** with bcrypt password hashing and session store
 - **Monthly response system** where each user can submit once per month with token-based private viewing
 - **Admin responses** stored without tokens, accessible only through authenticated admin interface
-- **Intelligent rate limiting** (3 submissions per 15 minutes) with IP-based tracking
+- **Intelligent rate limiting** -3 submissions per 15 minutes with IP-based tracking
 - **Advanced spam protection** - Honeypot fields + request validation + pattern detection
 - **Performance optimized** - Indexes on createdAt, admin constraints, efficient memory usage, asset caching
 
@@ -178,6 +181,39 @@ The `Response` model contains:
 - **CSRF Integration**: Automatic token management through `AdminAPI.request()`
 - **Content Security Policy**: Strict CSP with nonces preventing injection attacks
 
+### Dynamic Question Ordering System
+**Algorithm Overview**: Zero-maintenance question ordering that eliminates hardcoded arrays
+
+**Problem Solved**: Previously used a 12-line hardcoded `QUESTION_ORDER` array that required manual updates whenever form questions changed, risking desync between form and backend.
+
+**Solution**: Dynamic ordering based on natural form submission order with intelligent caching.
+
+**Implementation Steps**:
+1. **Cache Check** - 10-minute TTL with month-specific keys (`"YYYY-MM"` or `"all"`)
+2. **First Response Discovery** - Find oldest response for the time period using `createdAt` index  
+3. **Natural Order Extraction** - Use that response's question sequence as canonical ordering
+4. **PIE_Q Prioritization** - Always place pie chart question first regardless of original position
+5. **Question Normalization** - Group similar questions using `normalizeQuestion()` for French accents/spacing
+6. **Fallback Strategy** - Use `textSummary` order if no valid first response found
+7. **Cache Population** - Store result with metadata (source, performance metrics, response ID)
+
+**Cache Optimizations**:
+- **Memory Leak Prevention** - MAX_CACHE_SIZE (50 entries) with LRU eviction
+- **Automatic Cleanup** - Removes expired entries every 5 minutes
+- **Pre-warming** - Current month cached on startup and monthly refresh
+- **Error Resilience** - Falls back to expired cache if DB errors occur
+
+**Performance Benefits**:
+- **Eliminates DB queries** for repeated requests (10-minute cache)
+- **Pre-warmed cache** ensures fast initial response times
+- **Structured logging** tracks hit/miss ratios and performance metrics
+
+**Test Coverage**:
+- **15 comprehensive tests** in `admin.question-order.test.js`
+- **Edge cases**: corrupted data, empty datasets, normalization failures
+- **Performance tests**: large datasets, consistency across concurrent requests
+- **Fallback validation**: textSummary ordering when primary method fails
+
 ### Testing Infrastructure
 - **Backend**: Jest + Supertest + MongoDB Memory Server for comprehensive testing
 - **Security Test Coverage**:
@@ -188,16 +224,28 @@ The `Response` model contains:
   - **Body size limits** - 10MB Express parser configuration validation (reduced from 50MB)
   - **Honeypot protection** - Spam field detection and rejection
   - **Input sanitization** - Null/undefined handling, whitespace trimming, Unicode support
+  - **Dynamic question ordering** - 15 tests covering natural order, caching, edge cases, performance
 - **Test Commands**: `npm test`, `npm run test:watch`, `npm run test:coverage`
-- **Test Results**: 242+ tests pass (January 2025), comprehensive security validation
+- **Test Results**: 257+ tests pass (January 2025), comprehensive security validation
 - **Performance Testing**: Large payload handling, concurrent request processing, validation speed
 - **Architecture Validation**: Middleware modularity, Express parser optimization, environment adaptation
 
-### Recent Security Fixes (January 2025)
+### Recent Architecture Improvements (January 2025)
+**Security & XSS Fixes**:
 - **🚨 CRITICAL XSS Fix**: Replaced `innerHTML` with secure `textContent` in view.html:51
 - **🔧 Session Cookie Fix**: Corrected cookie name from `connect.sid` to `faf-session` in logout
 - **🛡️ Complete innerHTML Audit**: Replaced all unsafe `innerHTML` usage with `createElement()` and `textContent`
 - **🔒 Production Debug Lock**: Debug endpoints now disabled in production environment
+
+**Code Quality & Architecture**:
 - **🧹 Code Cleanup**: Removed 18 duplicate/obsolete files (*.refactored.js, *.v2.js, test files)
 - **✅ Test Repairs**: Fixed session configuration tests and removed problematic upload mocks
 - **🔧 Architecture Refactor**: Replaced admin-utils.js + core-utils.js with unified faf-admin.js ES6 module
+
+**Dynamic Question Ordering Implementation**:
+- **✨ Zero-Maintenance Algorithm**: Eliminated hardcoded QUESTION_ORDER array (12 lines removed)
+- **🚀 Intelligent Caching**: 10-minute TTL with memory leak prevention and pre-warming
+- **📊 Structured Logging**: Context-aware debugging with performance metrics and error resilience
+- **🛡️ Robust Fallback**: Multiple fallback strategies for corrupted/missing data
+- **⚡ Performance Optimized**: Pre-warmed cache, LRU eviction, automatic cleanup
+- **✅ Comprehensive Testing**: 15 new tests covering edge cases, performance, and consistency
