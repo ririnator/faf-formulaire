@@ -9,6 +9,7 @@
 
 // Constante partagée pour le décodage sécurisé des entités HTML
 export const SAFE_HTML_ENTITIES = {
+  '&#x2F;': '/',  // Ajout pour décoder les slashes dans les URLs Cloudinary
   '&#x27;': "'",
   '&#39;': "'",
   '&apos;': "'",
