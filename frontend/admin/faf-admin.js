@@ -443,12 +443,14 @@ export const Charts = {
     items.forEach(({ user, answer }) => {
       const li = document.createElement('li');
       
-      const isImage = Utils.isTrustedImageUrl(answer);
+      // Décoder les entités HTML AVANT la détection d'image
+      const decodedAnswer = Utils.unescapeHTML(answer);
+      const isImage = Utils.isTrustedImageUrl(decodedAnswer);
 
       if (isImage) {
         // Miniature cliquable
         const img = document.createElement('img');
-        img.src = answer;
+        img.src = decodedAnswer; // Utiliser l'URL décodée
         img.alt = `Image de ${user}`;
         img.className = `${config.thumbnailSize || 'w-16 h-16'} object-cover inline-block mr-2 border cursor-pointer`;
         
@@ -464,7 +466,7 @@ export const Charts = {
 
         // Ouverture de la lightbox quand on clique
         img.onclick = () => {
-          UI.createLightbox(answer, img.alt, user, {
+          UI.createLightbox(decodedAnswer, img.alt, user, {
             maxWidth: config.lightboxMaxSize || '90%',
             maxHeight: config.lightboxMaxSize || '90%'
           });
@@ -473,8 +475,8 @@ export const Charts = {
         li.appendChild(img);
         li.appendChild(document.createTextNode(` ${user}`));
       } else {
-        // Décoder les entités HTML pour un affichage correct
-        li.textContent = `${user} : ${Utils.unescapeHTML(answer)}`;
+        // Afficher le texte décodé
+        li.textContent = `${user} : ${decodedAnswer}`;
       }
 
       ul.appendChild(li);
