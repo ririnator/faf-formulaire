@@ -443,6 +443,14 @@ export const Charts = {
     items.forEach(({ user, answer }) => {
       const li = document.createElement('li');
       
+      // DEBUG: Log pour tracer le problème
+      console.log('🔍 DEBUG createAnswersList:', {
+        user,
+        originalAnswer: answer,
+        decodedAnswer: Utils.unescapeHTML(answer),
+        isImage: Utils.isTrustedImageUrl(Utils.unescapeHTML(answer))
+      });
+      
       // Décoder les entités HTML AVANT la détection d'image
       const decodedAnswer = Utils.unescapeHTML(answer);
       const isImage = Utils.isTrustedImageUrl(decodedAnswer);
