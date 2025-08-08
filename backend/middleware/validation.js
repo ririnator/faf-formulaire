@@ -9,8 +9,8 @@ function isCloudinaryUrl(str) {
   if (!str.match(cloudinaryPattern)) return false;
   
   // Vérifier qu'il n'y a pas de caractères dangereux dans l'URL
-  // Refuser les URLs avec <, >, ", ou code JavaScript (mais autoriser ' dans les noms de fichiers)
-  const dangerousChars = /<|>|"|javascript:|data:|vbscript:|onclick|onerror|onload|script/i;
+  // Refuser les URLs avec <, >, ", ', ou code JavaScript
+  const dangerousChars = /<|>|"|'|javascript:|data:|vbscript:|onclick|onerror|onload|script/i;
   if (dangerousChars.test(str)) return false;
   
   return true;
@@ -146,5 +146,8 @@ module.exports = {
   validateResponseStrict,
   validateLogin,
   handleValidationErrors,
-  sanitizeResponse
+  sanitizeResponse,
+  // Export pour les tests
+  isCloudinaryUrl,
+  smartEscape
 };

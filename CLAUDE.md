@@ -62,7 +62,9 @@ The frontend consists of static files served directly by Express from `frontend/
   - `serviceFactory.js` - Service layer dependency injection and factory pattern
 - `middleware/` - Modular security middleware architecture:
   - `auth.js` - Admin authentication with bcrypt and session management
-  - `validation.js` - Strict XSS escaping + null/undefined edge case handling (dual validation levels)
+  - `validation.js` - Smart XSS escaping with Cloudinary URL preservation + null/undefined edge case handling
+    - `smartEscape()` - Intelligent escaping that preserves valid Cloudinary URLs while protecting against XSS
+    - `isCloudinaryUrl()` - Validates Cloudinary URLs with security checks for malicious content
   - `security.js` - CSP nonce generation + environment-adaptive session cookies
   - `bodyParser.js` - Optimized body limits per endpoint type (512KB/2MB/5MB)
   - `rateLimiting.js` - Rate limiting configurations per endpoint
@@ -73,6 +75,7 @@ The frontend consists of static files served directly by Express from `frontend/
   - `validation.edge-cases.test.js` - Null/undefined/malformed input handling (30 tests)
   - `validation.boundary.test.js` - Exact boundary conditions + performance (32 tests)
   - `validation.security.test.js` - XSS protection + HTML escaping (22 tests)
+  - `validation.smart-escape.test.js` - Smart escape function with Cloudinary URL handling (44 tests)
   - `security.enhanced.test.js` - CSP nonce generation + session configs (19 tests)
   - `bodyParser.limits.test.js` - Optimized body parser limits per endpoint (16 tests)
   - `constraint.unit.test.js` - Database constraint validation (14 tests)
@@ -105,6 +108,7 @@ The frontend consists of static files served directly by Express from `frontend/
 
 ### Key Features
 - **Nonce-based CSP Security** - Dynamic nonces per request, eliminates unsafe-inline completely
+- **Smart XSS Prevention** - Intelligent escaping that preserves Cloudinary image URLs while protecting against XSS attacks
 - **XSS Prevention Architecture** - Secure DOM element creation, whitelist-based HTML entity decoding, no innerHTML with user content
 - **Comprehensive Input Validation** - 100+ tests covering null/undefined/boundary/XSS edge cases
 - **UTF-8 Encoding Support** - Global UTF-8 middleware, proper character encoding for French accented characters
