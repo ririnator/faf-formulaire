@@ -33,6 +33,16 @@ describe('smartEscape() Security Tests', () => {
       const escaped = smartEscape(malicious);
       expect(escaped).toContain('&#39;');
       expect(escaped).not.toBe(malicious);
+      // Vérifier que isCloudinaryUrl rejette aussi cette URL
+      expect(isCloudinaryUrl(malicious)).toBe(false);
+    });
+    
+    test('should reject Cloudinary URL with single quote in filename', () => {
+      const urlWithQuote = "https://res.cloudinary.com/demo/image/upload/capture_d'ecran.png";
+      expect(isCloudinaryUrl(urlWithQuote)).toBe(false);
+      const escaped = smartEscape(urlWithQuote);
+      expect(escaped).toContain('&#39;');
+      expect(escaped).not.toBe(urlWithQuote);
     });
     
     test('should escape Cloudinary URL with double quote', () => {
@@ -234,6 +244,10 @@ describe('isCloudinaryUrl() Validation Tests', () => {
     
     test('should reject URL with onclick', () => {
       expect(isCloudinaryUrl('https://res.cloudinary.com/demo/image/upload/file.jpg?onclick=alert(1)')).toBe(false);
+    });
+    
+    test('should reject URL with script keyword', () => {
+      expect(isCloudinaryUrl('https://res.cloudinary.com/demo/image/upload/myscript.jpg')).toBe(false);
     });
   });
   
