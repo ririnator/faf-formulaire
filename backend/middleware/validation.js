@@ -1,5 +1,43 @@
 const { body, validationResult } = require('express-validator');
 
+// Fonction pour détecter si une chaîne est une URL Cloudinary valide ET sûre
+function isCloudinaryUrl(str) {
+  if (!str || typeof str !== 'string') return false;
+  
+  // Vérifier le pattern Cloudinary de base
+  const cloudinaryPattern = /^https:\/\/res\.cloudinary\.com\/[\w-]+\/image\/upload\/.+$/;
+  if (!str.match(cloudinaryPattern)) return false;
+  
+  // Vérifier qu'il n'y a pas de caractères dangereux dans l'URL
+  // Refuser les URLs avec <, >, ", ou code JavaScript (mais autoriser ' dans les noms de fichiers)
+  const dangerousChars = /<|>|"|javascript:|data:|vbscript:|onclick|onerror|onload|script/i;
+  if (dangerousChars.test(str)) return false;
+  
+  return true;
+}
+
+// Fonction d'escape personnalisée qui préserve les URLs Cloudinary
+function smartEscape(str) {
+  if (!str || typeof str !== 'string') return str;
+  
+  // Si c'est une URL Cloudinary valide, ne pas l'encoder
+  if (isCloudinaryUrl(str)) {
+    return str; // Garder l'URL intacte
+  }
+  
+  // Sinon, appliquer l'escape HTML standard pour la sécurité
+  const escapeMap = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '/': '&#x2F;'
+  };
+  
+  return str.replace(/[&<>"'\/]/g, (char) => escapeMap[char]);
+}
+
 const validateResponseStrict = [
   body('name')
     .trim()
@@ -24,7 +62,10 @@ const validateResponseStrict = [
     .exists({ checkNull: true, checkFalsy: true })
     .withMessage('La réponse ne peut pas être nulle ou vide')
     .trim()
-    .escape()
+    .custom((value) => {
+      // Appliquer smartEscape au lieu de .escape() pour préserver les URLs Cloudinary
+      return smartEscape(value);
+    })
     .notEmpty()
     .isLength({ max: 10000 })
     .withMessage('Chaque réponse ne peut pas être vide (max 10000 caractères)'),
@@ -86,9 +127,14 @@ function sanitizeResponse(req, res, next) {
         if (typeof response !== 'object' || response === null) {
           return { question: '', answer: '' };
         }
+        
+        // Appliquer smartEscape pour préserver les URLs Cloudinary tout en protégeant contre XSS
+        const question = response.question != null ? response.question.toString().substring(0, 500) : '';
+        const answer = response.answer != null ? response.answer.toString().substring(0, 10000) : '';
+        
         return {
-          question: response.question != null ? response.question.toString().substring(0, 500) : '',
-          answer: response.answer != null ? response.answer.toString().substring(0, 10000) : ''
+          question: smartEscape(question),
+          answer: smartEscape(answer)
         };
       });
   }

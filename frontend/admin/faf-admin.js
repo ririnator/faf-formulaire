@@ -286,15 +286,19 @@ export const Utils = {
       if (!isTrustedDomain) return false;
       
       // Gestion spéciale pour les URLs Cloudinary
-      const pathname = urlObj.pathname.toLowerCase();
+      const pathname = urlObj.pathname;
       if (hostname === 'res.cloudinary.com' || hostname.endsWith('.cloudinary.com')) {
+        // Cloudinary URLs pattern: /[cloud_name]/image/upload/[version]/[path]
+        // ou /[cloud_name]/image/upload/[path]
         return pathname.includes('/image/upload/');
       } else {
-        // Pour les autres domaines, vérifier l'extension
+        // Pour les autres domaines, vérifier l'extension (case insensitive)
+        const pathLower = pathname.toLowerCase();
         const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-        return validExtensions.some(ext => pathname.includes(ext));
+        return validExtensions.some(ext => pathLower.includes(ext));
       }
     } catch (e) {
+      console.error('Erreur validation URL:', e);
       return false;
     }
   }
@@ -515,12 +519,20 @@ export const Charts = {
       
       // DEBUG: Log détaillé pour Safari
       const decodedAnswer = Utils.unescapeHTML(answer);
-      if (answer !== decodedAnswer || decodedAnswer.includes('cloudinary')) {
-        console.log('🔍 Décodage pour', user, ':', {
-          avant: answer,
-          après: decodedAnswer,
-          estImage: Utils.isTrustedImageUrl(decodedAnswer)
+      
+      // Log uniquement si c'est une URL ou s'il y a eu un changement
+      if (decodedAnswer.includes('http') || answer !== decodedAnswer) {
+        const isValidImage = Utils.isTrustedImageUrl(decodedAnswer);
+        console.log(`🔍 [${user}] URL:`, {
+          original: answer.substring(0, 100) + (answer.length > 100 ? '...' : ''),
+          decoded: decodedAnswer.substring(0, 100) + (decodedAnswer.length > 100 ? '...' : ''),
+          isValidImage: isValidImage
         });
+        
+        // Si c'est une URL mais pas reconnue comme image valide, afficher pourquoi
+        if (decodedAnswer.includes('cloudinary') && !isValidImage) {
+          console.warn(`⚠️ URL Cloudinary non reconnue comme image valide:`, decodedAnswer);
+        }
       }
       
       // La variable decodedAnswer est déjà définie par le debug ci-dessus
@@ -531,6 +543,7 @@ export const Charts = {
         const img = document.createElement('img');
         
         // Safari Fix 1: Utiliser setAttribute() au lieu d'assignation directe
+        // IMPORTANT: Ne PAS faire decodeURIComponent sur l'URL car elle est déjà valide
         img.setAttribute('src', decodedAnswer);
         img.setAttribute('alt', `Image de ${user}`);
         img.className = `${config.thumbnailSize || 'w-16 h-16'} object-cover inline-block mr-2 border cursor-pointer`;
