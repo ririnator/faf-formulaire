@@ -58,7 +58,6 @@ function smartEscape(str) {
 const validateResponseStrict = [
   body('name')
     .trim()
-    .escape()
     .isLength({ min: 2, max: 100 })
     .withMessage('Le nom doit contenir entre 2 et 100 caractères'),
   
