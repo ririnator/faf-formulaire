@@ -498,8 +498,17 @@ export const Charts = {
   createPieChart(items, config = {}) {
     const freq = {}, userMap = {};
     items.forEach(({ user, answer }) => {
-      // Décoder les entités HTML dans les réponses pour le graphique
-      const decodedAnswer = Utils.unescapeHTML(answer);
+      // Décoder les entités HTML sécurisées pour l'affichage du graphique
+      const decodedAnswer = answer
+        .replace(/&#39;/g, "'")    // &#39; → ' (apostrophe decimal)
+        .replace(/&#x27;/g, "'")   // &#x27; → ' (apostrophe hexadecimal)  
+        .replace(/&apos;/g, "'")   // &apos; → ' (apostrophe named)
+        .replace(/&quot;/g, '"')   // &quot; → " (guillemet)
+        .replace(/&amp;/g, '&')    // &amp; → & (ampersand)
+        .replace(/&nbsp;/g, ' ')   // &nbsp; → ' ' (espace insécable)
+        // NOTE: On ne décode PAS < > pour préserver la sécurité XSS
+        .trim();
+      
       freq[decodedAnswer] = (freq[decodedAnswer] || 0) + 1;
       (userMap[decodedAnswer] = userMap[decodedAnswer] || []).push(user);
     });
