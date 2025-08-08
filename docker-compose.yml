@@ -50,9 +50,9 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD}
       - MONGO_INITDB_DATABASE=faf
-    ports:
-      # Port exposé seulement en développement
-      - "27017:27017"
+      - MONGODB_APP_PASSWORD=${MONGODB_APP_PASSWORD}
+    # Ports supprimés en production pour la sécurité
+    # Le port MongoDB n'est accessible qu'aux conteneurs internes
     volumes:
       # Données persistantes
       - mongodb_data:/data/db
