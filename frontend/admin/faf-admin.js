@@ -498,19 +498,16 @@ export const Charts = {
   createPieChart(items, config = {}) {
     const freq = {}, userMap = {};
     items.forEach(({ user, answer }) => {
-      // Décoder les entités HTML dans les réponses pour le graphique
-      // DEBUG: Vérifier si Utils est accessible
-      console.log('🔍 Debug createPieChart:', { 
-        answer, 
-        hasUtils: typeof Utils !== 'undefined',
-        hasUnescapeHTML: typeof Utils?.unescapeHTML === 'function'
-      });
-      
-      const decodedAnswer = typeof Utils !== 'undefined' && Utils.unescapeHTML 
-        ? Utils.unescapeHTML(answer)
-        : answer.replace(/&#x27;/g, "'").replace(/&#39;/g, "'").replace(/&apos;/g, "'"); // Fallback
-        
-      console.log('🔍 Décodage:', { original: answer, decoded: decodedAnswer });
+      // Décoder les entités HTML sécurisées pour l'affichage du graphique
+      const decodedAnswer = answer
+        .replace(/&#39;/g, "'")    // &#39; → ' (apostrophe decimal)
+        .replace(/&#x27;/g, "'")   // &#x27; → ' (apostrophe hexadecimal)  
+        .replace(/&apos;/g, "'")   // &apos; → ' (apostrophe named)
+        .replace(/&quot;/g, '"')   // &quot; → " (guillemet)
+        .replace(/&amp;/g, '&')    // &amp; → & (ampersand)
+        .replace(/&nbsp;/g, ' ')   // &nbsp; → ' ' (espace insécable)
+        // NOTE: On ne décode PAS < > pour préserver la sécurité XSS
+        .trim();
       
       freq[decodedAnswer] = (freq[decodedAnswer] || 0) + 1;
       (userMap[decodedAnswer] = userMap[decodedAnswer] || []).push(user);
