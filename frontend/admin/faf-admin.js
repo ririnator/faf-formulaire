@@ -180,19 +180,17 @@ export const Utils = {
     if (!text || typeof text !== 'string') return text || '';
     
     let result = text;
-    // Compatibilité Safari : éviter Object.entries() et for...of
+    
+    // IMPORTANT: Décoder les slashes en premier pour les URLs
+    // Safari a des problèmes avec les URLs contenant &#x2F;
+    result = result.replace(/&#x2F;/g, '/');
+    result = result.replace(/&#47;/g, '/');
+    result = result.replace(/&sol;/g, '/');
+    
+    // Ensuite décoder les autres entités HTML
     const entities = SAFE_HTML_ENTITIES;
-    
-    // Safari Fix: Décodage spécifique des URLs Cloudinary en premier
-    if (result.includes('res.cloudinary.com') || result.includes('cloudinary.com')) {
-      // Décoder spécifiquement les slashes pour les URLs
-      result = result.replace(/&#x2F;/g, '/');
-      result = result.replace(/&#47;/g, '/');
-      result = result.replace(/&sol;/g, '/');
-    }
-    
     for (let entity in entities) {
-      if (entities.hasOwnProperty(entity)) {
+      if (entities.hasOwnProperty(entity) && entity !== '&#x2F;') { // Skip slash, already done
         const char = entities[entity];
         // Échapper les caractères spéciaux regex
         const escapedEntity = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -200,19 +198,21 @@ export const Utils = {
       }
     }
     
-    // Safari Fix: Nettoyage final des URLs
+    // Nettoyage final pour toutes les URLs (pas seulement Cloudinary)
+    result = result.trim();
+    
+    // Si c'est une URL Cloudinary, s'assurer qu'elle est bien formée
     if (result.includes('cloudinary.com')) {
-      // Supprimer les espaces en début/fin d'URL
-      result = result.trim();
-      // Valider que l'URL est bien formée
       try {
         const url = new URL(result);
-        if (url.hostname.includes('cloudinary.com')) {
+        // S'assurer que le protocole est HTTPS pour Cloudinary
+        if (url.hostname.includes('cloudinary.com') && url.protocol === 'http:') {
+          url.protocol = 'https:';
           result = url.toString();
         }
       } catch (e) {
-        // Si l'URL n'est pas valide, laisser tel quel
-        console.warn('🔧 Safari - URL Cloudinary malformée:', result);
+        // Si l'URL n'est pas valide après décodage
+        console.warn('🔧 URL Cloudinary malformée après décodage:', result);
       }
     }
     
@@ -513,16 +513,17 @@ export const Charts = {
     items.forEach(({ user, answer }) => {
       const li = document.createElement('li');
       
-      // DEBUG: Log pour tracer le problème
-      console.log('🔍 DEBUG createAnswersList:', {
-        user,
-        originalAnswer: answer,
-        decodedAnswer: Utils.unescapeHTML(answer),
-        isImage: Utils.isTrustedImageUrl(Utils.unescapeHTML(answer))
-      });
-      
-      // Décoder les entités HTML AVANT la détection d'image
+      // DEBUG: Log détaillé pour Safari
       const decodedAnswer = Utils.unescapeHTML(answer);
+      if (answer !== decodedAnswer || decodedAnswer.includes('cloudinary')) {
+        console.log('🔍 Décodage pour', user, ':', {
+          avant: answer,
+          après: decodedAnswer,
+          estImage: Utils.isTrustedImageUrl(decodedAnswer)
+        });
+      }
+      
+      // La variable decodedAnswer est déjà définie par le debug ci-dessus
       const isImage = Utils.isTrustedImageUrl(decodedAnswer);
 
       if (isImage) {
