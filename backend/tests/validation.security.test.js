@@ -107,8 +107,8 @@ describe('Validation Middleware Security Tests', () => {
       // Verify all dangerous characters are escaped
       expect(response.body.sanitized.responses[0].question).not.toContain('<svg');
       expect(response.body.sanitized.responses[0].question).toContain('&lt;svg');
-      // Single quotes should be escaped as &#x27;
-      expect(response.body.sanitized.responses[0].answer).toContain('&#x27;');
+      // Single quotes should be escaped as &#39; (par smartEscape)
+      expect(response.body.sanitized.responses[0].answer).toContain('&#39;');
     });
 
     test('should preserve legitimate content while escaping malicious parts', async () => {

@@ -16,6 +16,23 @@ function isCloudinaryUrl(str) {
   return true;
 }
 
+// Fonction d'escape pour les questions (préserve les apostrophes pour le français)
+function escapeQuestion(str) {
+  if (!str || typeof str !== 'string') return str;
+  
+  // Pour les questions, on escape seulement les caractères vraiment dangereux
+  // On préserve les apostrophes car elles sont normales en français
+  const questionEscapeMap = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;'
+    // Note: on ne touche pas aux apostrophes (') ni aux slashes (/) pour les questions
+  };
+  
+  return str.replace(/[&<>"]/g, (char) => questionEscapeMap[char]);
+}
+
 // Fonction d'escape personnalisée qui préserve les URLs Cloudinary
 function smartEscape(str) {
   if (!str || typeof str !== 'string') return str;
@@ -53,22 +70,17 @@ const validateResponseStrict = [
     .exists({ checkNull: true, checkFalsy: true })
     .withMessage('La question ne peut pas être nulle ou vide')
     .trim()
-    .escape()
     .notEmpty()
     .isLength({ max: 500 })
-    .withMessage('Chaque question doit être précisée (max 500 caractères)'),
+    .withMessage('Chaque question doit être précisée (max 500 caractères)'),  // Escape sera fait par middleware
   
   body('responses.*.answer')
     .exists({ checkNull: true, checkFalsy: true })
     .withMessage('La réponse ne peut pas être nulle ou vide')
     .trim()
-    .custom((value) => {
-      // Appliquer smartEscape au lieu de .escape() pour préserver les URLs Cloudinary
-      return smartEscape(value);
-    })
     .notEmpty()
     .isLength({ max: 10000 })
-    .withMessage('Chaque réponse ne peut pas être vide (max 10000 caractères)'),
+    .withMessage('Chaque réponse ne peut pas être vide (max 10000 caractères)'),  // Escape sera fait par middleware
 
   body('website')
     .optional()
@@ -119,6 +131,27 @@ function handleValidationErrors(req, res, next) {
   next();
 }
 
+// Middleware qui applique l'escape intelligent après validation
+function applySafeEscape(req, res, next) {
+  if (req.body.responses && Array.isArray(req.body.responses)) {
+    req.body.responses = req.body.responses.map(response => {
+      if (typeof response !== 'object' || response === null) {
+        return { question: '', answer: '' };
+      }
+      
+      const question = response.question != null ? response.question.toString() : '';
+      const answer = response.answer != null ? response.answer.toString() : '';
+      
+      return {
+        question: escapeQuestion(question),  // Questions : escape léger (préserve apostrophes)
+        answer: smartEscape(answer)          // Réponses : escape avec URLs Cloudinary préservées
+      };
+    });
+  }
+  next();
+}
+
+// Ancien middleware pour compatibilité
 function sanitizeResponse(req, res, next) {
   if (req.body.responses && Array.isArray(req.body.responses)) {
     req.body.responses = req.body.responses
@@ -133,8 +166,8 @@ function sanitizeResponse(req, res, next) {
         const answer = response.answer != null ? response.answer.toString().substring(0, 10000) : '';
         
         return {
-          question: smartEscape(question),
-          answer: smartEscape(answer)
+          question: escapeQuestion(question),  // Questions : escape léger
+          answer: smartEscape(answer)          // Réponses : escape avec URLs Cloudinary
         };
       });
   }
@@ -147,7 +180,9 @@ module.exports = {
   validateLogin,
   handleValidationErrors,
   sanitizeResponse,
+  applySafeEscape,
   // Export pour les tests
   isCloudinaryUrl,
-  smartEscape
+  smartEscape,
+  escapeQuestion
 };
