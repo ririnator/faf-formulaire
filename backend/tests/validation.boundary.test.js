@@ -4,7 +4,8 @@ const {
   validateResponseStrict, 
   validateResponse, 
   handleValidationErrors, 
-  sanitizeResponse 
+  sanitizeResponse,
+  applySafeEscape
 } = require('../middleware/validation');
 const { createFormBodyParser } = require('../middleware/bodyParser');
 
@@ -428,7 +429,8 @@ describe('Validation Boundary Conditions', () => {
     beforeEach(() => {
       app.post('/test-escape', 
         validateResponseStrict, 
-        handleValidationErrors, 
+        handleValidationErrors,
+        applySafeEscape,  // Appliquer l'escape intelligent
         (req, res) => res.json({ body: req.body })
       );
     });
@@ -474,7 +476,9 @@ describe('Validation Boundary Conditions', () => {
         .send(data)
         .expect(200);
 
+      // smartEscape() escape tout sauf les URLs Cloudinary
       expect(response.body.body.responses[0].answer).toContain('&gt;&lt;script&gt;');
+      expect(response.body.body.responses[0].answer).toContain('&quot;');
       expect(response.body.body.responses[0].answer).not.toContain('><script>');
     });
   });
