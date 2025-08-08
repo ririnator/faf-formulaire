@@ -241,6 +241,12 @@ The `Response` model contains:
 - **🛡️ Complete innerHTML Audit**: Replaced all unsafe `innerHTML` usage with `createElement()` and `textContent`
 - **🔒 Production Debug Lock**: Debug endpoints now disabled in production environment
 
+**UI/UX & Display Fixes**:
+- **🔧 French Character Display**: Fixed apostrophe display in admin.html (&#x27; → ') by removing overly aggressive .escape() from express-validator
+- **✨ Natural Language Support**: Questions now display with proper French apostrophes and accents without compromising XSS security
+- **🎯 Smart Escaping Strategy**: Preserved `escapeQuestion()` function that protects against dangerous characters while allowing natural French text
+- **🧪 Frontend HTML Entity Decoding**: Enhanced `Utils.unescapeHTML()` in faf-admin.js with better entity handling and secure DOM creation
+
 **Code Quality & Architecture**:
 - **🧹 Code Cleanup**: Removed 18 duplicate/obsolete files (*.refactored.js, *.v2.js, test files)
 - **✅ Test Repairs**: Fixed session configuration tests and removed problematic upload mocks
