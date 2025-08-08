@@ -187,10 +187,10 @@ export const Utils = {
     result = result.replace(/&#47;/g, '/');
     result = result.replace(/&sol;/g, '/');
     
-    // Ensuite décoder les autres entités HTML
+    // Ensuite décoder les autres entités HTML (y compris &#x27; pour les apostrophes)
     const entities = SAFE_HTML_ENTITIES;
     for (let entity in entities) {
-      if (entities.hasOwnProperty(entity) && entity !== '&#x2F;') { // Skip slash, already done
+      if (entities.hasOwnProperty(entity) && entity !== '&#x2F;') { // Skip slash, already done above
         const char = entities[entity];
         // Échapper les caractères spéciaux regex
         const escapedEntity = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -419,12 +419,29 @@ export const UI = {
       // Remplacer par un message d'erreur plutôt qu'une image fallback
       const errorDiv = document.createElement('div');
       errorDiv.className = 'text-white text-center p-8';
-      errorDiv.innerHTML = `
-        <div class="text-4xl mb-4">⚠️</div>
-        <div class="text-xl mb-2">Image indisponible</div>
-        <div class="text-sm opacity-75">${caption || imageAlt}</div>
-        <div class="text-xs opacity-50 mt-4">Safari - Problème de chargement Cloudinary</div>
-      `;
+      
+      // Créer les éléments sans innerHTML pour éviter XSS
+      const icon = document.createElement('div');
+      icon.className = 'text-4xl mb-4';
+      icon.textContent = '⚠️';
+      
+      const title = document.createElement('div');
+      title.className = 'text-xl mb-2';
+      title.textContent = 'Image indisponible';
+      
+      const captionDiv = document.createElement('div');
+      captionDiv.className = 'text-sm opacity-75';
+      captionDiv.textContent = caption || imageAlt;
+      
+      const details = document.createElement('div');
+      details.className = 'text-xs opacity-50 mt-4';
+      details.textContent = 'Safari - Problème de chargement Cloudinary';
+      
+      errorDiv.appendChild(icon);
+      errorDiv.appendChild(title);
+      errorDiv.appendChild(captionDiv);
+      errorDiv.appendChild(details);
+      
       bigImg.style.display = 'none';
       overlay.insertBefore(errorDiv, bigImg);
     };
