@@ -499,7 +499,19 @@ export const Charts = {
     const freq = {}, userMap = {};
     items.forEach(({ user, answer }) => {
       // Décoder les entités HTML dans les réponses pour le graphique
-      const decodedAnswer = Utils.unescapeHTML(answer);
+      // DEBUG: Vérifier si Utils est accessible
+      console.log('🔍 Debug createPieChart:', { 
+        answer, 
+        hasUtils: typeof Utils !== 'undefined',
+        hasUnescapeHTML: typeof Utils?.unescapeHTML === 'function'
+      });
+      
+      const decodedAnswer = typeof Utils !== 'undefined' && Utils.unescapeHTML 
+        ? Utils.unescapeHTML(answer)
+        : answer.replace(/&#x27;/g, "'").replace(/&#39;/g, "'").replace(/&apos;/g, "'"); // Fallback
+        
+      console.log('🔍 Décodage:', { original: answer, decoded: decodedAnswer });
+      
       freq[decodedAnswer] = (freq[decodedAnswer] || 0) + 1;
       (userMap[decodedAnswer] = userMap[decodedAnswer] || []).push(user);
     });
