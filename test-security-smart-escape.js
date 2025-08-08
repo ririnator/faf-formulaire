@@ -9,7 +9,8 @@ function isCloudinaryUrl(str) {
   if (!str.match(cloudinaryPattern)) return false;
   
   // Vérifier qu'il n'y a pas de caractères dangereux dans l'URL
-  const dangerousChars = /<|>|"|'|javascript:|data:|vbscript:|onclick|onerror|onload/i;
+  // Doit être identique à validation.js
+  const dangerousChars = /<|>|"|'|javascript:|data:|vbscript:|onclick|onerror|onload|script/i;
   if (dangerousChars.test(str)) return false;
   
   return true;
