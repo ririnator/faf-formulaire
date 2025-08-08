@@ -5,9 +5,10 @@
 db = db.getSiblingDB('faf');
 
 // Créer un utilisateur applicatif (plus sécurisé que root)
+// Utilise une variable d'environnement pour le mot de passe
 db.createUser({
   user: 'faf_app',
-  pwd: 'faf_app_password',
+  pwd: process.env.MONGODB_APP_PASSWORD || 'default_dev_password',
   roles: [
     {
       role: 'readWrite',

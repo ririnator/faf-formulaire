@@ -29,11 +29,12 @@ services:
 
   mongodb:
     ports:
-      - "27017:27017"  # Exposé pour debugging
+      - "27017:27017"  # Exposé pour debugging en développement seulement
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=dev-password
       - MONGO_INITDB_DATABASE=faf-dev
+      - MONGODB_APP_PASSWORD=dev-app-password
 
   # Service de test automatique (optionnel)
   faf-tests:
