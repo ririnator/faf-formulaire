@@ -1,5 +1,5 @@
 const { describe, test, expect } = require('@jest/globals');
-const { isCloudinaryUrl, smartEscape } = require('../middleware/validation');
+const { isCloudinaryUrl, smartEscape, escapeQuestion } = require('../middleware/validation');
 
 describe('smartEscape() Security Tests', () => {
   
@@ -270,6 +270,109 @@ describe('isCloudinaryUrl() Validation Tests', () => {
     
     test('should reject object', () => {
       expect(isCloudinaryUrl({})).toBe(false);
+    });
+  });
+});
+
+describe('escapeQuestion() Tests', () => {
+  
+  describe('French Text Preservation', () => {
+    test('should preserve apostrophes in French questions', () => {
+      const question = "C'est quoi ta reaction pic préférée ?";
+      expect(escapeQuestion(question)).toBe(question);
+    });
+    
+    test('should preserve contractions', () => {
+      const question = "Qu'est-ce que tu penses de l'été ?";
+      expect(escapeQuestion(question)).toBe(question);
+    });
+    
+    test('should preserve slashes in text', () => {
+      const question = "Ton ratio travail/loisir ce mois ?";
+      expect(escapeQuestion(question)).toBe(question);
+    });
+  });
+  
+  describe('Security Protection', () => {
+    test('should escape HTML tags', () => {
+      const malicious = 'Question avec <script>alert("XSS")</script>';
+      const escaped = escapeQuestion(malicious);
+      expect(escaped).toContain('&lt;script&gt;');
+      expect(escaped).not.toContain('<script>');
+    });
+    
+    test('should escape double quotes', () => {
+      const question = 'Question avec "guillemets" dangereuses';
+      const escaped = escapeQuestion(question);
+      expect(escaped).toContain('&quot;');
+      expect(escaped).not.toContain('"');
+    });
+    
+    test('should escape ampersands', () => {
+      const question = 'Question avec & commercial';
+      const escaped = escapeQuestion(question);
+      expect(escaped).toBe('Question avec &amp; commercial');
+    });
+    
+    test('should NOT escape single quotes', () => {
+      const question = "C'est important de garder les apostrophes";
+      const escaped = escapeQuestion(question);
+      expect(escaped).toBe(question);
+      expect(escaped).not.toContain('&#39;');
+    });
+    
+    test('should NOT escape slashes', () => {
+      const question = "Ratio travail/loisir";
+      const escaped = escapeQuestion(question);
+      expect(escaped).toBe(question);
+      expect(escaped).not.toContain('&#x2F;');
+    });
+  });
+  
+  describe('Edge Cases', () => {
+    test('should handle null input', () => {
+      expect(escapeQuestion(null)).toBe(null);
+    });
+    
+    test('should handle undefined input', () => {
+      expect(escapeQuestion(undefined)).toBe(undefined);
+    });
+    
+    test('should handle empty string', () => {
+      expect(escapeQuestion('')).toBe('');
+    });
+    
+    test('should handle number input', () => {
+      expect(escapeQuestion(123)).toBe(123);
+    });
+  });
+  
+  describe('Real-world French Questions', () => {
+    test('should handle typical FAF questions', () => {
+      const questions = [
+        "C'est quoi la reaction pic que tu utilises le plus en ce moment ?",
+        "Possibilité d'ajouter un peu plus de détails à la question précédente :",
+        "Qu'est-ce qui t'a le plus marqué ce mois ?",
+        "Balance ton ratio travail/loisir du mois",
+        "Photo de toi ce mois (selfie/miroir/quelqu'un d'autre)"
+      ];
+      
+      questions.forEach(question => {
+        const escaped = escapeQuestion(question);
+        expect(escaped).toBe(question); // Aucune modification
+        expect(escaped).not.toContain('&#39;'); // Pas d'encodage d'apostrophe
+        expect(escaped).not.toContain('&#x2F;'); // Pas d'encodage de slash
+      });
+    });
+    
+    test('should escape malicious French questions', () => {
+      const malicious = 'Question avec <img src="x" onerror="alert(\'XSS\')">';
+      const escaped = escapeQuestion(malicious);
+      expect(escaped).toContain('&lt;img');
+      expect(escaped).toContain('&quot;');
+      expect(escaped).not.toContain('<img');
+      // Mais les apostrophes dans alert restent
+      expect(escaped).toContain("alert('XSS')");
     });
   });
 });
