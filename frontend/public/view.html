@@ -94,17 +94,17 @@
             if (!isTrustedDomain) return false;
             
             // 3. Special handling for Cloudinary URLs (don't always have extensions)
-            const pathname = urlObj.pathname.toLowerCase();
+            const pathname = urlObj.pathname;
             if (hostname === 'res.cloudinary.com' || hostname.endsWith('.cloudinary.com')) {
               // Cloudinary URLs follow pattern: /cloud_name/image/upload/...
               // They're trusted if they match the domain, regardless of extension
-              // Note: Some Cloudinary URLs might use /v1234567890/ versioning
-              if (!pathname.includes('/image/upload/') && !pathname.match(/\/v\d+\//)) return false;
+              if (!pathname.includes('/image/upload/')) return false;
             } else {
-              // For other domains, verify file extension for images
+              // For other domains, verify file extension for images (case insensitive)
+              const pathLower = pathname.toLowerCase();
               const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
               const hasValidExtension = validExtensions.some(ext => 
-                pathname.includes(ext)
+                pathLower.includes(ext)
               );
               if (!hasValidExtension) return false;
             }

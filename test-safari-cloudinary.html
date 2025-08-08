@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Safari Cloudinary Final</title>
+  <style>
+    .test-box {
+      margin: 20px;
+      padding: 15px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+    }
+    .success { border-color: green; background: #e0ffe0; }
+    .error { border-color: red; background: #ffe0e0; }
+    img { max-width: 300px; margin: 10px 0; border: 2px solid blue; }
+    .url-display { 
+      word-break: break-all; 
+      background: #f0f0f0; 
+      padding: 10px; 
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test Final - Affichage Images Cloudinary sur Safari</h1>
+  
+  <div id="tests"></div>
+
+  <script>
+    // Fonction de décodage corrigée
+    function unescapeHTML(text) {
+      if (!text || typeof text !== 'string') return text || '';
+      
+      let result = text;
+      
+      // IMPORTANT: Décoder les slashes en premier pour les URLs Cloudinary
+      result = result.replace(/&#x2F;/g, '/');
+      result = result.replace(/&#47;/g, '/');
+      result = result.replace(/&sol;/g, '/');
+      
+      // Autres entités HTML communes
+      const safeEntityMap = {
+        '&#x27;': "'",
+        '&#39;': "'",
+        '&apos;': "'",
+        '&quot;': '"',
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&nbsp;': ' '
+      };
+      
+      for (let entity in safeEntityMap) {
+        if (safeEntityMap.hasOwnProperty(entity)) {
+          const char = safeEntityMap[entity];
+          const escapedEntity = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          result = result.replace(new RegExp(escapedEntity, 'g'), char);
+        }
+      }
+      
+      return result.trim();
+    }
+    
+    // Fonction de validation d'URL d'image
+    function isTrustedImageUrl(url) {
+      if (!url || typeof url !== 'string') return false;
+      
+      try {
+        const urlObj = new URL(url);
+        
+        // Force HTTPS
+        if (urlObj.protocol !== 'https:') return false;
+        
+        // Vérifier le domaine
+        const hostname = urlObj.hostname.toLowerCase();
+        if (!hostname.includes('cloudinary.com')) return false;
+        
+        // Pour Cloudinary, vérifier le pattern /image/upload/
+        const pathname = urlObj.pathname;
+        return pathname.includes('/image/upload/');
+      } catch (e) {
+        console.error('URL invalide:', e);
+        return false;
+      }
+    }
+
+    // Test avec votre URL problématique
+    const testCase = {
+      user: "test 07/08 3",
+      encodedURL: "https:&#x2F;&#x2F;res.cloudinary.com&#x2F;doyupygie&#x2F;image&#x2F;upload&#x2F;v1754587188&#x2F;faf-images&#x2F;1754587187639-Capture_d%C3%A2%C2%80%C2%99e%C3%8C%C2%81cran_2025-08-06_a%C3%8C%C2%80_12.50.58.png.png"
+    };
+
+    const container = document.getElementById('tests');
+    
+    // Créer la boîte de test
+    const testBox = document.createElement('div');
+    testBox.className = 'test-box';
+    
+    // Afficher l'utilisateur
+    const userTitle = document.createElement('h2');
+    userTitle.textContent = `Utilisateur: ${testCase.user}`;
+    testBox.appendChild(userTitle);
+    
+    // URL encodée
+    const encodedDiv = document.createElement('div');
+    encodedDiv.innerHTML = '<h3>URL encodée (originale):</h3>';
+    const encodedURL = document.createElement('div');
+    encodedURL.className = 'url-display';
+    encodedURL.textContent = testCase.encodedURL;
+    encodedDiv.appendChild(encodedURL);
+    testBox.appendChild(encodedDiv);
+    
+    // Décoder l'URL
+    const decodedURL = unescapeHTML(testCase.encodedURL);
+    
+    // URL décodée
+    const decodedDiv = document.createElement('div');
+    decodedDiv.innerHTML = '<h3>URL après décodage des entités HTML:</h3>';
+    const decodedURLDisplay = document.createElement('div');
+    decodedURLDisplay.className = 'url-display';
+    decodedURLDisplay.textContent = decodedURL;
+    decodedDiv.appendChild(decodedURLDisplay);
+    testBox.appendChild(decodedDiv);
+    
+    // Validation
+    const isValid = isTrustedImageUrl(decodedURL);
+    const validationDiv = document.createElement('div');
+    validationDiv.innerHTML = `<h3>Validation: ${isValid ? '✅ URL valide' : '❌ URL non valide'}</h3>`;
+    testBox.appendChild(validationDiv);
+    
+    // Test d'affichage de l'image
+    const imgTitle = document.createElement('h3');
+    imgTitle.textContent = 'Test d\'affichage de l\'image:';
+    testBox.appendChild(imgTitle);
+    
+    const img = document.createElement('img');
+    img.src = decodedURL;
+    img.alt = `Image de ${testCase.user}`;
+    img.crossOrigin = 'anonymous';
+    
+    let loadStatus = document.createElement('p');
+    
+    img.onload = function() {
+      loadStatus.textContent = '✅ Image chargée avec succès!';
+      loadStatus.style.color = 'green';
+      testBox.className = 'test-box success';
+    };
+    
+    img.onerror = function() {
+      loadStatus.textContent = '❌ Échec du chargement de l\'image';
+      loadStatus.style.color = 'red';
+      testBox.className = 'test-box error';
+      
+      // Analyser pourquoi
+      const analysis = document.createElement('div');
+      analysis.style.marginTop = '10px';
+      analysis.innerHTML = `
+        <h4>Analyse du problème:</h4>
+        <ul>
+          <li>L'URL contient des caractères mal encodés dans le nom du fichier</li>
+          <li>%C3%A2%C2%80%C2%99 devrait être ' (apostrophe)</li>
+          <li>%C3%8C%C2%81 et %C3%8C%C2%80 sont des encodages incorrects</li>
+          <li>Le fichier a probablement été uploadé avec un nom mal encodé</li>
+        </ul>
+        <p><strong>Solution:</strong> Le fichier doit être ré-uploadé avec un nom de fichier correctement encodé.</p>
+      `;
+      testBox.appendChild(analysis);
+    };
+    
+    testBox.appendChild(img);
+    testBox.appendChild(loadStatus);
+    
+    container.appendChild(testBox);
+    
+    // Ajouter des informations de debug
+    const debugInfo = document.createElement('div');
+    debugInfo.className = 'test-box';
+    debugInfo.innerHTML = `
+      <h3>Informations de débogage:</h3>
+      <p><strong>Navigateur:</strong> ${navigator.userAgent}</p>
+      <p><strong>URL décodée valide?</strong> ${isValid ? 'Oui' : 'Non'}</p>
+      <p><strong>Protocole:</strong> ${decodedURL.startsWith('https://') ? 'HTTPS ✅' : 'Autre ❌'}</p>
+      <p><strong>Domaine Cloudinary?</strong> ${decodedURL.includes('cloudinary.com') ? 'Oui ✅' : 'Non ❌'}</p>
+      <p><strong>Pattern /image/upload/?</strong> ${decodedURL.includes('/image/upload/') ? 'Oui ✅' : 'Non ❌'}</p>
+    `;
+    container.appendChild(debugInfo);
+  </script>
+</body>
+</html>
