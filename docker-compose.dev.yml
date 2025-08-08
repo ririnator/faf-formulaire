@@ -1,0 +1,60 @@
+version: '3.8'
+
+# Configuration Docker Compose pour DÉVELOPPEMENT
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  faf-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      target: development  # Utilise le stage de développement si défini
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    volumes:
+      # Mode développement: montage du code source pour hot-reload
+      - ./backend:/app
+      - ./frontend:/app/frontend
+      - ./run-frontend-tests.js:/app/run-frontend-tests.js
+      - ./test-form-locally.js:/app/test-form-locally.js
+      # Volumes pour node_modules (évite les conflits OS)
+      - node_modules_volume:/app/node_modules
+    command: npm run dev
+    ports:
+      - "3000:3000"
+      - "9229:9229"  # Port de débogage Node.js
+    stdin_open: true
+    tty: true
+
+  mongodb:
+    ports:
+      - "27017:27017"  # Exposé pour debugging
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=dev-password
+      - MONGO_INITDB_DATABASE=faf-dev
+
+  # Service de test automatique (optionnel)
+  faf-tests:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=test
+      - MONGODB_URI=mongodb://mongodb:27017/faf-test
+    volumes:
+      - ./backend:/app
+      - ./frontend:/app/frontend
+      - node_modules_volume:/app/node_modules
+    command: npm run test:watch
+    depends_on:
+      - mongodb
+    networks:
+      - faf-network
+    profiles:
+      - testing
+
+volumes:
+  node_modules_volume:
+    name: faf-node-modules-dev

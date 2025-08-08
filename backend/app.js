@@ -21,6 +21,15 @@ const { csrfTokenMiddleware } = require('./middleware/csrf');
 const app  = express();
 const port = process.env.PORT || 3000;
 
+// Health check endpoint pour Docker
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    timestamp: Date.now(),
+    uptime: process.uptime()
+  });
+});
+
 // SIMPLE TEST - aucun middleware, juste du JSON brut
 app.get('/test-simple', (req, res) => {
   res.json({ message: 'Simple test works', timestamp: Date.now() });
