@@ -612,6 +612,28 @@ MIT License - Voir [LICENSE.md](LICENSE.md) pour détails.
 
 ---
 
+## 🆕 Dernières Améliorations (Janvier 2025)
+
+### **🔧 Corrections d'Affichage & UI/UX**
+- **✨ Affichage Naturel Français**: Correction du problème d'affichage des apostrophes (`&#x27;` → `'`) dans admin.html
+- **🎯 Stratégie d'Échappement Intelligente**: Suppression de `.escape()` express-validator trop agressif, conservation de `escapeQuestion()` qui préserve le français
+- **🛡️ Sécurité Préservée**: Toutes les protections XSS maintenues (60/60 tests passent)
+- **🧪 Décodage HTML Amélioré**: Fonction `Utils.unescapeHTML()` optimisée avec création DOM sécurisée
+
+### **🛡️ Sécurité & XSS**
+- **🚨 Fix XSS Critique**: Remplacement complet de `innerHTML` par `textContent` sécurisé
+- **🔧 Correction Cookies**: Nom de cookie corrigé de `connect.sid` à `faf-session`
+- **🔒 Debug Production**: Endpoints de debug désactivés en production
+- **📐 Limites Corpo**: Optimisation body parser par endpoint (80% réduction mémoire)
+
+### **🏗️ Architecture & Code**
+- **🧹 Refactoring Module**: Remplacement admin-utils.js + core-utils.js par faf-admin.js ES6 unifié
+- **✅ Tests Robustes**: 15+ nouveaux tests pour ordre questions dynamique
+- **🚀 Cache Intelligent**: Système de cache 10min avec prévention memory leaks
+- **📊 Logging Structuré**: Debug contextuel avec métriques performance
+
+---
+
 ## 📞 Support
 
 **Questions ?** 

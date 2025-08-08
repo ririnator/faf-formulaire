@@ -187,10 +187,20 @@ export const Utils = {
     result = result.replace(/&#47;/g, '/');
     result = result.replace(/&sol;/g, '/');
     
-    // Ensuite décoder les autres entités HTML (y compris &#x27; pour les apostrophes)
+    // ROBUSTESSE: Décoder directement les apostrophes les plus communes AVANT le loop
+    // Cela garantit que même en cas de problème avec SAFE_HTML_ENTITIES, ça marche
+    result = result.replace(/&#x27;/g, "'");  // Hexadecimal apostrophe
+    result = result.replace(/&#39;/g, "'");   // Decimal apostrophe
+    result = result.replace(/&apos;/g, "'");  // Named apostrophe
+    
+    // Ensuite décoder les autres entités HTML
     const entities = SAFE_HTML_ENTITIES;
     for (let entity in entities) {
-      if (entities.hasOwnProperty(entity) && entity !== '&#x2F;') { // Skip slash, already done above
+      if (entities.hasOwnProperty(entity) && 
+          entity !== '&#x2F;' && 
+          entity !== '&#x27;' && 
+          entity !== '&#39;' && 
+          entity !== '&apos;') { // Skip déjà traités
         const char = entities[entity];
         // Échapper les caractères spéciaux regex
         const escapedEntity = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
