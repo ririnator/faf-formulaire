@@ -21,23 +21,35 @@ const { csrfTokenMiddleware } = require('./middleware/csrf');
 const app  = express();
 const port = process.env.PORT || 3000;
 
-// SIMPLE TEST - aucun middleware, juste du JSON brut
-app.get('/test-simple', (req, res) => {
-  res.json({ message: 'Simple test works', timestamp: Date.now() });
+// Health check endpoint pour Docker
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    timestamp: Date.now(),
+    uptime: process.uptime()
+  });
 });
 
-app.get('/test-debug', (req, res) => {
-  const info = {
-    nodeVersion: process.version,
-    platform: process.platform,
-    env: process.env.NODE_ENV,
-    port: port,
-    mongoConnected: mongoose.connection.readyState === 1,
-    timestamp: new Date().toISOString()
-  };
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(info, null, 2));
-});
+// Endpoints de debug - seulement en développement
+if (process.env.NODE_ENV !== 'production') {
+  // SIMPLE TEST - aucun middleware, juste du JSON brut
+  app.get('/test-simple', (req, res) => {
+    res.json({ message: 'Simple test works', timestamp: Date.now() });
+  });
+
+  app.get('/test-debug', (req, res) => {
+    const info = {
+      nodeVersion: process.version,
+      platform: process.platform,
+      env: process.env.NODE_ENV,
+      port: port,
+      mongoConnected: mongoose.connection.readyState === 1,
+      timestamp: new Date().toISOString()
+    };
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(info, null, 2));
+  });
+}
 
 // 1) Enhanced Security headers with nonce-based CSP
 app.use(createSecurityMiddleware());
