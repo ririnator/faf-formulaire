@@ -498,8 +498,10 @@ export const Charts = {
   createPieChart(items, config = {}) {
     const freq = {}, userMap = {};
     items.forEach(({ user, answer }) => {
-      freq[answer] = (freq[answer] || 0) + 1;
-      (userMap[answer] = userMap[answer] || []).push(user);
+      // Décoder les entités HTML dans les réponses pour le graphique
+      const decodedAnswer = Utils.unescapeHTML(answer);
+      freq[decodedAnswer] = (freq[decodedAnswer] || 0) + 1;
+      (userMap[decodedAnswer] = userMap[decodedAnswer] || []).push(user);
     });
 
     const labels = [], data = [], bg = [];
@@ -507,7 +509,7 @@ export const Charts = {
       labels.push(`${ans} (${userMap[ans].join(', ')})`);
       data.push(cnt);
 
-      // Couleurs fixes
+      // Couleurs fixes (maintenant avec réponses décodées)
       let color = "rgba(254, 153,   0, 1)"; // orange par défaut
       if (ans === "ça va")             color = "rgba( 50, 101, 204, 1)";
       else if (ans === "WE'RE BARACK") color = "rgba( 13, 150,  24, 1)";
