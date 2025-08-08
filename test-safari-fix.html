@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Safari Fix</title>
+</head>
+<body>
+  <h1>Test de décodage des entités HTML</h1>
+  
+  <div id="tests"></div>
+
+  <script>
+    // Fonction corrigée pour décoder les entités HTML
+    function unescapeHTML(text) {
+      if (!text || typeof text !== 'string') return text || '';
+      
+      let result = text;
+      
+      // IMPORTANT: Décoder les slashes en premier pour les URLs Cloudinary
+      result = result.replace(/&#x2F;/g, '/');
+      result = result.replace(/&#47;/g, '/');
+      result = result.replace(/&sol;/g, '/');
+      
+      // Autres entités HTML communes
+      const safeEntityMap = {
+        '&#x27;': "'",
+        '&#39;': "'",
+        '&apos;': "'",
+        '&quot;': '"',
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&nbsp;': ' '
+      };
+      
+      for (let entity in safeEntityMap) {
+        if (safeEntityMap.hasOwnProperty(entity)) {
+          const char = safeEntityMap[entity];
+          const escapedEntity = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          result = result.replace(new RegExp(escapedEntity, 'g'), char);
+        }
+      }
+      
+      return result.trim();
+    }
+
+    // Tests
+    const tests = [
+      {
+        name: "Pseudo avec slash",
+        input: "test 07&#x2F;08 3",
+        expected: "test 07/08 3"
+      },
+      {
+        name: "URL Cloudinary encodée",
+        input: "https:&#x2F;&#x2F;res.cloudinary.com&#x2F;demo&#x2F;image&#x2F;upload&#x2F;sample.jpg",
+        expected: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+      },
+      {
+        name: "Texte avec apostrophe",
+        input: "C&#39;est l&#39;été",
+        expected: "C'est l'été"
+      }
+    ];
+
+    const container = document.getElementById('tests');
+    
+    tests.forEach(test => {
+      const result = unescapeHTML(test.input);
+      const success = result === test.expected;
+      
+      const div = document.createElement('div');
+      div.style.margin = '20px';
+      div.style.padding = '10px';
+      div.style.border = success ? '2px solid green' : '2px solid red';
+      
+      div.innerHTML = `
+        <h3>${success ? '✅' : '❌'} ${test.name}</h3>
+        <p><strong>Entrée:</strong> ${test.input}</p>
+        <p><strong>Attendu:</strong> ${test.expected}</p>
+        <p><strong>Résultat:</strong> ${result}</p>
+      `;
+      
+      container.appendChild(div);
+      
+      // Si c'est une URL d'image, essayer de l'afficher
+      if (test.name.includes('Cloudinary') && success) {
+        const img = document.createElement('img');
+        img.src = result;
+        img.style.maxWidth = '200px';
+        img.style.marginTop = '10px';
+        img.onerror = () => {
+          const error = document.createElement('p');
+          error.textContent = '⚠️ Image de test non disponible (normal pour cette URL de démo)';
+          error.style.color = 'orange';
+          div.appendChild(error);
+        };
+        div.appendChild(img);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -98,7 +98,8 @@
             if (hostname === 'res.cloudinary.com' || hostname.endsWith('.cloudinary.com')) {
               // Cloudinary URLs follow pattern: /cloud_name/image/upload/...
               // They're trusted if they match the domain, regardless of extension
-              if (!pathname.includes('/image/upload/')) return false;
+              // Note: Some Cloudinary URLs might use /v1234567890/ versioning
+              if (!pathname.includes('/image/upload/') && !pathname.match(/\/v\d+\//)) return false;
             } else {
               // For other domains, verify file extension for images
               const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
