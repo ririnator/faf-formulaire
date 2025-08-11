@@ -6,6 +6,7 @@ const router = express.Router();
 
 const Response = require('../models/Response');
 const User = require('../models/User');
+const ResponseService = require('../services/responseService');
 const { validateResponseStrict, validateResponseConditional, handleValidationErrors, sanitizeResponse } = require('../middleware/validation');
 const { createFormBodyParser } = require('../middleware/bodyParser');
 const { detectAuthMethod, requireAuth } = require('../middleware/hybridAuth');
@@ -38,49 +39,69 @@ router.post(
         });
       }
 
-      responseData = {
-        userId: currentUser._id,
-        responses,
-        month,
-        isAdmin: currentUser.role === 'admin',
-        authMethod: 'user'
-        // Pas de token, pas de name
-      };
-
-      // Pour les admins, vérifier qu'il n'y en a pas déjà un
+      // Pour les admins, utiliser opération atomique pour éviter race conditions
       if (currentUser.role === 'admin') {
-        const existingAdmin = await Response.findOne({
+        responseData = {
+          userId: currentUser._id,
+          responses,
           month,
           isAdmin: true,
-          $or: [
-            { authMethod: 'user' },
-            { authMethod: 'token' }
-          ]
-        });
+          authMethod: 'user'
+        };
         
-        if (existingAdmin) {
+        // Opération atomique pour admin (prevent duplicates)
+        saved = await Response.findOneAndUpdate(
+          { 
+            month, 
+            isAdmin: true,
+            $or: [
+              { authMethod: 'user' },
+              { authMethod: 'token' }
+            ]
+          },
+          {
+            $setOnInsert: responseData
+          },
+          { 
+            upsert: true, 
+            new: true,
+            runValidators: true,
+            setDefaultsOnInsert: true
+          }
+        );
+
+        // Vérifier conflit (réponse admin par un autre utilisateur)
+        if (saved.userId && saved.userId.toString() !== currentUser._id.toString()) {
           return res.status(409).json({
             success: false,
             error: 'Une réponse admin existe déjà pour ce mois'
           });
         }
-      }
-
-      // Vérifier que l'utilisateur n'a pas déjà répondu ce mois
-      const existing = await Response.findOne({
-        userId: currentUser._id,
-        month
-      });
-
-      if (existing) {
-        return res.status(409).json({
-          success: false,
-          error: 'Vous avez déjà répondu ce mois-ci'
+      } else {
+        // Vérifier que l'utilisateur normal n'a pas déjà répondu ce mois
+        const existing = await Response.findOne({
+          userId: currentUser._id,
+          month
         });
-      }
 
-      saved = new Response(responseData);
-      await saved.save();
+        if (existing) {
+          return res.status(409).json({
+            success: false,
+            error: 'Vous avez déjà répondu ce mois-ci'
+          });
+        }
+
+        responseData = {
+          userId: currentUser._id,
+          responses,
+          month,
+          isAdmin: false,
+          authMethod: 'user'
+        };
+
+        saved = new Response(responseData);
+        await saved.save();
+      }
 
       // Incrémenter le compteur de réponses de l'utilisateur
       await currentUser.incrementResponseCount();
@@ -96,7 +117,7 @@ router.post(
       }
 
       const isAdmin = name.trim().toLowerCase() === process.env.FORM_ADMIN_NAME?.toLowerCase();
-      const token = isAdmin ? null : crypto.randomBytes(32).toString('hex');
+      const token = isAdmin ? null : ResponseService.generateToken();
 
       responseData = {
         name: name.trim(),

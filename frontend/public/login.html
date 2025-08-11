@@ -223,7 +223,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{nonce}}">
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -256,10 +256,7 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    // Succès - sauvegarder la session
-                    sessionStorage.setItem('userId', result.user.id);
-                    sessionStorage.setItem('username', result.user.username);
-                    sessionStorage.setItem('userRole', result.user.role);
+                    // Succès - session créée côté serveur via cookie sécurisé
                     
                     successMessage.textContent = 'Connexion réussie ! Redirection...';
                     successMessage.style.display = 'block';
@@ -324,11 +321,26 @@
             }
         }
         
+        // Fonction pour vérifier l'authentification
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification auth:', error);
+            }
+            return null;
+        }
+
         // Vérifier si l'utilisateur est déjà connecté
-        window.addEventListener('DOMContentLoaded', function() {
-            // Si session utilisateur active, rediriger
-            if (sessionStorage.getItem('userId')) {
-                const role = sessionStorage.getItem('userRole');
+        window.addEventListener('DOMContentLoaded', async function() {
+            const auth = await checkAuthStatus();
+            if (auth && auth.user) {
+                const role = auth.user.role;
                 if (role === 'admin') {
                     window.location.href = '/admin';
                 } else {

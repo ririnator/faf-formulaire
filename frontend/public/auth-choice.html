@@ -212,18 +212,32 @@
         </p>
     </div>
 
-    <script>
+    <script nonce="{{nonce}}">
         function continueAsGuest() {
             // Mode legacy pour transition douce
-            sessionStorage.setItem('guestMode', 'true');
-            sessionStorage.setItem('authChoice', 'guest');
+            // Pas besoin de stockage client, utilisation cookie serveur
             window.location.href = '/';
         }
 
+        // Fonction pour vérifier l'authentification
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification auth:', error);
+            }
+            return null;
+        }
+
         // Vérifier si l'utilisateur est déjà connecté
-        window.addEventListener('DOMContentLoaded', function() {
-            // Si session utilisateur active, rediriger vers dashboard
-            if (localStorage.getItem('userToken') || sessionStorage.getItem('userId')) {
+        window.addEventListener('DOMContentLoaded', async function() {
+            const auth = await checkAuthStatus();
+            if (auth && auth.user) {
                 window.location.href = '/dashboard';
                 return;
             }
