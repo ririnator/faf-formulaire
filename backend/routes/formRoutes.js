@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Response = require('../models/Response');
+const ResponseService = require('../services/responseService');
 
 router.post('/response', async (req, res) => {
   try {
@@ -14,7 +15,7 @@ router.post('/response', async (req, res) => {
     const isAdmin = name && name.trim().toLowerCase() === process.env.FORM_ADMIN_NAME?.toLowerCase();
     
     // Generate token for non-admin users
-    const token = isAdmin ? null : require('crypto').randomBytes(32).toString('hex');
+    const token = isAdmin ? null : ResponseService.generateToken();
 
     // Création du document avec le nouveau format
     const responseDoc = new Response({

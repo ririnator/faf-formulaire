@@ -243,7 +243,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{nonce}}">
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -278,10 +278,7 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    // Succès - sauvegarder la session
-                    sessionStorage.setItem('userId', result.user.id);
-                    sessionStorage.setItem('username', result.user.username);
-                    sessionStorage.setItem('userRole', result.user.role);
+                    // Succès - session créée côté serveur via cookie sécurisé
                     
                     // Afficher message de succès
                     let message = 'Compte créé avec succès ! Redirection...';

@@ -14,17 +14,19 @@ const adminRoutes    = require('./routes/adminRoutes');
 const authRoutes     = require('./routes/authRoutes');
 const uploadRoutes   = require('./routes/upload');
 const Response       = require('./models/Response');
+const { HTTP_STATUS, APP_CONSTANTS } = require('./constants');
+const TemplateRenderer = require('./utils/templateRenderer');
 const { ensureAdmin, authenticateAdmin, destroySession } = require('./middleware/auth');
 const { createSecurityMiddleware, createSessionOptions } = require('./middleware/security');
 const { createStandardBodyParser, createPayloadErrorHandler } = require('./middleware/bodyParser');
 const { csrfTokenMiddleware } = require('./middleware/csrf');
 
 const app  = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || APP_CONSTANTS.DEFAULT_PORT;
 
 // Health check endpoint pour Docker
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
+  res.status(HTTP_STATUS.OK).json({ 
     status: 'healthy', 
     timestamp: Date.now(),
     uptime: process.uptime()
@@ -123,17 +125,32 @@ mongoose.connect(process.env.MONGODB_URI)
 // 6) Front public (index.html, view.html…)
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 
-// 7) Pages d'authentification
+// 7) Pages d'authentification avec CSP nonce
 app.get('/auth-choice', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/public/auth-choice.html'));
+  try {
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/public/auth-choice.html'), res);
+    res.send(html);
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Page not found');
+  }
 });
 
 app.get('/register', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/public/register.html'));
+  try {
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/public/register.html'), res);
+    res.send(html);
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Page not found');
+  }
 });
 
 app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/public/login.html'));
+  try {
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/public/login.html'), res);
+    res.send(html);
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Page not found');
+  }
 });
 
 app.get('/admin-login', (req, res) => {
@@ -178,10 +195,10 @@ if (process.env.NODE_ENV !== 'production') {
         version: 'debug-1.0'
       };
       console.log('Sending response:', JSON.stringify(response, null, 2));
-      res.status(200).json(response);
+      res.status(HTTP_STATUS.OK).json(response);
     } catch (error) {
       console.error('ERROR in debug endpoint:', error);
-      res.status(500).json({ error: error.message });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message });
     }
   });
 
@@ -191,7 +208,7 @@ if (process.env.NODE_ENV !== 'production') {
     console.log('Headers:', req.headers);
     try {
       res.setHeader('Content-Type', 'application/json');
-      res.status(200).json({
+      res.status(HTTP_STATUS.OK).json({
         received: req.body,
         method: req.method,
         path: req.path,
@@ -199,7 +216,7 @@ if (process.env.NODE_ENV !== 'production') {
       });
     } catch (error) {
       console.error('ERROR in debug echo:', error);
-      res.status(500).json({ error: error.message });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message });
     }
   });
 }
@@ -213,7 +230,7 @@ app.get('/api/view/:token', async (req, res) => {
     const { token } = req.params;
     const userResp  = await Response.findOne({ token, isAdmin: false }).lean();
     if (!userResp) {
-      return res.status(404).json({ error: 'Lien invalide ou expiré' });
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Lien invalide ou expiré' });
     }
     const adminResp = await Response.findOne({ month: userResp.month, isAdmin: true }).lean();
     return res.json({ user: userResp, admin: adminResp });
@@ -225,7 +242,7 @@ app.get('/api/view/:token', async (req, res) => {
 
 // 11) Limiteur pour les soumissions de formulaire
 const formLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
+  windowMs: APP_CONSTANTS.RATE_LIMIT_WINDOW_MS,
   max: 3,
   message: { message: "Trop de soumissions. Réessaie dans 15 minutes." }
 });
@@ -244,7 +261,7 @@ app.get('/view/:token', (req, res) => {
 
 // 14) 404 générique
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
+  res.status(HTTP_STATUS.NOT_FOUND).sendFile(path.join(__dirname, '../frontend/404.html'));
 });
 
 // 14) Route d'accueil - redirection vers page de choix auth

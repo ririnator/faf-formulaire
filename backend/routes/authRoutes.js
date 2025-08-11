@@ -1,14 +1,16 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const Response = require('../models/Response');
+const { HTTP_STATUS, APP_CONSTANTS } = require('../constants');
 const router = express.Router();
 
 // Validation rules
 const registerValidation = [
   body('username')
     .trim()
-    .isLength({ min: 3, max: 30 })
+    .isLength({ min: APP_CONSTANTS.MIN_USERNAME_LENGTH, max: APP_CONSTANTS.MAX_USERNAME_LENGTH })
     .withMessage('Le nom d\'utilisateur doit contenir entre 3 et 30 caractères')
     .matches(/^[a-zA-Z0-9_-]+$/)
     .withMessage('Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores'),
@@ -19,12 +21,12 @@ const registerValidation = [
     .withMessage('Email invalide'),
   
   body('password')
-    .isLength({ min: 6 })
+    .isLength({ min: APP_CONSTANTS.MIN_PASSWORD_LENGTH })
     .withMessage('Le mot de passe doit contenir au moins 6 caractères'),
   
   body('displayName')
     .trim()
-    .isLength({ min: 1, max: 50 })
+    .isLength({ min: 1, max: APP_CONSTANTS.MAX_DISPLAY_NAME_LENGTH })
     .withMessage('Le nom d\'affichage est requis (max 50 caractères)'),
   
   body('migrateToken')
@@ -50,7 +52,7 @@ router.post('/register', registerValidation, async (req, res) => {
     // Vérifier les erreurs de validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
         error: 'Données invalides',
         details: errors.array()
       });
@@ -65,7 +67,7 @@ router.post('/register', registerValidation, async (req, res) => {
 
     if (existingUser) {
       const field = existingUser.email === email ? 'email' : 'nom d\'utilisateur';
-      return res.status(409).json({ 
+      return res.status(HTTP_STATUS.CONFLICT).json({ 
         error: `Ce ${field} est déjà utilisé`
       });
     }
@@ -101,28 +103,37 @@ router.post('/register', registerValidation, async (req, res) => {
 
     await user.save();
 
-    // Si migration : associer les anciennes réponses
+    // Si migration : associer les anciennes réponses avec transaction
     if (migrateToken && migrationData.legacyName) {
-      const migrationResult = await Response.updateMany(
-        { 
-          name: migrationData.legacyName,
-          authMethod: { $ne: 'user' }
-        },
-        { 
-          $set: { 
-            userId: user._id,
-            authMethod: 'user'
-          },
-          $unset: { 
-            token: 1,
-            name: 1
-          }
-        }
-      );
+      const session = await mongoose.startSession();
       
-      migratedResponses = migrationResult.modifiedCount;
-      user.metadata.responseCount = migratedResponses;
-      await user.save();
+      try {
+        await session.withTransaction(async () => {
+          const migrationResult = await Response.updateMany(
+            { 
+              name: migrationData.legacyName,
+              authMethod: { $ne: 'user' }
+            },
+            { 
+              $set: { 
+                userId: user._id,
+                authMethod: 'user'
+              },
+              $unset: { 
+                token: 1,
+                name: 1
+              }
+            },
+            { session }
+          );
+          
+          migratedResponses = migrationResult.modifiedCount;
+          user.metadata.responseCount = migratedResponses;
+          await user.save({ session });
+        });
+      } finally {
+        await session.endSession();
+      }
     }
 
     // Créer la session
@@ -137,8 +148,9 @@ router.post('/register', registerValidation, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors de l\'inscription:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    // Logging sécurisé - ne pas exposer les détails sensibles
+    console.error('Erreur inscription:', error.message || 'Erreur inconnue');
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -147,7 +159,7 @@ router.post('/login', loginValidation, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
         error: 'Données invalides',
         details: errors.array()
       });
@@ -165,7 +177,7 @@ router.post('/login', loginValidation, async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({ 
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ 
         error: 'Email/nom d\'utilisateur ou mot de passe incorrect'
       });
     }
@@ -173,7 +185,7 @@ router.post('/login', loginValidation, async (req, res) => {
     // Vérifier le mot de passe
     const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
-      return res.status(401).json({ 
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ 
         error: 'Email/nom d\'utilisateur ou mot de passe incorrect'
       });
     }
@@ -191,8 +203,8 @@ router.post('/login', loginValidation, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la connexion:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('Erreur connexion:', error.message || 'Erreur inconnue');
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -201,7 +213,7 @@ router.post('/logout', (req, res) => {
   if (req.session) {
     req.session.destroy((err) => {
       if (err) {
-        console.error('Erreur lors de la déconnexion:', err);
+        console.error('Erreur déconnexion:', err.message || 'Erreur inconnue');
         return res.status(500).json({ error: 'Erreur lors de la déconnexion' });
       }
       res.json({ message: 'Déconnexion réussie' });
@@ -215,7 +227,7 @@ router.post('/logout', (req, res) => {
 router.get('/me', async (req, res) => {
   try {
     if (!req.session?.userId) {
-      return res.status(401).json({ error: 'Non authentifié' });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ error: 'Non authentifié' });
     }
 
     const user = await User.findById(req.session.userId)
@@ -223,7 +235,7 @@ router.get('/me', async (req, res) => {
 
     if (!user || !user.metadata.isActive) {
       req.session.destroy();
-      return res.status(401).json({ error: 'Utilisateur introuvable' });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ error: 'Utilisateur introuvable' });
     }
 
     res.json({
@@ -231,8 +243,8 @@ router.get('/me', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la récupération du profil:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('Erreur récupération profil:', error.message || 'Erreur inconnue');
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -271,12 +283,12 @@ router.put('/profile', [
 ], async (req, res) => {
   try {
     if (!req.session?.userId) {
-      return res.status(401).json({ error: 'Non authentifié' });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ error: 'Non authentifié' });
     }
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
         error: 'Données invalides',
         details: errors.array()
       });
@@ -310,8 +322,8 @@ router.put('/profile', [
     });
 
   } catch (error) {
-    console.error('Erreur lors de la mise à jour du profil:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('Erreur mise à jour profil:', error.message || 'Erreur inconnue');
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -328,12 +340,12 @@ router.post('/claim-responses', [
 ], async (req, res) => {
   try {
     if (!req.session?.userId) {
-      return res.status(401).json({ error: 'Authentification requise' });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ error: 'Authentification requise' });
     }
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
         error: 'Données invalides',
         details: errors.array()
       });
@@ -341,7 +353,7 @@ router.post('/claim-responses', [
 
     const user = await User.findById(req.session.userId);
     if (!user) {
-      return res.status(401).json({ error: 'Utilisateur introuvable' });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ error: 'Utilisateur introuvable' });
     }
 
     const { legacyName, months } = req.body;
@@ -397,8 +409,8 @@ router.post('/claim-responses', [
     });
 
   } catch (error) {
-    console.error('Erreur lors de la récupération des réponses:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('Erreur récupération réponses:', error.message || 'Erreur inconnue');
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
   }
 });
 

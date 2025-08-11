@@ -1,0 +1,48 @@
+// Application Constants
+module.exports = {
+  // Security
+  BCRYPT_SALT_ROUNDS: 12,
+  TOKEN_BYTES_LENGTH: 32,
+  CSP_NONCE_BYTES: 16,
+
+  // Cache & Performance
+  CACHE_TTL_MINUTES: 10,
+  CACHE_TTL_MS: 10 * 60 * 1000, // 10 minutes
+  MAX_CACHE_SIZE: 50,
+
+  // File Upload Limits
+  MAX_FILE_SIZE_MB: 10,
+  MAX_FILE_SIZE_BYTES: 10 * 1024 * 1024,
+
+  // Form Validation Limits
+  MIN_NAME_LENGTH: 2,
+  MAX_NAME_LENGTH: 100,
+  MIN_USERNAME_LENGTH: 3,
+  MAX_USERNAME_LENGTH: 30,
+  MAX_DISPLAY_NAME_LENGTH: 50,
+  MIN_PASSWORD_LENGTH: 6,
+  MAX_QUESTION_LENGTH: 500,
+  MAX_ANSWER_LENGTH: 10000,
+  MAX_RESPONSES_COUNT: 20,
+
+  // Body Parser Limits
+  FORM_BODY_LIMIT: '512kb',
+  FORM_EXTENDED_LIMIT: '2mb',
+  UPLOAD_LIMIT: '5mb',
+  DEFAULT_BODY_LIMIT: '1mb',
+
+  // Rate Limiting
+  RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+  RATE_LIMIT_MAX_REQUESTS: 3,
+
+  // Session Configuration
+  SESSION_COOKIE_MAX_AGE: 1000 * 60 * 60, // 1 hour
+  SESSION_TTL_DAYS: 14,
+  
+  // Database Connection
+  DB_CONNECTION_TIMEOUT: 5000,
+  DB_HEARTBEAT_FREQUENCY: 2000,
+
+  // Server Configuration
+  DEFAULT_PORT: 3000
+};

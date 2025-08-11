@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const { APP_CONSTANTS } = require('../constants');
 const Schema = mongoose.Schema;
 
 const UserSchema = new Schema({
@@ -66,7 +67,7 @@ UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
   try {
-    const salt = await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(APP_CONSTANTS.BCRYPT_SALT_ROUNDS);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {

@@ -1,10 +1,24 @@
 const crypto = require('crypto');
 const Response = require('../models/Response');
 const EnvironmentConfig = require('../config/environment');
+const { APP_CONSTANTS } = require('../constants');
 
 class ResponseService {
   static generateToken() {
-    return crypto.randomBytes(32).toString('hex');
+    // Génération sécurisée avec entropie additionnelle
+    const timestamp = Date.now().toString(36);
+    const randomComponent = crypto.randomBytes(APP_CONSTANTS.TOKEN_BYTES_LENGTH);
+    const processComponent = Buffer.from(process.pid.toString());
+    
+    // Combiner les sources d'entropie
+    const combined = Buffer.concat([
+      randomComponent,
+      Buffer.from(timestamp),
+      processComponent
+    ]);
+    
+    // Hacher le résultat pour uniformité
+    return crypto.createHash('sha256').update(combined).digest('hex');
   }
 
   static getCurrentMonth() {
@@ -71,7 +85,7 @@ class ResponseService {
     };
   }
 
-  static async getAllResponses(page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc') {
+  static async getAllResponses(page = 1, limit = APP_CONSTANTS.DEFAULT_PAGE_SIZE || 10, sortBy = 'createdAt', sortOrder = 'desc') {
     const skip = (page - 1) * limit;
     const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
