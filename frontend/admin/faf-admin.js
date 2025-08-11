@@ -558,23 +558,26 @@ export const Charts = {
       // DEBUG: Log détaillé pour Safari
       const decodedAnswer = Utils.unescapeHTML(answer);
       
-      // Log uniquement si c'est une URL ou s'il y a eu un changement
-      if (decodedAnswer.includes('http') || answer !== decodedAnswer) {
-        const isValidImage = Utils.isTrustedImageUrl(decodedAnswer);
-        console.log(`🔍 [${user}] URL:`, {
-          original: answer.substring(0, 100) + (answer.length > 100 ? '...' : ''),
-          decoded: decodedAnswer.substring(0, 100) + (decodedAnswer.length > 100 ? '...' : ''),
-          isValidImage: isValidImage
-        });
-        
-        // Si c'est une URL mais pas reconnue comme image valide, afficher pourquoi
-        if (decodedAnswer.includes('cloudinary') && !isValidImage) {
-          console.warn(`⚠️ URL Cloudinary non reconnue comme image valide:`, decodedAnswer);
+      // Log uniquement si c'est potentiellement une URL (commence par http/https)
+      const isUrl = decodedAnswer.startsWith('http://') || decodedAnswer.startsWith('https://');
+      if (isUrl || answer !== decodedAnswer) {
+        if (isUrl) {
+          const isValidImage = Utils.isTrustedImageUrl(decodedAnswer);
+          console.log(`🔍 [${user}] URL:`, {
+            original: answer.substring(0, 100) + (answer.length > 100 ? '...' : ''),
+            decoded: decodedAnswer.substring(0, 100) + (decodedAnswer.length > 100 ? '...' : ''),
+            isValidImage: isValidImage
+          });
+          
+          // Si c'est une URL mais pas reconnue comme image valide, afficher pourquoi
+          if (decodedAnswer.includes('cloudinary') && !isValidImage) {
+            console.warn(`⚠️ URL Cloudinary non reconnue comme image valide:`, decodedAnswer);
+          }
         }
       }
       
-      // La variable decodedAnswer est déjà définie par le debug ci-dessus
-      const isImage = Utils.isTrustedImageUrl(decodedAnswer);
+      // Ne valider en tant qu'image que si c'est effectivement une URL
+      const isImage = isUrl && Utils.isTrustedImageUrl(decodedAnswer);
 
       if (isImage) {
         // Miniature cliquable avec corrections Safari
