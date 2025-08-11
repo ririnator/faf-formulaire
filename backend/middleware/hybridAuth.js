@@ -120,12 +120,11 @@ function getResponseAccess(req, res, next) {
   next();
 }
 
-// Middleware pour log et analytics
+// Middleware pour log et analytics (sécurisé)
 function logAuthMethod(req, res, next) {
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[HybridAuth] ${req.method} ${req.path} - Auth: ${req.authMethod}${
-      req.currentUser ? ` - User: ${req.currentUser.username}` : ''
-    }${req.viewToken ? ` - Token: ${req.viewToken.substring(0, 8)}...` : ''}`);
+    // Log sécurisé sans données sensibles
+    console.log(`[HybridAuth] ${req.method} ${req.path} - Auth: ${req.authMethod}`);
   }
   next();
 }

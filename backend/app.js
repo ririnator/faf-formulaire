@@ -202,23 +202,24 @@ if (process.env.NODE_ENV !== 'production') {
     }
   });
 
-  app.post('/api/debug/echo', (req, res) => {
-    console.log('=== DEBUG ECHO ===');
-    console.log('Body:', req.body);
-    console.log('Headers:', req.headers);
-    try {
-      res.setHeader('Content-Type', 'application/json');
-      res.status(HTTP_STATUS.OK).json({
-        received: req.body,
-        method: req.method,
-        path: req.path,
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('ERROR in debug echo:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message });
-    }
-  });
+  // Debug endpoint - disabled in production for security
+  if (process.env.NODE_ENV === 'development') {
+    app.post('/api/debug/echo', (req, res) => {
+      // Log sanitized info only - no sensitive data
+      console.log(`[DEBUG] ${req.method} ${req.path}`);
+      try {
+        res.setHeader('Content-Type', 'application/json');
+        res.status(HTTP_STATUS.OK).json({
+          method: req.method,
+          path: req.path,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('[DEBUG] Error:', error.message);
+        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Debug error' });
+      }
+    });
+  }
 }
 
 // 9) API Admin

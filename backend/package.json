@@ -15,7 +15,10 @@
     "test:frontend:coverage": "node ../run-frontend-tests.js --coverage",
     "test:form": "node ../test-form-locally.js",
     "test:all": "npm test && npm run test:frontend",
-    "test:all:coverage": "npm run test:coverage && npm run test:frontend:coverage"
+    "test:all:coverage": "npm run test:coverage && npm run test:frontend:coverage",
+    "test:auth": "jest auth.*test.js",
+    "test:migration": "jest migration.integration.test.js",
+    "test:security": "jest --testPathPattern='(auth|migration|security).*test.js'"
   },
   "keywords": [],
   "author": "",
