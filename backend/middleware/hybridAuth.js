@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const SecureLogger = require('../utils/secureLogger');
 
 // Middleware pour détecter la méthode d'authentification
 function detectAuthMethod(req, res, next) {
@@ -97,7 +98,7 @@ async function enrichUserData(req, res, next) {
         req.session.user = req.currentUser;
       }
     } catch (error) {
-      console.error('Error enriching user data:', error);
+      SecureLogger.logError('Error enriching user data', error);
       // Continuer sans enrichissement en cas d'erreur DB
     }
   }
@@ -122,10 +123,7 @@ function getResponseAccess(req, res, next) {
 
 // Middleware pour log et analytics (sécurisé)
 function logAuthMethod(req, res, next) {
-  if (process.env.NODE_ENV === 'development') {
-    // Log sécurisé sans données sensibles
-    console.log(`[HybridAuth] ${req.method} ${req.path} - Auth: ${req.authMethod}`);
-  }
+  SecureLogger.logAuth(req.method, req.path, req.authMethod);
   next();
 }
 

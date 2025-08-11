@@ -2,7 +2,7 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
-const crypto = require('crypto');
+const TokenGenerator = require('../utils/tokenGenerator');
 const app = require('../app');
 const User = require('../models/User');
 const Response = require('../models/Response');
@@ -32,7 +32,7 @@ describe('Migration Integration Tests', () => {
 
     beforeEach(async () => {
       // Create legacy responses
-      legacyToken = crypto.randomBytes(32).toString('hex');
+      legacyToken = TokenGenerator.generateTestToken(32);
       
       legacyResponses = [
         {
@@ -51,7 +51,7 @@ describe('Migration Integration Tests', () => {
             { question: 'Q1', answer: 'A1' }
           ],
           month: '2024-02',
-          token: crypto.randomBytes(32).toString('hex'),
+          token: TokenGenerator.generateTestToken(32),
           authMethod: 'token'
         },
         {
@@ -60,7 +60,7 @@ describe('Migration Integration Tests', () => {
             { question: 'Q1', answer: 'A1' }
           ],
           month: '2024-03',
-          token: crypto.randomBytes(32).toString('hex'),
+          token: TokenGenerator.generateTestToken(32),
           authMethod: 'token'
         }
       ];
@@ -215,7 +215,7 @@ describe('Migration Integration Tests', () => {
         });
 
       // Create a legacy response
-      legacyToken = crypto.randomBytes(32).toString('hex');
+      legacyToken = TokenGenerator.generateTestToken(32);
       await Response.create({
         name: 'Legacy User',
         responses: [{ question: 'Q', answer: 'A' }],
