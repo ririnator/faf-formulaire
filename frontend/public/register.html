@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - FAF</title>
+    <title>Inscription - FAF</title>
     <style>
         * {
             box-sizing: border-box;
@@ -26,7 +26,7 @@
             border-radius: 20px;
             padding: 40px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 450px;
+            max-width: 500px;
             width: 100%;
         }
 
@@ -89,6 +89,25 @@
             display: none;
         }
 
+        .migration-section {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .migration-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .migration-section p {
+            color: #555;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
         .submit-btn {
             width: 100%;
             padding: 15px;
@@ -115,20 +134,20 @@
             box-shadow: none;
         }
 
-        .register-link {
+        .login-link {
             text-align: center;
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid #e2e8f0;
         }
 
-        .register-link a {
+        .login-link a {
             color: #667eea;
             text-decoration: none;
             font-weight: 600;
         }
 
-        .register-link a:hover {
+        .login-link a:hover {
             text-decoration: underline;
         }
 
@@ -148,25 +167,6 @@
             display: none;
         }
 
-        .admin-section {
-            background: #fffaf0;
-            border: 2px solid #fed7aa;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .admin-section h3 {
-            color: #9a3412;
-            margin-bottom: 10px;
-            font-size: 1rem;
-        }
-
-        .admin-section p {
-            color: #a16207;
-            font-size: 0.9rem;
-        }
-
         @media (max-width: 500px) {
             .form-container {
                 padding: 30px 20px;
@@ -182,49 +182,69 @@
     <div class="form-container">
         <div class="header">
             <div class="logo">👥</div>
-            <h1>Connexion</h1>
-            <p class="subtitle">Accédez à votre compte FAF</p>
+            <h1>Créer un compte</h1>
+            <p class="subtitle">Rejoignez FAF et sauvegardez vos réponses</p>
         </div>
 
         <div id="successMessage" class="success-message"></div>
 
-        <form id="loginForm">
+        <form id="registerForm">
             <div class="form-group">
-                <label for="login">Email ou nom d'utilisateur</label>
-                <input type="text" id="login" name="login" required 
-                       placeholder="votre@email.com ou username" autocomplete="username">
-                <div class="error-message" id="loginError"></div>
+                <label for="username">Nom d'utilisateur</label>
+                <input type="text" id="username" name="username" required 
+                       placeholder="Ex: john_doe" minlength="3" maxlength="30">
+                <div class="error-message" id="usernameError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required 
+                       placeholder="votre@email.com">
+                <div class="error-message" id="emailError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="displayName">Nom d'affichage</label>
+                <input type="text" id="displayName" name="displayName" required 
+                       placeholder="Votre nom complet" maxlength="50">
+                <div class="error-message" id="displayNameError"></div>
             </div>
 
             <div class="form-group">
                 <label for="password">Mot de passe</label>
                 <input type="password" id="password" name="password" required 
-                       placeholder="Votre mot de passe" autocomplete="current-password">
+                       placeholder="Minimum 6 caractères" minlength="6">
                 <div class="error-message" id="passwordError"></div>
             </div>
 
+            <div class="migration-section">
+                <h3>🔄 Migration des anciennes réponses</h3>
+                <p>Si vous avez déjà répondu au formulaire avec un lien privé, copiez le token pour récupérer vos anciennes réponses.</p>
+                <div class="form-group">
+                    <label for="migrateToken">Token de migration (optionnel)</label>
+                    <input type="text" id="migrateToken" name="migrateToken" 
+                           placeholder="Ex: abc123...xyz789" maxlength="64">
+                    <div class="error-message" id="migrateTokenError"></div>
+                </div>
+            </div>
+
             <button type="submit" class="submit-btn" id="submitBtn">
-                Se connecter
+                Créer mon compte
             </button>
 
             <div class="loading" id="loading">
-                <p>Connexion en cours...</p>
+                <p>Création du compte en cours...</p>
             </div>
         </form>
 
-        <div class="admin-section">
-            <h3>🔑 Accès administrateur</h3>
-            <p>Les administrateurs peuvent toujours utiliser l'<a href="/admin-login" style="color: #9a3412;">ancien système d'administration</a>.</p>
-        </div>
-
-        <div class="register-link">
-            <p>Pas encore de compte ? <a href="/register">Créer un compte</a></p>
+        <div class="login-link">
+            <p>Vous avez déjà un compte ? <a href="/login">Se connecter</a></p>
             <p><a href="/auth-choice">← Retour aux options</a></p>
         </div>
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const submitBtn = document.getElementById('submitBtn');
@@ -239,18 +259,20 @@
             loading.style.display = 'block';
             
             const formData = {
-                login: document.getElementById('login').value.trim(),
-                password: document.getElementById('password').value
+                username: document.getElementById('username').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                displayName: document.getElementById('displayName').value.trim(),
+                password: document.getElementById('password').value,
+                migrateToken: document.getElementById('migrateToken').value.trim() || undefined
             };
             
             try {
-                const response = await fetch('/api/auth/login', {
+                const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(formData),
-                    credentials: 'include' // Important pour les sessions
+                    body: JSON.stringify(formData)
                 });
                 
                 const result = await response.json();
@@ -261,17 +283,19 @@
                     sessionStorage.setItem('username', result.user.username);
                     sessionStorage.setItem('userRole', result.user.role);
                     
-                    successMessage.textContent = 'Connexion réussie ! Redirection...';
+                    // Afficher message de succès
+                    let message = 'Compte créé avec succès ! Redirection...';
+                    if (result.migrated && result.migratedCount > 0) {
+                        message += ` ${result.migratedCount} réponse(s) récupérée(s).`;
+                    }
+                    
+                    successMessage.textContent = message;
                     successMessage.style.display = 'block';
                     
-                    // Redirection selon le rôle
+                    // Redirection après 2 secondes
                     setTimeout(() => {
-                        if (result.user.role === 'admin') {
-                            window.location.href = '/admin';
-                        } else {
-                            window.location.href = '/dashboard';
-                        }
-                    }, 1500);
+                        window.location.href = '/dashboard';
+                    }, 2000);
                     
                 } else {
                     // Erreur - afficher les erreurs
@@ -280,7 +304,7 @@
                             showError(error.path, error.msg);
                         });
                     } else {
-                        showError('general', result.error || 'Erreur lors de la connexion');
+                        showError('general', result.error || 'Erreur lors de la création du compte');
                     }
                 }
                 
@@ -324,18 +348,27 @@
             }
         }
         
-        // Vérifier si l'utilisateur est déjà connecté
-        window.addEventListener('DOMContentLoaded', function() {
-            // Si session utilisateur active, rediriger
-            if (sessionStorage.getItem('userId')) {
-                const role = sessionStorage.getItem('userRole');
-                if (role === 'admin') {
-                    window.location.href = '/admin';
-                } else {
-                    window.location.href = '/dashboard';
-                }
+        // Validation en temps réel
+        document.getElementById('username').addEventListener('input', function() {
+            const value = this.value;
+            if (value && !/^[a-zA-Z0-9_-]+$/.test(value)) {
+                showError('username', 'Seuls les lettres, chiffres, tirets et underscores sont autorisés');
+            } else {
+                clearFieldError('username');
             }
         });
+        
+        function clearFieldError(field) {
+            const errorElement = document.getElementById(field + 'Error');
+            const inputElement = document.getElementById(field);
+            
+            if (errorElement) {
+                errorElement.style.display = 'none';
+            }
+            if (inputElement) {
+                inputElement.classList.remove('error');
+            }
+        }
     </script>
 </body>
 </html>

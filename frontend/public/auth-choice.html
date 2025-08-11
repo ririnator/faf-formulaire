@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenue sur FAF - Form a Friend</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .auth-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .auth-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+
+        .primary-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .secondary-btn {
+            background: #48bb78;
+            color: white;
+        }
+
+        .secondary-btn:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+        }
+
+        .guest-btn {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+
+        .guest-btn:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .features {
+            text-align: left;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+
+        .features h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .features li {
+            padding: 8px 0;
+            color: #555;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .features li:before {
+            content: "✨";
+            position: absolute;
+            left: 0;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            color: #999;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e2e8f0;
+            z-index: 1;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        @media (max-width: 500px) {
+            .auth-container {
+                padding: 30px 20px;
+            }
+            
+            .logo {
+                font-size: 2.5rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="logo">👥</div>
+        <h1>Bienvenue sur FAF</h1>
+        <p class="subtitle">Form a Friend - Partagez vos réponses entre amis</p>
+
+        <div class="features">
+            <h3>Avec un compte utilisateur :</h3>
+            <ul>
+                <li>Sauvegardez toutes vos réponses</li>
+                <li>Tableau de bord personnel</li>
+                <li>Historique complet</li>
+                <li>Profil personnalisé</li>
+                <li>Récupérez vos anciennes réponses</li>
+            </ul>
+        </div>
+
+        <div class="auth-options">
+            <a href="/register" class="auth-btn primary-btn">
+                Créer un compte
+            </a>
+            <a href="/login" class="auth-btn secondary-btn">
+                Se connecter
+            </a>
+        </div>
+
+        <div class="divider">
+            <span>ou</span>
+        </div>
+
+        <button onclick="continueAsGuest()" class="auth-btn guest-btn">
+            Continuer en mode invité
+        </button>
+        
+        <p style="margin-top: 15px; font-size: 0.9rem; color: #999;">
+            Le mode invité utilise l'ancien système avec liens privés
+        </p>
+    </div>
+
+    <script>
+        function continueAsGuest() {
+            // Mode legacy pour transition douce
+            sessionStorage.setItem('guestMode', 'true');
+            sessionStorage.setItem('authChoice', 'guest');
+            window.location.href = '/';
+        }
+
+        // Vérifier si l'utilisateur est déjà connecté
+        window.addEventListener('DOMContentLoaded', function() {
+            // Si session utilisateur active, rediriger vers dashboard
+            if (localStorage.getItem('userToken') || sessionStorage.getItem('userId')) {
+                window.location.href = '/dashboard';
+                return;
+            }
+        });
+    </script>
+</body>
+</html>
