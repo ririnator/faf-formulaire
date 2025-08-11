@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const Response = require('../models/Response');
 const { HTTP_STATUS, APP_CONSTANTS } = require('../constants');
+const { authLimiters } = require('../middleware/authRateLimit');
 const router = express.Router();
 
 // Validation rules
@@ -46,8 +47,8 @@ const loginValidation = [
     .withMessage('Mot de passe requis')
 ];
 
-// POST /api/auth/register - Inscription
-router.post('/register', registerValidation, async (req, res) => {
+// POST /api/auth/register - Inscription avec rate limiting
+router.post('/register', authLimiters.register, registerValidation, async (req, res) => {
   try {
     // Vérifier les erreurs de validation
     const errors = validationResult(req);
@@ -109,6 +110,12 @@ router.post('/register', registerValidation, async (req, res) => {
       
       try {
         await session.withTransaction(async () => {
+          // Vérifier que l'utilisateur existe toujours
+          const userStillExists = await User.exists({ _id: user._id }).session(session);
+          if (!userStillExists) {
+            throw new Error('User creation failed during migration');
+          }
+
           const migrationResult = await Response.updateMany(
             { 
               name: migrationData.legacyName,
@@ -128,9 +135,21 @@ router.post('/register', registerValidation, async (req, res) => {
           );
           
           migratedResponses = migrationResult.modifiedCount;
-          user.metadata.responseCount = migratedResponses;
-          await user.save({ session });
+          
+          // Validation avant mise à jour
+          if (migratedResponses > 0) {
+            user.metadata.responseCount = migratedResponses;
+            await user.save({ session });
+          }
         });
+      } catch (migrationError) {
+        // Log error safely without sensitive data
+        console.error('Migration error for user:', user.username, '- Error:', migrationError.message);
+        
+        // Migration failed but user created - continue with warning
+        // Don't fail the entire registration
+        migratedResponses = 0;
+        migrationData.error = 'Migration partially failed';
       } finally {
         await session.endSession();
       }
@@ -154,8 +173,8 @@ router.post('/register', registerValidation, async (req, res) => {
   }
 });
 
-// POST /api/auth/login - Connexion
-router.post('/login', loginValidation, async (req, res) => {
+// POST /api/auth/login - Connexion avec rate limiting
+router.post('/login', authLimiters.login, loginValidation, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -248,8 +267,8 @@ router.get('/me', async (req, res) => {
   }
 });
 
-// PUT /api/auth/profile - Mettre à jour le profil
-router.put('/profile', [
+// PUT /api/auth/profile - Mettre à jour le profil avec rate limiting
+router.put('/profile', authLimiters.profileUpdate, [
   body('displayName')
     .optional()
     .trim()
