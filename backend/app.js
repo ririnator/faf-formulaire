@@ -11,6 +11,7 @@ const helmet        = require('helmet');
 const formRoutes     = require('./routes/formRoutes');
 const responseRoutes = require('./routes/responseRoutes');
 const adminRoutes    = require('./routes/adminRoutes');
+const authRoutes     = require('./routes/authRoutes');
 const uploadRoutes   = require('./routes/upload');
 const Response       = require('./models/Response');
 const { ensureAdmin, authenticateAdmin, destroySession } = require('./middleware/auth');
@@ -122,10 +123,24 @@ mongoose.connect(process.env.MONGODB_URI)
 // 6) Front public (index.html, view.html…)
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 
-// 7) Pages de login/logout
+// 7) Pages d'authentification
+app.get('/auth-choice', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/auth-choice.html'));
+});
+
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/register.html'));
+});
+
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/public/login.html'));
 });
+
+app.get('/admin-login', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/admin-login.html'));
+});
+
+// Routes legacy admin
 app.post('/login', authenticateAdmin);
 app.get('/logout', destroySession);
 
@@ -217,6 +232,7 @@ const formLimiter = rateLimit({
 app.use('/api/response', formLimiter);
 
 // 12) API publiques
+app.use('/api/auth', authRoutes);
 app.use('/api/form', formRoutes);
 app.use('/api/response', responseRoutes);
 app.use('/api/upload', uploadRoutes);
@@ -229,6 +245,11 @@ app.get('/view/:token', (req, res) => {
 // 14) 404 générique
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
+});
+
+// 14) Route d'accueil - redirection vers page de choix auth
+app.get('/', (req, res) => {
+  res.redirect('/auth-choice');
 });
 
 // 15) Lancement du serveur

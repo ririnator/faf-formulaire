@@ -55,6 +55,54 @@ function smartEscape(str) {
   return str.replace(/[&<>"'\/]/g, (char) => escapeMap[char]);
 }
 
+// Validation conditionnelle selon le mode d'auth
+const validateResponseConditional = (req, res, next) => {
+  const validations = [];
+  
+  // Si mode legacy (pas d'user connecté), exiger le nom
+  if (req.authMethod !== 'user') {
+    validations.push(
+      body('name')
+        .trim()
+        .isLength({ min: 2, max: 100 })
+        .withMessage('Le nom doit contenir entre 2 et 100 caractères')
+    );
+  }
+  
+  // Validations communes
+  validations.push(
+    body('responses')
+      .isArray({ min: 1, max: 20 })
+      .withMessage('Il faut entre 1 et 20 réponses'),
+    
+    body('responses.*.question')
+      .exists({ checkNull: true, checkFalsy: true })
+      .withMessage('La question ne peut pas être nulle ou vide')
+      .trim()
+      .notEmpty()
+      .isLength({ max: 500 })
+      .withMessage('Chaque question doit être précisée (max 500 caractères)'),
+    
+    body('responses.*.answer')
+      .exists({ checkNull: true, checkFalsy: true })
+      .withMessage('La réponse ne peut pas être nulle ou vide')
+      .trim()
+      .notEmpty()
+      .isLength({ max: 10000 })
+      .withMessage('Chaque réponse ne peut pas être vide (max 10000 caractères)'),
+
+    body('website')
+      .optional()
+      .isEmpty()
+      .withMessage('Champ honeypot détecté - tentative de spam')
+  );
+  
+  // Exécuter toutes les validations
+  Promise.all(validations.map(validation => validation.run(req)))
+    .then(() => next())
+    .catch(next);
+};
+
 const validateResponseStrict = [
   body('name')
     .trim()
@@ -176,6 +224,7 @@ function sanitizeResponse(req, res, next) {
 module.exports = {
   validateResponse,
   validateResponseStrict,
+  validateResponseConditional,
   validateLogin,
   handleValidationErrors,
   sanitizeResponse,
