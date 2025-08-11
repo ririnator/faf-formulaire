@@ -1,5 +1,6 @@
 // middleware/csrf.js
 const crypto = require('crypto');
+const TokenGenerator = require('../utils/tokenGenerator');
 
 /**
  * Middleware CSRF simple pour les opérations sensibles
@@ -14,7 +15,7 @@ function generateCSRFToken(req) {
     throw new Error('Session middleware required for CSRF protection');
   }
   
-  const token = crypto.randomBytes(32).toString('hex');
+  const token = TokenGenerator.generateCSRFToken();
   req.session.csrfToken = token;
   return token;
 }

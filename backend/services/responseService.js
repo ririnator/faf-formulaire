@@ -2,23 +2,11 @@ const crypto = require('crypto');
 const Response = require('../models/Response');
 const EnvironmentConfig = require('../config/environment');
 const { APP_CONSTANTS } = require('../constants');
+const TokenGenerator = require('../utils/tokenGenerator');
 
 class ResponseService {
   static generateToken() {
-    // Génération sécurisée avec entropie additionnelle
-    const timestamp = Date.now().toString(36);
-    const randomComponent = crypto.randomBytes(APP_CONSTANTS.TOKEN_BYTES_LENGTH);
-    const processComponent = Buffer.from(process.pid.toString());
-    
-    // Combiner les sources d'entropie
-    const combined = Buffer.concat([
-      randomComponent,
-      Buffer.from(timestamp),
-      processComponent
-    ]);
-    
-    // Hacher le résultat pour uniformité
-    return crypto.createHash('sha256').update(combined).digest('hex');
+    return TokenGenerator.generateResponseToken();
   }
 
   static getCurrentMonth() {

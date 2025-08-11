@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Response = require('../models/Response');
 const { HTTP_STATUS, APP_CONSTANTS } = require('../constants');
 const { authLimiters } = require('../middleware/authRateLimit');
+const SecureLogger = require('../utils/secureLogger');
 const router = express.Router();
 
 // Validation rules
@@ -144,7 +145,7 @@ router.post('/register', authLimiters.register, registerValidation, async (req, 
         });
       } catch (migrationError) {
         // Log error safely without sensitive data
-        console.error('Migration error for user:', user.username, '- Error:', migrationError.message);
+        SecureLogger.logError('Migration failed during registration', migrationError);
         
         // Migration failed but user created - continue with warning
         // Don't fail the entire registration
@@ -167,8 +168,7 @@ router.post('/register', authLimiters.register, registerValidation, async (req, 
     });
 
   } catch (error) {
-    // Logging sécurisé - ne pas exposer les détails sensibles
-    console.error('Erreur inscription:', error.message || 'Erreur inconnue');
+    SecureLogger.logError('Registration failed', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
   }
 });
@@ -222,7 +222,7 @@ router.post('/login', authLimiters.login, loginValidation, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur connexion:', error.message || 'Erreur inconnue');
+    SecureLogger.logError('Login failed', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
   }
 });
@@ -232,7 +232,7 @@ router.post('/logout', (req, res) => {
   if (req.session) {
     req.session.destroy((err) => {
       if (err) {
-        console.error('Erreur déconnexion:', err.message || 'Erreur inconnue');
+        SecureLogger.logError('Logout failed', err);
         return res.status(500).json({ error: 'Erreur lors de la déconnexion' });
       }
       res.json({ message: 'Déconnexion réussie' });
@@ -262,7 +262,7 @@ router.get('/me', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur récupération profil:', error.message || 'Erreur inconnue');
+    SecureLogger.logError('Profile retrieval failed', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
   }
 });
@@ -341,7 +341,7 @@ router.put('/profile', authLimiters.profileUpdate, [
     });
 
   } catch (error) {
-    console.error('Erreur mise à jour profil:', error.message || 'Erreur inconnue');
+    SecureLogger.logError('Profile update failed', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
   }
 });
@@ -428,7 +428,7 @@ router.post('/claim-responses', [
     });
 
   } catch (error) {
-    console.error('Erreur récupération réponses:', error.message || 'Erreur inconnue');
+    SecureLogger.logError('Response retrieval failed', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
   }
 });

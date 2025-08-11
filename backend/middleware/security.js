@@ -1,6 +1,7 @@
 // middleware/security.js
 const helmet = require('helmet');
 const crypto = require('crypto');
+const TokenGenerator = require('../utils/tokenGenerator');
 
 /**
  * Enhanced Security Middleware with Nonce-based CSP
@@ -8,7 +9,7 @@ const crypto = require('crypto');
  */
 
 function generateNonce() {
-  return crypto.randomBytes(16).toString('base64');
+  return TokenGenerator.generateNonce();
 }
 
 function createSecurityMiddleware() {
