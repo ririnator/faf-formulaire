@@ -36,11 +36,11 @@ class HybridIndexMonitor extends EventEmitter {
       
       // Index usage patterns
       indexUsage: {
-        responses_userId_1: { hits: 0, misses: 0, efficiency: 0 },
-        responses_token_1: { hits: 0, misses: 0, efficiency: 0 },
-        responses_month_1_isAdmin_1: { hits: 0, misses: 0, efficiency: 0 },
-        responses_createdAt_-1: { hits: 0, misses: 0, efficiency: 0 },
-        responses_compound_hybrid: { hits: 0, misses: 0, efficiency: 0 }
+        'responses_userId_1': { hits: 0, misses: 0, efficiency: 0 },
+        'responses_token_1': { hits: 0, misses: 0, efficiency: 0 },
+        'responses_month_1_isAdmin_1': { hits: 0, misses: 0, efficiency: 0 },
+        'responses_createdAt_-1': { hits: 0, misses: 0, efficiency: 0 },
+        'responses_compound_hybrid': { hits: 0, misses: 0, efficiency: 0 }
       },
       
       // Query pattern analysis
