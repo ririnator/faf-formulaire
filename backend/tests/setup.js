@@ -1,35 +1,17 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const mongoose = require('mongoose');
+// Simplified setup that uses global database instance
+const { setupGlobalDatabase, cleanupGlobalDatabase, cleanupBetweenTests } = require('./setup-global');
 
-let mongoServer;
-
+// Global setup - runs once for entire test suite
 beforeAll(async () => {
-  // Start in-memory MongoDB instance
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  
-  await mongoose.connect(mongoUri);
-}, 30000); // Increased timeout for DB setup
+  await setupGlobalDatabase();
+}, 60000);
 
+// Global teardown - runs once after all tests
 afterAll(async () => {
-  // Clean up database and connections
-  if (mongoose.connection.readyState !== 0) {
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
-  }
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
+  await cleanupGlobalDatabase();
 }, 30000);
 
+// Clean between each test
 afterEach(async () => {
-  // Quick cleanup after each test
-  if (mongoose.connection.readyState === 1) {
-    const collections = mongoose.connection.collections;
-    const promises = [];
-    for (const key in collections) {
-      promises.push(collections[key].deleteMany({}));
-    }
-    await Promise.all(promises);
-  }
+  await cleanupBetweenTests();
 }, 10000);

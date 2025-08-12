@@ -49,8 +49,10 @@ function cleanupCache() {
   }
 }
 
-// Periodic cache cleanup every 5 minutes
-setInterval(cleanupCache, 5 * 60 * 1000);
+// Periodic cache cleanup every 5 minutes (only in production)
+if (process.env.NODE_ENV === 'production') {
+  setInterval(cleanupCache, 5 * 60 * 1000);
+}
 
 /**
  * Pre-warm cache for current month to improve initial performance
@@ -77,18 +79,20 @@ async function preWarmCurrentMonth() {
   }
 }
 
-// Pre-warm on startup (after 10s to allow DB connection)
-setTimeout(preWarmCurrentMonth, 10000);
+// Pre-warm on startup (only in production, not during tests)
+if (process.env.NODE_ENV === 'production') {
+  setTimeout(preWarmCurrentMonth, 10000);
 
-// Pre-warm monthly (on the 1st of each month at 1 AM)
-const now = new Date();
-const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 1, 0, 0);
-const timeToNextMonth = nextMonth.getTime() - now.getTime();
-setTimeout(() => {
-  preWarmCurrentMonth();
-  // Then repeat monthly
-  setInterval(preWarmCurrentMonth, 30 * 24 * 60 * 60 * 1000); // 30 days
-}, timeToNextMonth);
+  // Pre-warm monthly (on the 1st of each month at 1 AM)
+  const now = new Date();
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 1, 0, 0);
+  const timeToNextMonth = nextMonth.getTime() - now.getTime();
+  setTimeout(() => {
+    preWarmCurrentMonth();
+    // Then repeat monthly
+    setInterval(preWarmCurrentMonth, 30 * 24 * 60 * 60 * 1000); // 30 days
+  }, timeToNextMonth);
+}
 
 /**
  * Retrieves cached question order or fetches from database
