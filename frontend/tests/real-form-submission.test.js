@@ -23,7 +23,7 @@ class MockFile {
 // Setup du DOM avec le vrai HTML
 function setupRealFormDOM() {
   // Lecture du fichier HTML réel
-  const htmlPath = path.join(__dirname, '../../public/index.html');
+  const htmlPath = path.join(__dirname, '../public/index.html');
   const htmlContent = fs.readFileSync(htmlPath, 'utf8');
   
   // Parser le HTML et l'injecter dans jsdom
