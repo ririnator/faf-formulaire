@@ -205,10 +205,20 @@ app.get('/dashboard', ensureAdmin, (req, res) => {
 });
 
 app.get('/admin', ensureAdmin, (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/admin/admin.html'));
+  try {
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/admin/admin.html'), res);
+    res.send(html);
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Admin dashboard not available');
+  }
 });
 app.get('/admin/gestion', ensureAdmin, (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/admin/admin_gestion.html'));
+  try {
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/admin/admin_gestion.html'), res);
+    res.send(html);
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Admin management not available');
+  }
 });
 
 // Assets admin (faf-admin.js module, CSS, images, etc.) - accessible si session admin active
