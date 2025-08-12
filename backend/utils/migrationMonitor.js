@@ -65,7 +65,7 @@ class MigrationMonitor {
       try {
         report.checks.migrationProgress = await this.checkMigrationProgress();
       } catch (error) {
-        SecureLogger.logError('Migration progress check failed', error);
+        SecureLogger.logMigrationError('progress_check', 'query_failed', 0);
         report.checks.migrationProgress = { error: error.message };
       }
       
@@ -83,7 +83,7 @@ class MigrationMonitor {
       
       return report;
     } catch (error) {
-      SecureLogger.logError('Migration health check failed', error);
+      SecureLogger.logMigrationError('health_check', 'system_failure', 0);
       report.error = error.message;
       return report;
     }

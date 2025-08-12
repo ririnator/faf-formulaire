@@ -144,8 +144,8 @@ router.post('/register', authLimiters.register, registerValidation, async (req, 
           }
         });
       } catch (migrationError) {
-        // Log error safely without sensitive data
-        SecureLogger.logError('Migration failed during registration', migrationError);
+        // Log error safely without sensitive data - use specialized migration error logging
+        SecureLogger.logMigrationError('registration_migration', 'transaction_failed', 0);
         
         // Migration failed but user created - continue with warning
         // Don't fail the entire registration

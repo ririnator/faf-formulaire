@@ -11,6 +11,47 @@ class AuthStateManager {
     this.init();
   }
 
+  // Input sanitization helpers
+  sanitizeInput(input) {
+    if (typeof input !== 'string') return '';
+    // Remove any HTML tags and trim whitespace
+    return input.replace(/<[^>]*>/g, '').trim();
+  }
+
+  sanitizeCredentials(credentials) {
+    const sanitized = {};
+    for (const [key, value] of Object.entries(credentials)) {
+      if (typeof value === 'string') {
+        // For passwords, only trim whitespace (don't alter special chars)
+        if (key === 'password' || key === 'confirmPassword') {
+          sanitized[key] = value.trim();
+        } else {
+          // For other fields, sanitize more strictly
+          sanitized[key] = this.sanitizeInput(value);
+        }
+      } else {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
+  }
+
+  validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  validateUsername(username) {
+    // Username: 3-50 chars, alphanumeric + underscore/dash
+    const usernameRegex = /^[a-zA-Z0-9_-]{3,50}$/;
+    return usernameRegex.test(username);
+  }
+
+  validatePassword(password) {
+    // Password: minimum 8 chars
+    return password && password.length >= 8;
+  }
+
   // Initialize auth state on page load
   async init() {
     this.setState({ loading: true });
@@ -67,6 +108,16 @@ class AuthStateManager {
   async login(credentials) {
     this.setState({ loading: true, error: null });
     
+    // Sanitize input
+    const sanitizedCredentials = this.sanitizeCredentials(credentials);
+    
+    // Validate input
+    if (!sanitizedCredentials.username || !sanitizedCredentials.password) {
+      const error = 'Username and password are required';
+      this.setState({ loading: false, error });
+      return { success: false, error };
+    }
+    
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -74,7 +125,7 @@ class AuthStateManager {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(credentials)
+        body: JSON.stringify(sanitizedCredentials)
       });
 
       const result = await response.json();
@@ -111,6 +162,34 @@ class AuthStateManager {
   async register(userData) {
     this.setState({ loading: true, error: null });
     
+    // Sanitize input
+    const sanitizedData = this.sanitizeCredentials(userData);
+    
+    // Validate input
+    if (!sanitizedData.username || !sanitizedData.password) {
+      const error = 'Username and password are required';
+      this.setState({ loading: false, error });
+      return { success: false, error };
+    }
+    
+    if (!this.validateUsername(sanitizedData.username)) {
+      const error = 'Username must be 3-50 characters and contain only letters, numbers, underscore, or dash';
+      this.setState({ loading: false, error });
+      return { success: false, error };
+    }
+    
+    if (!this.validatePassword(sanitizedData.password)) {
+      const error = 'Password must be at least 8 characters long';
+      this.setState({ loading: false, error });
+      return { success: false, error };
+    }
+    
+    if (sanitizedData.email && !this.validateEmail(sanitizedData.email)) {
+      const error = 'Please provide a valid email address';
+      this.setState({ loading: false, error });
+      return { success: false, error };
+    }
+    
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -118,7 +197,7 @@ class AuthStateManager {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(userData)
+        body: JSON.stringify(sanitizedData)
       });
 
       const result = await response.json();
@@ -184,6 +263,16 @@ class AuthStateManager {
   async updateProfile(profileData) {
     this.setState({ loading: true, error: null });
     
+    // Sanitize input
+    const sanitizedData = this.sanitizeCredentials(profileData);
+    
+    // Validate email if provided
+    if (sanitizedData.email && !this.validateEmail(sanitizedData.email)) {
+      const error = 'Please provide a valid email address';
+      this.setState({ loading: false, error });
+      return { success: false, error };
+    }
+    
     try {
       const response = await fetch('/api/auth/profile', {
         method: 'PUT',
@@ -191,7 +280,7 @@ class AuthStateManager {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(profileData)
+        body: JSON.stringify(sanitizedData)
       });
 
       const result = await response.json();
