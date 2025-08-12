@@ -61,7 +61,7 @@ class SessionMonitoringService {
    */
   trackSessionCreation(sessionId, req, userId = null) {
     const clientIP = this.getClientIP(req);
-    const userAgent = req.get('User-Agent') || 'unknown';
+    const userAgent = (req.get && req.get('User-Agent')) || req.headers['user-agent'] || 'unknown';
     const timestamp = Date.now();
 
     // Update active sessions count
@@ -156,7 +156,7 @@ class SessionMonitoringService {
         recentAttempts: recentFailures.slice(-3)
       });
 
-      SecureLogger.logError('IP marked as suspicious due to failed logins', {
+      SecureLogger.logWarning('IP marked as suspicious due to failed logins', {
         clientIP: this.maskIP(clientIP),
         attempts: recentFailures.length,
         timeWindow: `${this.config.timeWindow / 1000}s`
@@ -203,9 +203,9 @@ class SessionMonitoringService {
    * Detect suspicious session patterns
    */
   detectSuspiciousSession(clientIP, userId, userAgent, req) {
-    // Check for rapid session creation
+    // Check for rapid session creation - only flag if approaching the limit
     const ipSessions = this.activeSessions.get(clientIP) || 0;
-    if (ipSessions >= this.config.maxSessionsPerIP / 2) {
+    if (ipSessions >= this.config.maxSessionsPerIP - 1) {
       return true;
     }
 
@@ -317,7 +317,8 @@ class SessionMonitoringService {
       timestamp: new Date().toISOString()
     };
 
-    SecureLogger.logError('Suspicious session activity detected: ' + activityType, { details: logData });
+    // Use logWarning instead of logError since this is a warning about suspicious activity, not an error
+    SecureLogger.logWarning('Suspicious session activity detected: ' + activityType, logData);
 
     // In production, you might want to:
     // 1. Send alerts to administrators
@@ -332,16 +333,17 @@ class SessionMonitoringService {
   isSuspiciousUserAgent(userAgent) {
     if (!userAgent) return true;
 
+    // Be more permissive - only flag clearly automated tools
     const suspiciousPatterns = [
-      /bot/i,
-      /crawler/i,
-      /spider/i,
-      /curl/i,
-      /wget/i,
-      /python/i,
-      /java/i,
+      /^curl/i,
+      /^wget/i,
+      /^python-requests/i,
+      /^java/i,
       /postman/i,
-      /insomnia/i
+      /insomnia/i,
+      /^bot\//i,  // Only flag explicit bot user agents, not partial matches
+      /crawler/i,
+      /spider/i
     ];
 
     return suspiciousPatterns.some(pattern => pattern.test(userAgent));
@@ -351,13 +353,11 @@ class SessionMonitoringService {
    * Check for suspicious request headers
    */
   hasSuspiciousHeaders(headers) {
-    // Check for missing common headers
-    if (!headers['user-agent'] || !headers['accept']) {
-      return true;
-    }
-
-    // Check for automated tools
-    const automation_headers = ['x-requested-with', 'x-automated-tool'];
+    // Only check for explicitly suspicious headers, not missing ones
+    // Missing headers are common with legitimate requests
+    
+    // Check for automated tools indicators
+    const automation_headers = ['x-automated-tool', 'x-bot-request'];
     return automation_headers.some(header => headers[header]);
   }
 
