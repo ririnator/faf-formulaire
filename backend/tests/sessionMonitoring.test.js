@@ -134,6 +134,9 @@ describe('SessionMonitoringService', () => {
       const suspiciousHeaders = {
         'x-automated-tool': 'PostmanRuntime/7.26.8'
       };
+      const botHeaders = {
+        'x-bot-request': 'true'
+      };
       const normalHeaders = {
         'user-agent': 'Mozilla/5.0',
         'accept': 'text/html,application/xhtml+xml'
@@ -143,8 +146,9 @@ describe('SessionMonitoringService', () => {
       };
 
       expect(monitoringService.hasSuspiciousHeaders(suspiciousHeaders)).toBe(true);
+      expect(monitoringService.hasSuspiciousHeaders(botHeaders)).toBe(true);
       expect(monitoringService.hasSuspiciousHeaders(normalHeaders)).toBe(false);
-      expect(monitoringService.hasSuspiciousHeaders(missingHeaders)).toBe(true);
+      expect(monitoringService.hasSuspiciousHeaders(missingHeaders)).toBe(false); // Changed: missing headers are now allowed
     });
 
     test('should block sessions from suspicious IPs', () => {
