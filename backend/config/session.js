@@ -1,7 +1,9 @@
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const SessionCleanupService = require('../services/sessionCleanupService');
 
 class SessionConfig {
+  static cleanupService = null;
   static getConfig() {
     if (!process.env.SESSION_SECRET) {
       throw new Error('SESSION_SECRET manquant dans les variables d\'environnement');
@@ -34,6 +36,34 @@ class SessionConfig {
 
   static middleware() {
     return session(this.getConfig());
+  }
+
+  /**
+   * Initialize session cleanup service
+   */
+  static initializeCleanupService() {
+    if (!this.cleanupService) {
+      this.cleanupService = new SessionCleanupService();
+      this.cleanupService.initialize();
+    }
+    return this.cleanupService;
+  }
+
+  /**
+   * Get cleanup service instance
+   */
+  static getCleanupService() {
+    return this.cleanupService;
+  }
+
+  /**
+   * Shutdown cleanup service
+   */
+  static shutdownCleanupService() {
+    if (this.cleanupService) {
+      this.cleanupService.shutdown();
+      this.cleanupService = null;
+    }
   }
 }
 

@@ -6,6 +6,7 @@ const Response = require('../models/Response');
 const { createAdminBodyParser } = require('../middleware/bodyParser');
 const { csrfProtection, csrfTokenEndpoint } = require('../middleware/csrf');
 const { normalizeQuestion } = require('../utils/questionNormalizer');
+const SessionConfig = require('../config/session');
 
 // Configuration constants
 const PIE_CHART_QUESTION = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
@@ -618,6 +619,210 @@ router.get('/months', async (req, res) => {
   } catch (err) {
     console.error('❌ Erreur months :', err);
     res.status(500).json({ error: 'Erreur serveur lors de la récupération des mois', code: 'SERVER_ERROR' });
+  }
+});
+
+// ============================================
+// Session Cleanup Management Endpoints
+// ============================================
+
+// Get cleanup service status and statistics
+router.get('/cleanup/status', async (req, res) => {
+  try {
+    const cleanupService = SessionConfig.getCleanupService();
+    
+    if (!cleanupService) {
+      return res.status(404).json({ 
+        error: 'Cleanup service not initialized',
+        initialized: false
+      });
+    }
+
+    const stats = cleanupService.getCleanupStats();
+    
+    res.json({
+      initialized: true,
+      stats,
+      config: {
+        sessionTTL: cleanupService.config.sessionTTL,
+        userInactivityThreshold: cleanupService.config.userInactivityThreshold,
+        cleanupInterval: cleanupService.config.cleanupInterval,
+        batchSize: cleanupService.config.batchSize,
+        enableAutoCleanup: cleanupService.config.enableAutoCleanup
+      },
+      lastCleanup: stats.lastCleanup
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getting cleanup status:', error);
+    res.status(500).json({ 
+      error: 'Failed to get cleanup status', 
+      code: 'CLEANUP_STATUS_ERROR' 
+    });
+  }
+});
+
+// Run manual cleanup (dry run by default)
+router.post('/cleanup/run', createAdminBodyParser(), async (req, res) => {
+  try {
+    const { dryRun = true, type = 'complete' } = req.body;
+    const cleanupService = SessionConfig.getCleanupService();
+    
+    if (!cleanupService) {
+      return res.status(404).json({ 
+        error: 'Cleanup service not initialized',
+        code: 'SERVICE_NOT_FOUND'
+      });
+    }
+
+    let result;
+    
+    switch (type) {
+      case 'sessions':
+        await cleanupService.cleanupExpiredSessions(dryRun);
+        result = {
+          type: 'sessions',
+          stats: { expiredSessions: cleanupService.cleanupStats.expiredSessions },
+          dryRun
+        };
+        break;
+        
+      case 'users':
+        await cleanupService.cleanupInactiveUsers(dryRun);
+        result = {
+          type: 'users',
+          stats: { inactiveUsers: cleanupService.cleanupStats.inactiveUsers },
+          dryRun
+        };
+        break;
+        
+      case 'orphaned':
+        await cleanupService.cleanupOrphanedData(dryRun);
+        result = {
+          type: 'orphaned',
+          stats: { orphanedData: cleanupService.cleanupStats.orphanedData },
+          dryRun
+        };
+        break;
+        
+      case 'complete':
+      default:
+        result = await cleanupService.runManualCleanup({ dryRun });
+        break;
+    }
+
+    res.json({
+      success: true,
+      cleanup: result,
+      timestamp: new Date()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error running manual cleanup:', error);
+    res.status(500).json({ 
+      error: 'Failed to run cleanup', 
+      code: 'CLEANUP_RUN_ERROR',
+      details: error.message
+    });
+  }
+});
+
+// Update cleanup configuration
+router.put('/cleanup/config', createAdminBodyParser(), async (req, res) => {
+  try {
+    const cleanupService = SessionConfig.getCleanupService();
+    
+    if (!cleanupService) {
+      return res.status(404).json({ 
+        error: 'Cleanup service not initialized',
+        code: 'SERVICE_NOT_FOUND'
+      });
+    }
+
+    const allowedConfigKeys = [
+      'sessionTTL',
+      'userInactivityThreshold', 
+      'cleanupInterval',
+      'batchSize',
+      'enableAutoCleanup'
+    ];
+
+    const newConfig = {};
+    for (const key of allowedConfigKeys) {
+      if (req.body[key] !== undefined) {
+        newConfig[key] = req.body[key];
+      }
+    }
+
+    if (Object.keys(newConfig).length === 0) {
+      return res.status(400).json({
+        error: 'No valid configuration provided',
+        allowedKeys: allowedConfigKeys
+      });
+    }
+
+    cleanupService.updateConfig(newConfig);
+    
+    res.json({
+      success: true,
+      updatedConfig: cleanupService.config,
+      timestamp: new Date()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error updating cleanup config:', error);
+    res.status(500).json({ 
+      error: 'Failed to update cleanup configuration', 
+      code: 'CLEANUP_CONFIG_ERROR',
+      details: error.message
+    });
+  }
+});
+
+// Initialize or restart cleanup service
+router.post('/cleanup/initialize', async (req, res) => {
+  try {
+    // Shutdown existing service if any
+    SessionConfig.shutdownCleanupService();
+    
+    // Initialize new service
+    const cleanupService = SessionConfig.initializeCleanupService();
+    
+    res.json({
+      success: true,
+      message: 'Cleanup service initialized successfully',
+      config: cleanupService.config,
+      timestamp: new Date()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error initializing cleanup service:', error);
+    res.status(500).json({ 
+      error: 'Failed to initialize cleanup service', 
+      code: 'CLEANUP_INIT_ERROR',
+      details: error.message
+    });
+  }
+});
+
+// Shutdown cleanup service
+router.post('/cleanup/shutdown', async (req, res) => {
+  try {
+    SessionConfig.shutdownCleanupService();
+    
+    res.json({
+      success: true,
+      message: 'Cleanup service shutdown successfully',
+      timestamp: new Date()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error shutting down cleanup service:', error);
+    res.status(500).json({ 
+      error: 'Failed to shutdown cleanup service', 
+      code: 'CLEANUP_SHUTDOWN_ERROR',
+      details: error.message
+    });
   }
 });
 
