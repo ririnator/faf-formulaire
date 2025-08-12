@@ -103,6 +103,15 @@ class HybridIndexMonitor extends EventEmitter {
     this.isMonitoring = false;
     this.monitoringTimer = null;
     this.queryBuffer = [];
+    
+    // Debug metrics for safety checks
+    this.debugMetrics = {
+      invalidModelQueries: 0,
+      skippedNonResponsesQueries: 0,
+      invalidQueryObjects: 0,
+      totalQueriesIntercepted: 0,
+      lastReset: new Date()
+    };
   }
 
   /**
@@ -208,8 +217,24 @@ class HybridIndexMonitor extends EventEmitter {
       const startTime = Date.now();
       const query = this;
       
+      if (this.parent) {
+        this.parent.debugMetrics.totalQueriesIntercepted++;
+      }
+      
       // Safety check for query.model
       if (!query.model || !query.model.collection) {
+        if (this.parent) {
+          this.parent.debugMetrics.invalidModelQueries++;
+          if (this.parent.config.enableDetailedLogging) {
+            SecureLogger.logDebug('Query intercepted without valid model reference', {
+              hasModel: !!query.model,
+              hasCollection: !!(query.model && query.model.collection),
+              queryType: query.op || 'unknown',
+              invalidModelCount: this.parent.debugMetrics.invalidModelQueries,
+              timestamp: new Date().toISOString()
+            });
+          }
+        }
         return await originalExec.apply(this, args);
       }
       
@@ -222,6 +247,17 @@ class HybridIndexMonitor extends EventEmitter {
         // Only monitor 'responses' collection for hybrid auth
         if (collection === 'responses' && this.parent) {
           await this.parent.analyzeQuery(query, executionTime, result);
+        } else if (this.parent) {
+          this.parent.debugMetrics.skippedNonResponsesQueries++;
+          if (this.parent.config.enableDetailedLogging) {
+            SecureLogger.logDebug('Query skipped from monitoring', {
+              collection,
+              hasParent: !!this.parent,
+              executionTime,
+              skippedCount: this.parent.debugMetrics.skippedNonResponsesQueries,
+              timestamp: new Date().toISOString()
+            });
+          }
         }
         
         return result;
@@ -247,6 +283,16 @@ class HybridIndexMonitor extends EventEmitter {
     try {
       // Safety check for query methods
       if (!query.getQuery || typeof query.getQuery !== 'function') {
+        this.debugMetrics.invalidQueryObjects++;
+        if (this.config.enableDetailedLogging) {
+          SecureLogger.logDebug('Query analysis skipped - invalid query object', {
+            hasGetQuery: !!query.getQuery,
+            getQueryType: typeof query.getQuery,
+            queryConstructor: query.constructor?.name || 'unknown',
+            invalidQueryCount: this.debugMetrics.invalidQueryObjects,
+            timestamp: new Date().toISOString()
+          });
+        }
         return;
       }
       
@@ -648,6 +694,34 @@ class HybridIndexMonitor extends EventEmitter {
       isMonitoring: this.isMonitoring,
       config: { ...this.config }
     };
+  }
+
+  /**
+   * Get debug metrics for safety checks
+   */
+  getDebugMetrics() {
+    return {
+      ...this.debugMetrics,
+      uptime: Date.now() - this.debugMetrics.lastReset.getTime(),
+      interceptRate: this.debugMetrics.totalQueriesIntercepted > 0 
+        ? (this.debugMetrics.invalidModelQueries / this.debugMetrics.totalQueriesIntercepted * 100).toFixed(2) + '%'
+        : '0%'
+    };
+  }
+
+  /**
+   * Reset debug metrics
+   */
+  resetDebugMetrics() {
+    this.debugMetrics = {
+      invalidModelQueries: 0,
+      skippedNonResponsesQueries: 0,
+      invalidQueryObjects: 0,
+      totalQueriesIntercepted: 0,
+      lastReset: new Date()
+    };
+    
+    SecureLogger.logInfo('Hybrid index monitor debug metrics reset');
   }
 
   /**

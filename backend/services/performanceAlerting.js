@@ -261,6 +261,12 @@ class PerformanceAlerting extends EventEmitter {
       try {
         // Safety check for metrics availability
         if (!currentMetrics || !currentMetrics.realtime) {
+          SecureLogger.logDebug(`Alert rule ${ruleId} skipped - metrics not available`, {
+            hasCurrentMetrics: !!currentMetrics,
+            hasRealtimeMetrics: !!(currentMetrics && currentMetrics.realtime),
+            ruleId,
+            timestamp: new Date().toISOString()
+          });
           continue;
         }
         
