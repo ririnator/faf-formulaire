@@ -41,6 +41,31 @@ class SecureLogger {
     }
   }
 
+  static logDebug(message, data = null) {
+    // Debug logging only in development or when explicitly enabled
+    if (process.env.NODE_ENV === 'production' && !process.env.ENABLE_DEBUG_LOGS) return;
+    
+    const timestamp = new Date().toISOString();
+    if (data) {
+      const sanitizedData = this.sanitizeForLogging(data);
+      console.log(`[${timestamp}] DEBUG: ${message}`, sanitizedData);
+    } else {
+      console.log(`[${timestamp}] DEBUG: ${message}`);
+    }
+  }
+
+  static logWarning(message, data = null) {
+    if (!PrivacyUtils.canLog('warning')) return;
+    
+    const timestamp = new Date().toISOString();
+    if (data) {
+      const sanitizedData = this.sanitizeForLogging(data);
+      console.warn(`[${timestamp}] WARN: ${message}`, sanitizedData);
+    } else {
+      console.warn(`[${timestamp}] WARN: ${message}`);
+    }
+  }
+
   static logAuth(method, path, authMethod) {
     // Check privacy config before any auth logging
     if (!PrivacyUtils.canLog('auth')) return;
