@@ -207,6 +207,12 @@ class HybridIndexMonitor extends EventEmitter {
     mongoose.Query.prototype.exec = async function(...args) {
       const startTime = Date.now();
       const query = this;
+      
+      // Safety check for query.model
+      if (!query.model || !query.model.collection) {
+        return await originalExec.apply(this, args);
+      }
+      
       const collection = query.model.collection.name;
       
       try {
@@ -214,7 +220,7 @@ class HybridIndexMonitor extends EventEmitter {
         const executionTime = Date.now() - startTime;
         
         // Only monitor 'responses' collection for hybrid auth
-        if (collection === 'responses') {
+        if (collection === 'responses' && this.parent) {
           await this.parent.analyzeQuery(query, executionTime, result);
         }
         
@@ -223,7 +229,7 @@ class HybridIndexMonitor extends EventEmitter {
       } catch (error) {
         const executionTime = Date.now() - startTime;
         
-        if (collection === 'responses') {
+        if (collection === 'responses' && this.parent) {
           await this.parent.analyzeQuery(query, executionTime, null, error);
         }
         
@@ -236,9 +242,14 @@ class HybridIndexMonitor extends EventEmitter {
    * Analyze individual query performance
    */
   async analyzeQuery(query, executionTime, result, error = null) {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring || !query) return;
 
     try {
+      // Safety check for query methods
+      if (!query.getQuery || typeof query.getQuery !== 'function') {
+        return;
+      }
+      
       const queryString = JSON.stringify(query.getQuery());
       const queryType = this.categorizeQuery(queryString);
       
