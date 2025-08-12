@@ -178,6 +178,11 @@ app.post('/login', sessionMonitoringMiddleware.blockSuspiciousSessions(), authen
 app.get('/logout', destroySession);
 
 // 8) Back-office Admin (HTML + assets)
+// Dashboard route that redirects to the admin interface
+app.get('/dashboard', ensureAdmin, (req, res) => {
+  res.redirect('/admin');
+});
+
 app.get('/admin', ensureAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin/admin.html'));
 });

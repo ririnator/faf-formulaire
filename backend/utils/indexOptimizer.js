@@ -93,7 +93,7 @@ class IndexOptimizer {
       console.log(`📊 Migration phase: ${this.indexAnalysis.migration.phase} (${(migrationRate * 100).toFixed(1)}% migrated)`);
       
     } catch (error) {
-      SecureLogger.logError('Migration phase assessment failed', error);
+      SecureLogger.logMigrationError('phase_assessment', 'analysis_failed', 0);
     }
   }
 

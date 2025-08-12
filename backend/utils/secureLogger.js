@@ -76,14 +76,22 @@ class SecureLogger {
     console.log(`[${timestamp}] AUTH_STATS: AuthMethod=${authMethod} (aggregated)`);
   }
 
-  static logMigration(action, success = true, count = 0) {
+  static logMigration(action, success = true, count = 0, metadata = {}) {
     // Migration logs should not contain user-identifiable information
     if (!PrivacyUtils.canLog('migration')) return;
     
     const timestamp = new Date().toISOString();
     const status = success ? 'SUCCESS' : 'ERROR';
+    const sanitizedMetadata = this.sanitizeForLogging(metadata);
     // Only log aggregate counts, not specific user data
-    console.log(`[${timestamp}] MIGRATION: ${action} - ${status} - Count: ${count}`);
+    console.log(`[${timestamp}] MIGRATION: ${action} - ${status} - Count: ${count}`, sanitizedMetadata);
+  }
+
+  static logMigrationError(action, errorType = 'unknown', count = 0) {
+    // Specific migration error logging that never exposes sensitive data
+    const timestamp = new Date().toISOString();
+    // Only log error types, never actual error messages or stack traces
+    console.error(`[${timestamp}] MIGRATION_ERROR: ${action} - Type: ${errorType} - Affected: ${count}`);
   }
 
   // Production-safe performance logging
