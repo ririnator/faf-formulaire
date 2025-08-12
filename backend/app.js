@@ -186,7 +186,12 @@ app.get('/login', (req, res) => {
 });
 
 app.get('/admin-login', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/public/admin-login.html'));
+  try {
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/public/admin-login.html'), res);
+    res.send(html);
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Page not found');
+  }
 });
 
 // Routes legacy admin with session security
