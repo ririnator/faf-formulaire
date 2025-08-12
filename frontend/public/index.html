@@ -4,111 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FAF - Form-a-Friend | Connecte-toi avec tes amis</title>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAOISURBVFiFtZdLiE1RGIafM+YMGJAyYCBlQCnlMmBASrkNSCkDKQMpAykDKQMpA1IGUgZSBlIGUgZky4CUgZSBlAEpAykDKQMpAykDKQMpnz/7v3vtffY+59x7z3/Wt9a31rf+9a9/7bXOPqKqTCQisgLYBKwCFgGzgQZwG3gLvFTVz+NhM6MFRGQxsA/YCsyaQGsAz4A7qvq0Ww1RVSd8AEuA48A7QCdxvAO2AN5E+sdVQEQWisiDDgN38rgPzJ9Ir2sFRGQmcBZY1wPzN3BWVe9ORP/YCojIbOAysLIH9k9gpao+HU//sRQQkQC4Cqzugf0bWKOqT8bzF1sBETkCbO2B+RtYq6pPJvI3lgIisg+4ACSkLkCB/ar6V1X/AotVdcj5i6jqmA/QAAaBAWCw/bkXxoBGt/7G7QEtIrIY6AdmAH9U9UdXP61CRRQ4o6rDzhpxFbgH1FX1w6RQ6/kJeCBpMCfGHDOiAhE0sCF6VIEKqEAFVEAFVKACKqACKqACKqACFVCBCqiACqiACqhABVRgAhXYICI7i65ARGYDOyVpJbBCkmZKmiVJ7VPQknwZZSPeFKtAHXgh6b0kvZT0XdJrSXcl3ZGky5IuSjov6ZykM2P8nZZ0aoS905KO51D3JN2U9EjSE0lvJL2V9K4tu5e1/FcKSGpIGpS1xpI+SVpP1nqytuZOa7O1Wcut7da+tPZSm61920qrq623tnda+9Lat37e7dZebLf1sxbfVzPfzM5/LrMb+Bd4CjwGXmSRPwdey8J+AfzX9u8F8JelK21tkEX9VBZ1p7Vo7VqO5Lks8mdtb8/ytWdbuy6L/GH2/ZIs+sdQ97PoPzDK3yvKtFM91NpRsojvt4W/rYeeDcE1SadkIZ9oi31A0i1JNyRdl3RN0lVJV2Thnpd0TtJZSWckncr+n5R0QtJxSccknSjhJnuASxSWvkxA+jKz39I2INqBEe2gaPtF21/aDp4Y5StomWDrW9vJI3yNaNEI9qMtBuErlsOxAhHcBo5GcB/YGcF+YI8saHcYt8GdoVgOgyOFHsQeeBYrgO9Q1yqgAhVQARVQgQqoQAVUQAVUoAIqUAEVqIAKVEAFKqACFagZ0R6IbJCsDZe1Q5F2cLSdHx01iyxrO//adnCsjZe1I5K1Q5HdAz6zE/gHXoovb6FBhAoAAAAASUVORK5CYII=" type="image/png">
     <link rel="stylesheet" href="/styles/modern-theme.css">
-    <style>
-        body {
-            padding: var(--spacing-8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .hero-section {
-            text-align: center;
-            margin-bottom: var(--spacing-12);
-        }
-        
-        .logo-emoji {
-            font-size: 4rem;
-            margin-bottom: var(--spacing-4);
-            display: block;
-        }
-        
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--spacing-6);
-            margin: var(--spacing-12) 0;
-        }
-        
-        .feature-card {
-            background: var(--gray-50);
-            padding: var(--spacing-6);
-            border-radius: var(--border-radius-lg);
-            text-align: center;
-            border: 1px solid var(--gray-200);
-            transition: var(--transition-base);
-        }
-        
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--primary-color);
-        }
-        
-        .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: var(--spacing-3);
-            display: block;
-        }
-        
-        .feature-title {
-            font-size: var(--font-size-lg);
-            font-weight: 600;
-            color: var(--gray-700);
-            margin-bottom: var(--spacing-2);
-        }
-        
-        .feature-description {
-            color: var(--gray-500);
-            font-size: var(--font-size-sm);
-        }
-        
-        .cta-section {
-            margin-top: var(--spacing-12);
-            padding: var(--spacing-8);
-            background: var(--gray-50);
-            border-radius: var(--border-radius-lg);
-            text-align: center;
-        }
-        
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: var(--spacing-8);
-            margin: var(--spacing-8) 0;
-        }
-        
-        .stat {
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: var(--font-size-2xl);
-            font-weight: 700;
-            color: var(--primary-color);
-            display: block;
-        }
-        
-        .stat-label {
-            font-size: var(--font-size-sm);
-            color: var(--gray-500);
-        }
-        
-        @media (max-width: 768px) {
-            .features {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats {
-                flex-direction: column;
-                gap: var(--spacing-4);
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/styles/homepage.css">
 </head>
-<body>
+<body class="homepage-body">
     <div class="faf-container">
         <div class="hero-section faf-fade-in">
             <span class="logo-emoji">🌟</span>
@@ -183,35 +83,12 @@
                 </a>
             </div>
             
-            <p style="margin-top: var(--spacing-4); font-size: var(--font-size-sm); color: var(--gray-500);">
+            <p class="cta-note">
                 💡 <strong>Nouveau ?</strong> Crée un compte pour sauvegarder ton historique et récupérer tes anciennes réponses
             </p>
         </div>
     </div>
     
-    <script>
-        // Animation d'entrée progressive pour les cartes
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.feature-card');
-            cards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.classList.add('faf-fade-in');
-                }, index * 100);
-            });
-        });
-        
-        // Effet hover sur les stats
-        const stats = document.querySelectorAll('.stat');
-        stats.forEach(stat => {
-            stat.addEventListener('mouseenter', function() {
-                this.style.transform = 'scale(1.1)';
-                this.style.transition = 'transform 0.3s ease';
-            });
-            
-            stat.addEventListener('mouseleave', function() {
-                this.style.transform = 'scale(1)';
-            });
-        });
-    </script>
+    <script nonce="{{nonce}}" src="/js/homepage.js"></script>
 </body>
 </html>
