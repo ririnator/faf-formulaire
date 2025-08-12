@@ -7,6 +7,8 @@ const { createAdminBodyParser } = require('../middleware/bodyParser');
 const { csrfProtection, csrfTokenEndpoint } = require('../middleware/csrf');
 const { normalizeQuestion } = require('../utils/questionNormalizer');
 const SessionConfig = require('../config/session');
+const DBPerformanceMonitor = require('../services/dbPerformanceMonitor');
+const RealTimeMetrics = require('../services/realTimeMetrics');
 
 // Configuration constants
 const PIE_CHART_QUESTION = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
@@ -822,6 +824,505 @@ router.post('/cleanup/shutdown', async (req, res) => {
       error: 'Failed to shutdown cleanup service', 
       code: 'CLEANUP_SHUTDOWN_ERROR',
       details: error.message
+    });
+  }
+});
+
+// ============================================
+// Database Performance Monitoring Endpoints
+// ============================================
+
+// Global performance monitor instances (will be initialized by app.js)
+let performanceMonitor = null;
+let realTimeMetrics = null;
+
+// Initialize performance monitoring
+router.initializePerformanceMonitoring = (monitor, metrics) => {
+  performanceMonitor = monitor;
+  realTimeMetrics = metrics;
+};
+
+// Get performance monitoring status
+router.get('/performance/status', async (req, res) => {
+  try {
+    if (!performanceMonitor || !realTimeMetrics) {
+      return res.status(503).json({
+        error: 'Performance monitoring not initialized',
+        initialized: false
+      });
+    }
+
+    const monitorStatus = {
+      dbMonitor: {
+        isMonitoring: performanceMonitor.isMonitoring,
+        config: performanceMonitor.config,
+        metricsCount: {
+          queries: performanceMonitor.metrics.queries.size,
+          slowQueries: performanceMonitor.metrics.slowQueries.length,
+          collections: performanceMonitor.metrics.collections.size,
+          indexes: performanceMonitor.metrics.indexes.size
+        }
+      },
+      realTimeMetrics: {
+        isCollecting: realTimeMetrics.isCollecting,
+        config: realTimeMetrics.config,
+        windowsCount: realTimeMetrics.windows.length,
+        activeAlertsCount: realTimeMetrics.activeAlerts.size
+      },
+      system: {
+        nodeVersion: process.version,
+        platform: process.platform,
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage()
+      }
+    };
+
+    res.json({
+      initialized: true,
+      status: monitorStatus,
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting performance status:', error);
+    res.status(500).json({
+      error: 'Failed to get performance monitoring status',
+      code: 'PERFORMANCE_STATUS_ERROR'
+    });
+  }
+});
+
+// Get current performance summary
+router.get('/performance/summary', async (req, res) => {
+  try {
+    if (!performanceMonitor || !realTimeMetrics) {
+      return res.status(503).json({
+        error: 'Performance monitoring not initialized'
+      });
+    }
+
+    const summary = performanceMonitor.getPerformanceSummary();
+    const realtimeStats = realTimeMetrics.getCurrentStats();
+    
+    res.json({
+      summary,
+      realtime: realtimeStats,
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting performance summary:', error);
+    res.status(500).json({
+      error: 'Failed to get performance summary',
+      code: 'PERFORMANCE_SUMMARY_ERROR'
+    });
+  }
+});
+
+// Get real-time metrics
+router.get('/performance/realtime', async (req, res) => {
+  try {
+    if (!realTimeMetrics) {
+      return res.status(503).json({
+        error: 'Real-time metrics not initialized'
+      });
+    }
+
+    const stats = realTimeMetrics.getCurrentStats();
+    const { timespan } = req.query;
+    
+    let windowAnalysis = null;
+    if (timespan) {
+      const timespanMs = parseInt(timespan) * 60 * 1000; // Convert minutes to ms
+      windowAnalysis = realTimeMetrics.getWindowAnalysis(timespanMs);
+    }
+
+    res.json({
+      current: stats,
+      analysis: windowAnalysis,
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting real-time metrics:', error);
+    res.status(500).json({
+      error: 'Failed to get real-time metrics',
+      code: 'REALTIME_METRICS_ERROR'
+    });
+  }
+});
+
+// Get slow queries analysis
+router.get('/performance/slow-queries', async (req, res) => {
+  try {
+    if (!performanceMonitor) {
+      return res.status(503).json({
+        error: 'Performance monitoring not initialized'
+      });
+    }
+
+    const { limit = 50, collection, minExecutionTime } = req.query;
+    
+    let slowQueries = [...performanceMonitor.metrics.slowQueries];
+    
+    // Filter by collection if specified
+    if (collection) {
+      slowQueries = slowQueries.filter(query => query.collection === collection);
+    }
+    
+    // Filter by minimum execution time if specified
+    if (minExecutionTime) {
+      const minTime = parseInt(minExecutionTime);
+      slowQueries = slowQueries.filter(query => query.executionTime >= minTime);
+    }
+    
+    // Sort by execution time (descending) and limit
+    slowQueries = slowQueries
+      .sort((a, b) => b.executionTime - a.executionTime)
+      .slice(0, parseInt(limit));
+
+    // Add analysis for each slow query
+    const analyzedQueries = slowQueries.map(query => ({
+      ...query,
+      hybridIndexAnalysis: performanceMonitor.analyzeHybridIndexUsage(query.filter),
+      indexPattern: performanceMonitor.detectIndexPattern(query.filter)
+    }));
+
+    res.json({
+      slowQueries: analyzedQueries,
+      summary: {
+        total: performanceMonitor.metrics.slowQueries.length,
+        filtered: analyzedQueries.length,
+        avgExecutionTime: analyzedQueries.length > 0 
+          ? analyzedQueries.reduce((sum, q) => sum + q.executionTime, 0) / analyzedQueries.length 
+          : 0
+      },
+      filters: {
+        collection,
+        minExecutionTime,
+        limit: parseInt(limit)
+      },
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting slow queries:', error);
+    res.status(500).json({
+      error: 'Failed to get slow queries analysis',
+      code: 'SLOW_QUERIES_ERROR'
+    });
+  }
+});
+
+// Get hybrid index analysis
+router.get('/performance/hybrid-indexes', async (req, res) => {
+  try {
+    if (!performanceMonitor) {
+      return res.status(503).json({
+        error: 'Performance monitoring not initialized'
+      });
+    }
+
+    const hybridEfficiency = performanceMonitor.calculateHybridIndexEfficiency();
+    const indexesInfo = Array.from(performanceMonitor.metrics.indexes.entries());
+    
+    // Analyze query patterns by hybrid index type
+    const queryPatterns = {};
+    for (const [signature, queryData] of performanceMonitor.metrics.queries.entries()) {
+      if (queryData.hybridIndexUsage && queryData.hybridIndexUsage.type !== 'none') {
+        const type = queryData.hybridIndexUsage.type;
+        if (!queryPatterns[type]) {
+          queryPatterns[type] = {
+            queries: 0,
+            totalTime: 0,
+            avgTime: 0,
+            efficiency: 0,
+            examples: []
+          };
+        }
+        
+        queryPatterns[type].queries += queryData.count;
+        queryPatterns[type].totalTime += queryData.totalTime;
+        queryPatterns[type].avgTime = queryData.avgTime;
+        queryPatterns[type].efficiency = queryData.hybridIndexUsage.efficiency;
+        
+        if (queryPatterns[type].examples.length < 3) {
+          queryPatterns[type].examples.push({
+            collection: queryData.collection,
+            operation: queryData.operation,
+            avgTime: queryData.avgTime,
+            count: queryData.count
+          });
+        }
+      }
+    }
+
+    res.json({
+      hybridIndexEfficiency,
+      indexes: indexesInfo.map(([collection, data]) => ({
+        collection,
+        indexCount: data.indexes.length,
+        indexes: data.indexes,
+        lastAnalyzed: data.lastAnalyzed
+      })),
+      queryPatterns,
+      recommendations: performanceMonitor.generatePerformanceRecommendations()
+        .filter(rec => rec.type.includes('index') || rec.type.includes('hybrid')),
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting hybrid index analysis:', error);
+    res.status(500).json({
+      error: 'Failed to get hybrid index analysis',
+      code: 'HYBRID_INDEX_ERROR'
+    });
+  }
+});
+
+// Get active performance alerts
+router.get('/performance/alerts', async (req, res) => {
+  try {
+    if (!realTimeMetrics) {
+      return res.status(503).json({
+        error: 'Real-time metrics not initialized'
+      });
+    }
+
+    const { includeHistory = false, severity } = req.query;
+    
+    let activeAlerts = Array.from(realTimeMetrics.activeAlerts.values());
+    
+    // Filter by severity if specified
+    if (severity) {
+      activeAlerts = activeAlerts.filter(alert => alert.severity === severity);
+    }
+    
+    let alertHistory = [];
+    if (includeHistory === 'true') {
+      alertHistory = realTimeMetrics.alertHistory
+        .slice(-100) // Last 100 historical alerts
+        .sort((a, b) => new Date(b.lastTriggered) - new Date(a.lastTriggered));
+    }
+
+    res.json({
+      activeAlerts,
+      alertHistory,
+      summary: {
+        total: activeAlerts.length,
+        bySeverity: {
+          high: activeAlerts.filter(a => a.severity === 'high').length,
+          medium: activeAlerts.filter(a => a.severity === 'medium').length,
+          low: activeAlerts.filter(a => a.severity === 'low').length
+        },
+        oldestActive: activeAlerts.length > 0 
+          ? Math.min(...activeAlerts.map(a => new Date(a.firstTriggered).getTime()))
+          : null
+      },
+      thresholds: realTimeMetrics.config.alertThresholds,
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting performance alerts:', error);
+    res.status(500).json({
+      error: 'Failed to get performance alerts',
+      code: 'PERFORMANCE_ALERTS_ERROR'
+    });
+  }
+});
+
+// Start/stop performance monitoring
+router.post('/performance/control', createAdminBodyParser(), async (req, res) => {
+  try {
+    const { action, config } = req.body;
+
+    if (!performanceMonitor || !realTimeMetrics) {
+      return res.status(503).json({
+        error: 'Performance monitoring not initialized'
+      });
+    }
+
+    switch (action) {
+      case 'start':
+        if (!performanceMonitor.isMonitoring) {
+          await performanceMonitor.startMonitoring();
+        }
+        if (!realTimeMetrics.isCollecting) {
+          realTimeMetrics.startCollection();
+        }
+        break;
+
+      case 'stop':
+        if (performanceMonitor.isMonitoring) {
+          performanceMonitor.stopMonitoring();
+        }
+        if (realTimeMetrics.isCollecting) {
+          realTimeMetrics.stopCollection();
+        }
+        break;
+
+      case 'restart':
+        performanceMonitor.stopMonitoring();
+        realTimeMetrics.stopCollection();
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        await performanceMonitor.startMonitoring();
+        realTimeMetrics.startCollection();
+        break;
+
+      case 'reset':
+        performanceMonitor.resetMetrics();
+        realTimeMetrics.resetMetrics();
+        break;
+
+      default:
+        return res.status(400).json({
+          error: 'Invalid action. Use: start, stop, restart, or reset'
+        });
+    }
+
+    res.json({
+      success: true,
+      action,
+      status: {
+        dbMonitoring: performanceMonitor.isMonitoring,
+        realtimeCollection: realTimeMetrics.isCollecting
+      },
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('❌ Error controlling performance monitoring:', error);
+    res.status(500).json({
+      error: 'Failed to control performance monitoring',
+      code: 'PERFORMANCE_CONTROL_ERROR'
+    });
+  }
+});
+
+// Update performance monitoring configuration
+router.put('/performance/config', createAdminBodyParser(), async (req, res) => {
+  try {
+    if (!performanceMonitor || !realTimeMetrics) {
+      return res.status(503).json({
+        error: 'Performance monitoring not initialized'
+      });
+    }
+
+    const { dbMonitorConfig, realTimeConfig } = req.body;
+    
+    let updated = {};
+
+    // Update DB monitor config
+    if (dbMonitorConfig) {
+      const allowedKeys = [
+        'slowQueryThreshold',
+        'sampleRate',
+        'enableProfiling',
+        'enableExplainAnalysis',
+        'maxMetricsBuffer'
+      ];
+      
+      const filteredConfig = {};
+      allowedKeys.forEach(key => {
+        if (dbMonitorConfig[key] !== undefined) {
+          filteredConfig[key] = dbMonitorConfig[key];
+        }
+      });
+
+      performanceMonitor.config = { ...performanceMonitor.config, ...filteredConfig };
+      updated.dbMonitor = filteredConfig;
+    }
+
+    // Update real-time metrics config
+    if (realTimeConfig) {
+      const allowedKeys = [
+        'windowSize',
+        'updateInterval',
+        'alertThresholds',
+        'retainWindows'
+      ];
+      
+      const filteredConfig = {};
+      allowedKeys.forEach(key => {
+        if (realTimeConfig[key] !== undefined) {
+          filteredConfig[key] = realTimeConfig[key];
+        }
+      });
+
+      realTimeMetrics.config = { ...realTimeMetrics.config, ...filteredConfig };
+      updated.realTimeMetrics = filteredConfig;
+    }
+
+    res.json({
+      success: true,
+      updated,
+      currentConfig: {
+        dbMonitor: performanceMonitor.config,
+        realTimeMetrics: realTimeMetrics.config
+      },
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating performance config:', error);
+    res.status(500).json({
+      error: 'Failed to update performance configuration',
+      code: 'PERFORMANCE_CONFIG_ERROR'
+    });
+  }
+});
+
+// Export performance data
+router.get('/performance/export', async (req, res) => {
+  try {
+    if (!performanceMonitor || !realTimeMetrics) {
+      return res.status(503).json({
+        error: 'Performance monitoring not initialized'
+      });
+    }
+
+    const { format = 'json', includeRawData = false } = req.query;
+    
+    const exportData = {
+      metadata: {
+        exportDate: new Date(),
+        version: '1.0',
+        nodeVersion: process.version,
+        uptime: process.uptime()
+      },
+      summary: performanceMonitor.getPerformanceSummary(),
+      realtimeMetrics: realTimeMetrics.getCurrentStats(),
+      configuration: {
+        dbMonitor: performanceMonitor.config,
+        realTimeMetrics: realTimeMetrics.config
+      }
+    };
+
+    if (includeRawData === 'true') {
+      exportData.rawData = {
+        dbPerformance: performanceMonitor.exportPerformanceData(),
+        realTimeMetrics: realTimeMetrics.exportMetricsData()
+      };
+    }
+
+    if (format === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="performance-export-${Date.now()}.json"`);
+      res.json(exportData);
+    } else {
+      res.status(400).json({
+        error: 'Unsupported export format. Use: json'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error exporting performance data:', error);
+    res.status(500).json({
+      error: 'Failed to export performance data',
+      code: 'PERFORMANCE_EXPORT_ERROR'
     });
   }
 });

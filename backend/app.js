@@ -21,6 +21,9 @@ const { createSecurityMiddleware, createSessionOptions } = require('./middleware
 const { createStandardBodyParser, createPayloadErrorHandler } = require('./middleware/bodyParser');
 const { csrfTokenMiddleware } = require('./middleware/csrf');
 const SessionConfig = require('./config/session');
+const DBPerformanceMonitor = require('./services/dbPerformanceMonitor');
+const RealTimeMetrics = require('./services/realTimeMetrics');
+const PerformanceAlerting = require('./services/performanceAlerting');
 
 const app  = express();
 const port = process.env.PORT || APP_CONSTANTS.DEFAULT_PORT;
@@ -283,6 +286,59 @@ if (require.main === module) {
     } catch (error) {
       console.error('Failed to initialize session cleanup service:', error.message);
     }
+
+    // Initialize performance monitoring
+    try {
+      const performanceMonitor = new DBPerformanceMonitor({
+        slowQueryThreshold: 100,
+        sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+        enableProfiling: process.env.NODE_ENV === 'production',
+        enableExplainAnalysis: true
+      });
+
+      const realTimeMetrics = new RealTimeMetrics(performanceMonitor, {
+        windowSize: 5 * 60 * 1000, // 5 minutes
+        updateInterval: 10 * 1000, // 10 seconds
+        alertThresholds: {
+          slowQueryRate: 0.15, // 15%
+          avgExecutionTime: 150, // ms
+          queryVolume: 500, // queries per minute
+          indexEfficiency: 0.75 // 75%
+        }
+      });
+
+      // Initialize performance alerting
+      const performanceAlerting = new PerformanceAlerting(realTimeMetrics, {
+        autoRemediation: process.env.NODE_ENV === 'production',
+        enableEmailAlerts: false, // Disabled for now
+        enableWebhooks: false,    // Disabled for now
+        escalationTimeouts: {
+          low: 30 * 60 * 1000,    // 30 minutes
+          medium: 15 * 60 * 1000,  // 15 minutes
+          high: 5 * 60 * 1000      // 5 minutes
+        }
+      });
+
+      // Start monitoring
+      performanceMonitor.startMonitoring();
+      realTimeMetrics.startCollection();
+      performanceAlerting.startAlerting();
+
+      // Initialize admin routes with performance monitoring
+      const adminRoutes = require('./routes/adminRoutes');
+      adminRoutes.initializePerformanceMonitoring(performanceMonitor, realTimeMetrics);
+
+      console.log('Database performance monitoring initialized');
+      console.log('Performance alerting system initialized');
+      
+      // Store references for graceful shutdown
+      server.performanceMonitor = performanceMonitor;
+      server.realTimeMetrics = realTimeMetrics;
+      server.performanceAlerting = performanceAlerting;
+      
+    } catch (error) {
+      console.error('Failed to initialize performance monitoring:', error.message);
+    }
   });
 
   // Graceful shutdown
@@ -294,6 +350,22 @@ if (require.main === module) {
       
       // Shutdown cleanup service
       SessionConfig.shutdownCleanupService();
+      
+      // Shutdown performance monitoring
+      if (server.performanceMonitor) {
+        server.performanceMonitor.stopMonitoring();
+        console.log('Performance monitoring stopped');
+      }
+      
+      if (server.realTimeMetrics) {
+        server.realTimeMetrics.stopCollection();
+        console.log('Real-time metrics collection stopped');
+      }
+
+      if (server.performanceAlerting) {
+        server.performanceAlerting.stopAlerting();
+        console.log('Performance alerting system stopped');
+      }
       
       // Close database connection
       mongoose.connection.close(() => {
