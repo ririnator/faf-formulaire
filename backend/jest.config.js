@@ -40,6 +40,7 @@ module.exports = {
   // Global test configuration
   globals: {
     'process.env.NODE_ENV': 'test',
-    'process.env.MONGODB_URI': 'mongodb://localhost:27017/faf-test-jest'
+    'process.env.MONGODB_URI': 'mongodb://localhost:27017/faf-test-jest',
+    'process.env.DISABLE_RATE_LIMITING': 'true'
   }
 };

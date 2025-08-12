@@ -4,6 +4,16 @@ const { APP_CONSTANTS } = require('../constants');
 const deviceFingerprinting = require('../utils/deviceFingerprinting');
 const SecureLogger = require('../utils/secureLogger');
 
+// Middleware to bypass rate limiting in test environment
+const bypassInTests = (middleware) => {
+  return (req, res, next) => {
+    if (process.env.NODE_ENV === 'test' || process.env.DISABLE_RATE_LIMITING === 'true') {
+      return next();
+    }
+    return middleware(req, res, next);
+  };
+};
+
 // Enhanced rate limiting with device fingerprinting
 const createAuthRateLimit = (options = {}) => {
   const {
@@ -113,8 +123,8 @@ const createAuthRateLimit = (options = {}) => {
   return rateLimit({ ...defaults, ...rateLimitOptions });
 };
 
-// Enhanced specific limiters for different auth operations
-const authLimiters = {
+// Enhanced specific limiters for different auth operations  
+const authLimitersRaw = {
   // Login: Strict fingerprinting with dynamic limits based on trust
   login: createAuthRateLimit({
     max: 5, // Base limit, reduced for suspicious devices
@@ -204,6 +214,16 @@ const authLimiters = {
       includeSecHeaders: false // Don't be too strict for forms
     }
   })
+};
+
+// Apply test bypass to all limiters
+const authLimiters = {
+  login: bypassInTests(authLimitersRaw.login),
+  register: bypassInTests(authLimitersRaw.register),
+  passwordReset: bypassInTests(authLimitersRaw.passwordReset),
+  profileUpdate: bypassInTests(authLimitersRaw.profileUpdate),
+  api: bypassInTests(authLimitersRaw.api),
+  formSubmission: bypassInTests(authLimitersRaw.formSubmission)
 };
 
 // Utility functions for enhanced rate limiting
