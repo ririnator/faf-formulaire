@@ -47,6 +47,7 @@ const UserSchema = new Schema({
     isActive: { type: Boolean, default: true },
     emailVerified: { type: Boolean, default: false },
     lastActive: { type: Date, default: Date.now },
+    lastLoginAt: { type: Date }, // For session cleanup service
     responseCount: { type: Number, default: 0 },
     registeredAt: { type: Date, default: Date.now }
   },
@@ -61,6 +62,7 @@ const UserSchema = new Schema({
 
 // Index pour les performances (email et username ont déjà unique: true)
 UserSchema.index({ 'metadata.lastActive': -1 });
+UserSchema.index({ 'metadata.lastLoginAt': -1 }); // For cleanup service queries
 
 // Hash password avant sauvegarde
 UserSchema.pre('save', async function(next) {
@@ -82,6 +84,13 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
 
 // Méthode pour mettre à jour la dernière activité
 UserSchema.methods.updateLastActive = function() {
+  this.metadata.lastActive = new Date();
+  return this.save();
+};
+
+// Méthode pour mettre à jour le dernier login
+UserSchema.methods.updateLastLogin = function() {
+  this.metadata.lastLoginAt = new Date();
   this.metadata.lastActive = new Date();
   return this.save();
 };

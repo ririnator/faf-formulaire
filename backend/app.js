@@ -20,6 +20,7 @@ const { ensureAdmin, authenticateAdmin, destroySession } = require('./middleware
 const { createSecurityMiddleware, createSessionOptions } = require('./middleware/security');
 const { createStandardBodyParser, createPayloadErrorHandler } = require('./middleware/bodyParser');
 const { csrfTokenMiddleware } = require('./middleware/csrf');
+const SessionConfig = require('./config/session');
 
 const app  = express();
 const port = process.env.PORT || APP_CONSTANTS.DEFAULT_PORT;
@@ -272,9 +273,44 @@ app.get('/', (req, res) => {
 
 // 15) Lancement du serveur
 if (require.main === module) {
-  app.listen(port, () => {
+  const server = app.listen(port, () => {
     console.log(`Serveur lancé sur le port ${port}`);
+    
+    // Initialize session cleanup service
+    try {
+      SessionConfig.initializeCleanupService();
+      console.log('Session cleanup service initialized');
+    } catch (error) {
+      console.error('Failed to initialize session cleanup service:', error.message);
+    }
   });
+
+  // Graceful shutdown
+  const gracefulShutdown = (signal) => {
+    console.log(`${signal} received: starting graceful shutdown`);
+    
+    server.close(() => {
+      console.log('HTTP server closed');
+      
+      // Shutdown cleanup service
+      SessionConfig.shutdownCleanupService();
+      
+      // Close database connection
+      mongoose.connection.close(() => {
+        console.log('MongoDB connection closed');
+        process.exit(0);
+      });
+    });
+    
+    // Force shutdown after 10 seconds
+    setTimeout(() => {
+      console.error('Forcing shutdown after timeout');
+      process.exit(1);
+    }, 10000);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 module.exports = app;
