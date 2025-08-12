@@ -55,7 +55,7 @@ class PerformanceAlerting extends EventEmitter {
     this.addAlertRule('slow_query_rate', {
       name: 'High Slow Query Rate',
       description: 'Monitors the percentage of slow queries',
-      condition: (metrics) => metrics.slowQueryRate > 0.15,
+      condition: (metrics) => metrics && typeof metrics.slowQueryRate === 'number' && metrics.slowQueryRate > 0.15,
       severity: 'high',
       cooldown: 5 * 60 * 1000, // 5 minutes
       recommendations: [
@@ -74,7 +74,7 @@ class PerformanceAlerting extends EventEmitter {
     this.addAlertRule('avg_execution_time', {
       name: 'High Average Execution Time',
       description: 'Monitors average query execution time',
-      condition: (metrics) => metrics.avgExecutionTime > 200,
+      condition: (metrics) => metrics && typeof metrics.avgExecutionTime === 'number' && metrics.avgExecutionTime > 200,
       severity: 'medium',
       cooldown: 10 * 60 * 1000, // 10 minutes
       recommendations: [
@@ -93,7 +93,7 @@ class PerformanceAlerting extends EventEmitter {
     this.addAlertRule('index_efficiency', {
       name: 'Low Hybrid Index Efficiency',
       description: 'Monitors hybrid indexing strategy effectiveness',
-      condition: (metrics) => metrics.hybridIndexEfficiency < 0.7 && metrics.hybridIndexEfficiency > 0,
+      condition: (metrics) => metrics && typeof metrics.hybridIndexEfficiency === 'number' && metrics.hybridIndexEfficiency < 0.7 && metrics.hybridIndexEfficiency > 0,
       severity: 'medium',
       cooldown: 15 * 60 * 1000, // 15 minutes
       recommendations: [
@@ -113,8 +113,9 @@ class PerformanceAlerting extends EventEmitter {
       name: 'Query Volume Spike',
       description: 'Detects unusual spikes in query volume',
       condition: (metrics, historical) => {
+        if (!metrics || typeof metrics.queriesPerSecond !== 'number') return false;
         if (!historical || historical.length < 3) return false;
-        const avgHistorical = historical.reduce((sum, h) => sum + h.queriesPerSecond, 0) / historical.length;
+        const avgHistorical = historical.reduce((sum, h) => sum + (h.queriesPerSecond || 0), 0) / historical.length;
         return metrics.queriesPerSecond > avgHistorical * 2.5;
       },
       severity: 'low',
@@ -136,8 +137,9 @@ class PerformanceAlerting extends EventEmitter {
       name: 'High Memory Usage',
       description: 'Monitors application memory consumption',
       condition: (metrics) => {
+        if (!metrics || !metrics.memoryUsage) return false;
         const memUsage = metrics.memoryUsage;
-        return memUsage && memUsage.heapUsedMB > 500; // 500MB threshold
+        return memUsage && typeof memUsage.heapUsedMB === 'number' && memUsage.heapUsedMB > 500; // 500MB threshold
       },
       severity: 'medium',
       cooldown: 10 * 60 * 1000, // 10 minutes
@@ -257,6 +259,11 @@ class PerformanceAlerting extends EventEmitter {
       if (!rule.isActive || this.suppressedAlerts.has(ruleId)) continue;
 
       try {
+        // Safety check for metrics availability
+        if (!currentMetrics || !currentMetrics.realtime) {
+          continue;
+        }
+        
         // Check if rule condition is met
         const conditionMet = rule.condition(currentMetrics.realtime, historicalMetrics);
         
