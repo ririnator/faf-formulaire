@@ -177,7 +177,17 @@ class HybridIndexMonitor extends EventEmitter {
    */
   async captureBaselineMetrics() {
     try {
+      // Wait for database connection to be ready
+      if (mongoose.connection.readyState !== 1) {
+        SecureLogger.logInfo('Database not ready for baseline metrics capture, skipping');
+        return;
+      }
+
       const db = mongoose.connection.db;
+      if (!db) {
+        SecureLogger.logInfo('Database connection not available, skipping baseline metrics');
+        return;
+      }
       
       // Get current index statistics
       const collections = await db.collections();
@@ -211,67 +221,13 @@ class HybridIndexMonitor extends EventEmitter {
    * Setup query interception for performance analysis
    */
   setupQueryInterception() {
-    const originalExec = mongoose.Query.prototype.exec;
+    // Temporarily disable query interception due to compatibility issues
+    // This was causing "Query must have `op` before executing" errors
+    SecureLogger.logInfo('Query interception temporarily disabled for stability');
     
-    mongoose.Query.prototype.exec = async function(...args) {
-      const startTime = Date.now();
-      const query = this;
-      
-      if (this.parent) {
-        this.parent.debugMetrics.totalQueriesIntercepted++;
-      }
-      
-      // Safety check for query.model
-      if (!query.model || !query.model.collection) {
-        if (this.parent) {
-          this.parent.debugMetrics.invalidModelQueries++;
-          if (this.parent.config.enableDetailedLogging) {
-            SecureLogger.logDebug('Query intercepted without valid model reference', {
-              hasModel: !!query.model,
-              hasCollection: !!(query.model && query.model.collection),
-              queryType: query.op || 'unknown',
-              invalidModelCount: this.parent.debugMetrics.invalidModelQueries,
-              timestamp: new Date().toISOString()
-            });
-          }
-        }
-        return await originalExec.apply(this, args);
-      }
-      
-      const collection = query.model.collection.name;
-      
-      try {
-        const result = await originalExec.apply(this, args);
-        const executionTime = Date.now() - startTime;
-        
-        // Only monitor 'responses' collection for hybrid auth
-        if (collection === 'responses' && this.parent) {
-          await this.parent.analyzeQuery(query, executionTime, result);
-        } else if (this.parent) {
-          this.parent.debugMetrics.skippedNonResponsesQueries++;
-          if (this.parent.config.enableDetailedLogging) {
-            SecureLogger.logDebug('Query skipped from monitoring', {
-              collection,
-              hasParent: !!this.parent,
-              executionTime,
-              skippedCount: this.parent.debugMetrics.skippedNonResponsesQueries,
-              timestamp: new Date().toISOString()
-            });
-          }
-        }
-        
-        return result;
-        
-      } catch (error) {
-        const executionTime = Date.now() - startTime;
-        
-        if (collection === 'responses' && this.parent) {
-          await this.parent.analyzeQuery(query, executionTime, null, error);
-        }
-        
-        throw error;
-      }
-    }.bind({ parent: this });
+    // TODO: Implement alternative monitoring approach that doesn't interfere with Mongoose internals
+    // Consider using Mongoose middleware or database profiler instead
+    return;
   }
 
   /**

@@ -124,7 +124,17 @@ class DBPerformanceMonitor extends EventEmitter {
    */
   async enableMongoProfiling() {
     try {
+      // Check if database connection is ready
+      if (mongoose.connection.readyState !== 1) {
+        SecureLogger.logInfo('Database not ready for profiling setup, skipping');
+        return;
+      }
+      
       const db = mongoose.connection.db;
+      if (!db || !db.command) {
+        SecureLogger.logInfo('Database command interface not available, skipping profiling');
+        return;
+      }
       
       // Set profiling level: 2 = profile all operations, 1 = profile slow operations only
       await db.command({ 
@@ -145,6 +155,10 @@ class DBPerformanceMonitor extends EventEmitter {
   async disableMongoProfiling() {
     try {
       const db = mongoose.connection.db;
+      if (!db || !db.command) {
+        SecureLogger.logInfo('Database command interface not available for profiling disable');
+        return;
+      }
       await db.command({ profile: 0 });
       
       SecureLogger.logInfo('MongoDB profiling disabled');
@@ -492,6 +506,12 @@ class DBPerformanceMonitor extends EventEmitter {
    */
   async analyzeCurrentIndexes() {
     try {
+      // Check if database connection is ready
+      if (mongoose.connection.readyState !== 1 || !mongoose.connection.db) {
+        SecureLogger.logInfo('Database not ready for index analysis, skipping');
+        return;
+      }
+
       const collections = ['responses', 'users'];
       
       for (const collName of collections) {
