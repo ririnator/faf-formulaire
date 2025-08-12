@@ -133,10 +133,8 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.error("Erreur de connexion à la DB :", err));
 
-// 6) Route d'accueil - redirection vers page de choix auth
-app.get('/', (req, res) => {
-  res.redirect('/auth-choice');
-});
+// 6) Route d'accueil - nouvelle page d'accueil moderne
+// (remplacé plus bas par la route statique)
 
 // 7) Front public (form.html, view.html…)
 app.use(express.static(path.join(__dirname, '../frontend/public')));
@@ -167,6 +165,16 @@ app.get('/login', (req, res) => {
   } catch (error) {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Page not found');
   }
+});
+
+// Page d'accueil moderne
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/index.html'));
+});
+
+// Route pour le formulaire principal
+app.get('/form', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/form.html'));
 });
 
 app.get('/admin-login', (req, res) => {

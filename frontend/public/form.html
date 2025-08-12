@@ -6,18 +6,241 @@
   <title>Form-a-Friend - Formulaire</title>
   <link rel="stylesheet" href="/admin/mobile-responsive.css">
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    form { max-width: 600px; margin: 0 auto; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; }
-    input[type="text"], textarea, input[type="file"] {
-      width: 100%; padding: 8px; box-sizing: border-box;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    button { padding: 10px 20px; font-size: 16px; }
-    .radio-group { display: flex; align-items: center; margin-bottom: 8px; }
-    .radio-group input[type="radio"] { margin-right: 8px; }
-    #feedback { margin-top: 20px; font-size: 16px; }
-    #feedback a { color: blue; text-decoration: underline; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #667eea;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 40px;
+      font-size: 1.1rem;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    fieldset {
+      border: none;
+      margin-bottom: 25px;
+    }
+
+    legend {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 15px;
+      padding: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #4a5568;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: #f7fafc;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .radio-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      transition: background-color 0.2s ease;
+    }
+
+    .radio-group:hover {
+      background-color: #f7fafc;
+    }
+
+    .radio-group input[type="radio"] {
+      margin-right: 12px;
+      transform: scale(1.2);
+      accent-color: #667eea;
+    }
+
+    .radio-group label {
+      margin: 0;
+      cursor: pointer;
+      flex: 1;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 15px;
+      border: 2px dashed #e2e8f0;
+      border-radius: 10px;
+      background: #f7fafc;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    input[type="file"]:hover {
+      border-color: #667eea;
+      background: #edf2f7;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    #feedback {
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    #feedback.success {
+      background: #c6f6d5;
+      color: #22543d;
+      border: 1px solid #9ae6b4;
+    }
+
+    #feedback.error {
+      background: #fed7d7;
+      color: #742a2a;
+      border: 1px solid #feb2b2;
+    }
+
+    #feedback a {
+      color: #3182ce;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    #feedback a:hover {
+      text-decoration: underline;
+    }
+
+    .form-icon {
+      display: inline-block;
+      margin-right: 8px;
+      font-size: 1.2em;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+        margin: 10px;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .radio-group {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .radio-group input[type="radio"] {
+        margin-bottom: 5px;
+      }
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: #667eea;
+      color: white;
+      padding: 8px;
+      border-radius: 4px;
+      text-decoration: none;
+      transition: top 0.3s;
+    }
+
+    .skip-link:focus {
+      top: 6px;
+    }
   </style>
 </head>
 <body>
@@ -25,15 +248,22 @@
   <a href="#main-content" class="skip-link">Aller au contenu principal</a>
   
   <main id="main-content" role="main">
-    <h1 id="form-title">Formulaire Mensuel... dis-moi tout</h1>
-    
-    <form id="friendForm" role="form" aria-labelledby="form-title" novalidate>
+    <div class="container">
+      <h1 id="form-title">🌟 Formulaire Mensuel</h1>
+      <p class="subtitle">Dis-moi tout ! Partage tes pensées et découvre celles de tes amis</p>
+      
+      <!-- Barre de progression -->
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      
+      <form id="friendForm" role="form" aria-labelledby="form-title" novalidate>
       <!-- Honeypot field for spam protection -->
       <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off" aria-hidden="true">
 
     <!-- Champ Nom -->
     <div class="form-group">
-      <label for="name">Ton nom :</label>
+      <label for="name"><span class="form-icon">👤</span>Ton nom :</label>
       <input type="text" id="name" name="name" required 
              aria-describedby="name-help" 
              aria-invalid="false"
@@ -43,7 +273,7 @@
 
     <!-- Question 1 -->
     <fieldset class="form-group">
-      <legend>En rapide, comment ça va ? :</legend>
+      <legend><span class="form-icon">💭</span>En rapide, comment ça va ? :</legend>
       <div class="radio-group">
         <input type="radio" name="question1" id="option1" value="ça va" required 
                aria-describedby="q1-help">
@@ -65,7 +295,7 @@
 
     <!-- Question 2 -->
     <div class="form-group">
-      <label for="question2">Possibilité d'ajouter un peu plus de détails à la question précédente :</label>
+      <label for="question2"><span class="form-icon">📝</span>Possibilité d'ajouter un peu plus de détails à la question précédente :</label>
       <input type="text" id="question2" name="question2" required
              aria-describedby="q2-help"
              aria-invalid="false"
@@ -74,7 +304,7 @@
 
     <!-- Question 3 -->
     <div class="form-group">
-      <label for="question3">Le pulse check mensuel... montre une photo de toi ce mois-ci :</label>
+      <label for="question3"><span class="form-icon">📸</span>Le pulse check mensuel... montre une photo de toi ce mois-ci :</label>
       <input type="file" id="question3" name="question3" accept="image/*" required
              aria-describedby="q3-help"
              aria-invalid="false">
@@ -83,43 +313,43 @@
 
     <!-- Question 4 -->
     <div class="form-group">
-      <label for="question4">Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ? :</label>
+      <label for="question4"><span class="form-icon">✨</span>Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ? :</label>
       <textarea id="question4" name="question4" rows="3" required></textarea>
     </div>
 
     <!-- Question 5 -->
     <div class="form-group">
-      <label for="question5">C'est quoi la reaction pic que tu utilises le plus en ce moment ? :</label>
+      <label for="question5"><span class="form-icon">😊</span>C'est quoi la reaction pic que tu utilises le plus en ce moment ? :</label>
       <input type="file" id="question5" name="question5" accept="image/*" required>
     </div>
 
     <!-- Question 6 -->
     <div class="form-group">
-      <label for="question6">Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ? :</label>
+      <label for="question6"><span class="form-icon">💬</span>Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ? :</label>
       <textarea id="question6" name="question6" rows="3" required></textarea>
     </div>
 
     <!-- Question 7 -->
     <div class="form-group">
-      <label for="question7">Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement) :</label>
+      <label for="question7"><span class="form-icon">🎭</span>Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement) :</label>
       <input type="file" id="question7" name="question7" accept="image/*" required>
     </div>
 
     <!-- Question 8 -->
     <div class="form-group">
-      <label for="question8">Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ? :</label>
+      <label for="question8"><span class="form-icon">🔄</span>Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ? :</label>
       <textarea id="question8" name="question8" rows="3" required></textarea>
     </div>
 
     <!-- Question 9 -->
     <div class="form-group">
-      <label for="question9">Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.) :</label>
+      <label for="question9"><span class="form-icon">🆘</span>Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.) :</label>
       <textarea id="question9" name="question9" rows="3" required></textarea>
     </div>
 
     <!-- Question 10 -->
     <div class="form-group">
-      <label for="question10">Pour terminer : une photo de toi qui touche de l'herbe ou un arbre :</label>
+      <label for="question10"><span class="form-icon">🌿</span>Pour terminer : une photo de toi qui touche de l'herbe ou un arbre :</label>
       <input type="file" id="question10" name="question10" accept="image/*" required>
     </div>
 
@@ -132,14 +362,57 @@
       
       Soumettre vos réponses mensuelles. Un lien privé vous sera fourni pour consulter vos réponses.
     </div>
-  </form>
+      </form>
 
-  <!-- Section de feedback -->
-  <section id="feedback" role="status" aria-live="polite" aria-atomic="true"></section>
+      <!-- Section de feedback -->
+      <section id="feedback" role="status" aria-live="polite" aria-atomic="true"></section>
+    </div>
   
   </main>
 
   <script>
+    // Fonctionnalité de barre de progression
+    document.addEventListener('DOMContentLoaded', function() {
+      const progressBar = document.getElementById('progressFill');
+      const formGroups = document.querySelectorAll('.form-group, fieldset');
+      const totalSteps = formGroups.length;
+      
+      function updateProgress() {
+        let completedSteps = 0;
+        
+        formGroups.forEach(group => {
+          const inputs = group.querySelectorAll('input, textarea');
+          let hasValue = false;
+          
+          inputs.forEach(input => {
+            if (input.type === 'radio' && input.checked) {
+              hasValue = true;
+            } else if (input.type === 'file' && input.files.length > 0) {
+              hasValue = true;
+            } else if (input.type === 'text' && input.value.trim()) {
+              hasValue = true;
+            } else if (input.tagName === 'TEXTAREA' && input.value.trim()) {
+              hasValue = true;
+            }
+          });
+          
+          if (hasValue) {
+            completedSteps++;
+          }
+        });
+        
+        const percentage = (completedSteps / totalSteps) * 100;
+        progressBar.style.width = percentage + '%';
+      }
+      
+      // Écouter les changements sur tous les champs
+      document.addEventListener('input', updateProgress);
+      document.addEventListener('change', updateProgress);
+      
+      // Mise à jour initiale
+      updateProgress();
+    });
+
     /**
      * Génère dynamiquement l'option 2 du formulaire avec le mois précédent
      * Utilise les règles de français pour les articles ('d'' vs 'de ')
