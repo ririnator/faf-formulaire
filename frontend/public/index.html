@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAF - Form-a-Friend | Connecte-toi avec tes amis</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles/modern-theme.css">
+    <style>
+        body {
+            padding: var(--spacing-8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hero-section {
+            text-align: center;
+            margin-bottom: var(--spacing-12);
+        }
+        
+        .logo-emoji {
+            font-size: 4rem;
+            margin-bottom: var(--spacing-4);
+            display: block;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-6);
+            margin: var(--spacing-12) 0;
+        }
+        
+        .feature-card {
+            background: var(--gray-50);
+            padding: var(--spacing-6);
+            border-radius: var(--border-radius-lg);
+            text-align: center;
+            border: 1px solid var(--gray-200);
+            transition: var(--transition-base);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--spacing-3);
+            display: block;
+        }
+        
+        .feature-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: var(--spacing-2);
+        }
+        
+        .feature-description {
+            color: var(--gray-500);
+            font-size: var(--font-size-sm);
+        }
+        
+        .cta-section {
+            margin-top: var(--spacing-12);
+            padding: var(--spacing-8);
+            background: var(--gray-50);
+            border-radius: var(--border-radius-lg);
+            text-align: center;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-8);
+            margin: var(--spacing-8) 0;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            color: var(--primary-color);
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: var(--font-size-sm);
+            color: var(--gray-500);
+        }
+        
+        @media (max-width: 768px) {
+            .features {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: var(--spacing-4);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="faf-container">
+        <div class="hero-section faf-fade-in">
+            <span class="logo-emoji">🌟</span>
+            <h1 class="faf-title">Form-a-Friend</h1>
+            <p class="faf-subtitle">
+                Connecte-toi avec tes amis à travers des questions mensuelles amusantes.<br>
+                Partage tes pensées, découvre celles de tes amis et créez des souvenirs ensemble !
+            </p>
+        </div>
+        
+        <div class="features">
+            <div class="feature-card">
+                <span class="feature-icon">📝</span>
+                <h3 class="feature-title">Questions Personnalisées</h3>
+                <p class="feature-description">
+                    Chaque mois, réponds à des questions uniques et découvre les réponses de tes amis
+                </p>
+            </div>
+            
+            <div class="feature-card">
+                <span class="feature-icon">📸</span>
+                <h3 class="feature-title">Partage de Photos</h3>
+                <p class="feature-description">
+                    Ajoute des images à tes réponses pour rendre tes partages encore plus vivants
+                </p>
+            </div>
+            
+            <div class="feature-card">
+                <span class="feature-icon">🔒</span>
+                <h3 class="feature-title">Privé et Sécurisé</h3>
+                <p class="feature-description">
+                    Tes réponses sont protégées et ne sont visibles que par ton groupe d'amis
+                </p>
+            </div>
+            
+            <div class="feature-card">
+                <span class="feature-icon">📊</span>
+                <h3 class="feature-title">Visualisations</h3>
+                <p class="feature-description">
+                    Découvre les tendances de ton groupe avec des graphiques interactifs
+                </p>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-number">∞</span>
+                <span class="stat-label">Souvenirs créés</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number">🎉</span>
+                <span class="stat-label">Moments partagés</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number">❤️</span>
+                <span class="stat-label">Amitiés renforcées</span>
+            </div>
+        </div>
+        
+        <div class="cta-section">
+            <h2 class="faf-heading">Prêt(e) à commencer ?</h2>
+            <p class="faf-subtitle" style="margin-bottom: var(--spacing-6);">
+                Rejoins tes amis ou crée ton compte pour une expérience personnalisée
+            </p>
+            
+            <div class="faf-flex faf-flex-col faf-gap-4">
+                <a href="/auth-choice" class="faf-btn faf-btn-primary faf-btn-lg">
+                    🚀 Commencer l'aventure
+                </a>
+                <a href="/form" class="faf-btn faf-btn-outline faf-btn-lg">
+                    📝 Accès rapide au formulaire
+                </a>
+            </div>
+            
+            <p style="margin-top: var(--spacing-4); font-size: var(--font-size-sm); color: var(--gray-500);">
+                💡 <strong>Nouveau ?</strong> Crée un compte pour sauvegarder ton historique et récupérer tes anciennes réponses
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Animation d'entrée progressive pour les cartes
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('faf-fade-in');
+                }, index * 100);
+            });
+        });
+        
+        // Effet hover sur les stats
+        const stats = document.querySelectorAll('.stat');
+        stats.forEach(stat => {
+            stat.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.1)';
+                this.style.transition = 'transform 0.3s ease';
+            });
+            
+            stat.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
