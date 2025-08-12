@@ -123,7 +123,18 @@ function getResponseAccess(req, res, next) {
 
 // Middleware pour log et analytics (sécurisé)
 function logAuthMethod(req, res, next) {
-  SecureLogger.logAuth(req.method, req.path, req.authMethod);
+  // Only log aggregated metrics, not individual user paths
+  if (process.env.NODE_ENV === 'development' && process.env.VERBOSE_AUTH_LOGS === 'true') {
+    // Only log auth method statistics, not paths that could identify users
+    SecureLogger.logAuth(req.method, 'REDACTED', req.authMethod);
+  }
+  
+  // In production, only increment counters without logging
+  if (process.env.NODE_ENV === 'production') {
+    // Could increment metrics here without logging sensitive data
+    // e.g., authMethodCounters[req.authMethod]++;
+  }
+  
   next();
 }
 
