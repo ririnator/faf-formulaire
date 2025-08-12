@@ -14,12 +14,11 @@ function generateNonce() {
 
 function createSecurityMiddleware() {
   return (req, res, next) => {
-    // Authentication pages need nonce-based CSP
-    const authPages = ['/auth-choice', '/register', '/login', '/admin-login'];
+    // Pages that need nonce-based CSP
+    const noncePages = ['/auth-choice', '/register', '/login', '/admin-login', '/', '/form'];
     
-    // Skip CSP completely for static content and HTML files (except auth pages)
+    // Skip CSP completely for static content and HTML files (except nonce pages)
     if ((req.path.startsWith('/api/') || 
-        req.path === '/' || 
         req.path === '/admin' ||
         req.path.startsWith('/admin/') ||
         req.path.endsWith('.html') || 
@@ -28,7 +27,7 @@ function createSecurityMiddleware() {
         req.path.includes('/frontend/') ||
         req.path.startsWith('/css/') ||
         req.path.startsWith('/js/')) && 
-        !authPages.includes(req.path)) {
+        !noncePages.includes(req.path)) {
       
       // Apply basic Helmet security without CSP for static files
       helmet({
