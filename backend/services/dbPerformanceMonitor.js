@@ -182,19 +182,20 @@ class DBPerformanceMonitor extends EventEmitter {
       model.schema.pre(/^(find|count|aggregate|distinct)/, function() {
         this._startTime = Date.now();
         this._operation = this.op || this.getUpdate ? 'update' : 'find';
-        this._collection = this.model.collection.name;
+        this._collection = this.model?.collection?.name || 'unknown';
       });
 
       // Post-hook to measure performance
+      const monitor = this;
       model.schema.post(/^(find|count|aggregate|distinct)/, function(result) {
         if (!this._startTime) return;
 
         const executionTime = Date.now() - this._startTime;
         
         // Sample queries based on sample rate
-        if (Math.random() > this.config.sampleRate) return;
+        if (Math.random() > monitor.config.sampleRate) return;
 
-        this.recordQueryMetrics({
+        monitor.recordQueryMetrics({
           collection: this._collection,
           operation: this._operation,
           filter: this.getFilter ? this.getFilter() : this.getQuery(),
@@ -202,7 +203,7 @@ class DBPerformanceMonitor extends EventEmitter {
           resultCount: Array.isArray(result) ? result.length : (result ? 1 : 0),
           timestamp: new Date()
         });
-      }.bind(this));
+      });
     });
   }
 

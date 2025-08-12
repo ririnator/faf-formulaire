@@ -439,7 +439,7 @@ if (require.main === module) {
   const gracefulShutdown = (signal) => {
     console.log(`${signal} received: starting graceful shutdown`);
     
-    server.close(() => {
+    server.close(async () => {
       console.log('HTTP server closed');
       
       // Shutdown cleanup service
@@ -472,10 +472,14 @@ if (require.main === module) {
       }
       
       // Close database connection
-      mongoose.connection.close(() => {
+      try {
+        await mongoose.connection.close();
         console.log('MongoDB connection closed');
         process.exit(0);
-      });
+      } catch (error) {
+        console.error('Error closing MongoDB connection:', error);
+        process.exit(1);
+      }
     });
     
     // Force shutdown after 10 seconds
