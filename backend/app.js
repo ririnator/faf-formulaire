@@ -23,6 +23,7 @@ const { csrfTokenMiddleware } = require('./middleware/csrf');
 const SessionConfig = require('./config/session');
 const sessionMonitoringMiddleware = require('./middleware/sessionMonitoring');
 const DBPerformanceMonitor = require('./services/dbPerformanceMonitor');
+const HybridIndexMonitor = require('./services/hybridIndexMonitor');
 const RealTimeMetrics = require('./services/realTimeMetrics');
 const PerformanceAlerting = require('./services/performanceAlerting');
 
@@ -239,6 +240,61 @@ app.use('/api/admin', ensureAdmin, adminRoutes);
 app.get('/api/admin/session-stats', ensureAdmin, sessionMonitoringMiddleware.getMonitoringStats());
 app.post('/api/admin/reset-suspicious-ip', ensureAdmin, sessionMonitoringMiddleware.resetSuspiciousIP());
 
+// 9.2) Hybrid index monitoring admin endpoints
+app.get('/api/admin/hybrid-index-stats', ensureAdmin, (req, res) => {
+  try {
+    const hybridIndexMonitor = req.app.locals.services?.hybridIndexMonitor;
+    if (!hybridIndexMonitor) {
+      return res.status(503).json({ 
+        error: 'Hybrid index monitoring not available',
+        message: 'Service not initialized or not running'
+      });
+    }
+
+    const metrics = hybridIndexMonitor.getMetrics();
+    const report = hybridIndexMonitor.generatePerformanceReport();
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      monitoring: {
+        isActive: hybridIndexMonitor.isMonitoring,
+        uptime: Date.now() - metrics.lastUpdated.getTime()
+      },
+      metrics,
+      performanceReport: report
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to retrieve hybrid index monitoring stats',
+      message: error.message
+    });
+  }
+});
+
+app.post('/api/admin/hybrid-index-reset', ensureAdmin, (req, res) => {
+  try {
+    const hybridIndexMonitor = req.app.locals.services?.hybridIndexMonitor;
+    if (!hybridIndexMonitor) {
+      return res.status(503).json({ 
+        error: 'Hybrid index monitoring not available' 
+      });
+    }
+
+    hybridIndexMonitor.resetMetrics();
+    res.json({ 
+      success: true, 
+      message: 'Hybrid index monitoring metrics reset successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to reset hybrid index monitoring metrics',
+      message: error.message
+    });
+  }
+});
+
 // 10) Consultation privée (JSON)
 app.get('/api/view/:token', async (req, res) => {
   try {
@@ -342,17 +398,37 @@ if (require.main === module) {
       realTimeMetrics.startCollection();
       performanceAlerting.startAlerting();
 
+      // Initialize hybrid index monitoring for dual auth system
+      const hybridIndexMonitor = new HybridIndexMonitor({
+        monitoringInterval: 30000, // 30 seconds
+        slowQueryThreshold: 100,
+        indexEfficiencyThreshold: 0.8,
+        enableDetailedLogging: process.env.NODE_ENV !== 'production'
+      });
+
+      hybridIndexMonitor.startMonitoring();
+
       // Initialize admin routes with performance monitoring
       const adminRoutes = require('./routes/adminRoutes');
       adminRoutes.initializePerformanceMonitoring(performanceMonitor, realTimeMetrics);
 
       console.log('Database performance monitoring initialized');
+      console.log('Hybrid index monitoring initialized for dual auth system');
       console.log('Performance alerting system initialized');
       
-      // Store references for graceful shutdown
+      // Store references for graceful shutdown and admin access
       server.performanceMonitor = performanceMonitor;
+      server.hybridIndexMonitor = hybridIndexMonitor;
       server.realTimeMetrics = realTimeMetrics;
       server.performanceAlerting = performanceAlerting;
+      
+      // Make services accessible to routes
+      app.locals.services = {
+        performanceMonitor,
+        hybridIndexMonitor,
+        realTimeMetrics,
+        performanceAlerting
+      };
       
     } catch (error) {
       console.error('Failed to initialize performance monitoring:', error.message);
@@ -387,6 +463,12 @@ if (require.main === module) {
       if (server.performanceAlerting) {
         server.performanceAlerting.stopAlerting();
         console.log('Performance alerting system stopped');
+      }
+
+      // Shutdown hybrid index monitoring
+      if (server.hybridIndexMonitor) {
+        server.hybridIndexMonitor.stopMonitoring();
+        console.log('Hybrid index monitoring stopped');
       }
       
       // Close database connection
