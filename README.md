@@ -101,10 +101,16 @@ FAF/
 │   │   ├── environment.js    # Validation variables d'environnement
 │   │   └── session.js        # Configuration sessions et cookies
 │   ├── 📁 services/          # Couche logique métier
-│   │   ├── authService.js    # Logique authentification
-│   │   ├── responseService.js # CRUD réponses et validation
-│   │   ├── uploadService.js  # Traitement uploads Cloudinary
-│   │   └── serviceFactory.js # Factory pattern et injection dépendances
+│   │   ├── authService.js          # Logique authentification
+│   │   ├── responseService.js      # CRUD réponses et validation
+│   │   ├── uploadService.js        # Traitement uploads Cloudinary
+│   │   ├── serviceFactory.js       # Factory pattern et injection dépendances
+│   │   ├── sessionCleanupService.js    # Nettoyage automatique des sessions expirées
+│   │   ├── sessionMonitoringService.js # Surveillance temps réel des sessions
+│   │   ├── hybridIndexMonitor.js       # Monitoring performance index dual-auth
+│   │   ├── dbPerformanceMonitor.js     # Monitoring performance base de données
+│   │   ├── realTimeMetrics.js          # Métriques temps réel
+│   │   └── performanceAlerting.js      # Système d'alertes performance
 │   ├── 📁 middleware/         # Middleware de sécurité modulaire
 │   │   ├── auth.js           # Authentification admin bcrypt
 │   │   ├── validation.js     # Validation XSS + null/undefined
@@ -113,7 +119,8 @@ FAF/
 │   │   ├── rateLimiting.js   # Protection anti-spam intelligente
 │   │   ├── csrf.js           # Protection CSRF
 │   │   ├── errorHandler.js   # Gestion centralisée des erreurs
-│   │   └── paramValidation.js # Validation paramètres URL
+│   │   ├── paramValidation.js # Validation paramètres URL
+│   │   └── sessionMonitoring.js # Surveillance sécurisée des sessions
 │   ├── 📁 routes/            # Endpoints API
 │   │   ├── responseRoutes.js # Soumission sécurisée
 │   │   ├── adminRoutes.js    # Interface admin
@@ -121,12 +128,15 @@ FAF/
 │   │   └── upload.js         # Upload Cloudinary
 │   ├── 📁 models/            # Schémas MongoDB
 │   ├── 📁 tests/             # Suite de tests sécurité (100+)
-│   │   ├── validation.*.test.js    # Tests validation (84+ tests)
-│   │   ├── security.*.test.js      # Tests sécurité XSS/CSP
-│   │   ├── bodyParser.*.test.js    # Tests limites optimisées
-│   │   ├── constraint.*.test.js    # Tests contraintes DB
-│   │   ├── dynamic.*.test.js       # Tests options dynamiques
-│   │   └── integration.*.test.js   # Tests d'intégration complète
+│   │   ├── validation.*.test.js           # Tests validation (84+ tests)
+│   │   ├── security.*.test.js             # Tests sécurité XSS/CSP
+│   │   ├── bodyParser.*.test.js           # Tests limites optimisées
+│   │   ├── constraint.*.test.js           # Tests contraintes DB
+│   │   ├── dynamic.*.test.js              # Tests options dynamiques
+│   │   ├── integration.*.test.js          # Tests d'intégration complète
+│   │   ├── sessionMonitoring.test.js      # Tests surveillance sessions (25+ tests)
+│   │   ├── sessionManagement.integration.test.js # Tests intégration sessions
+│   │   └── dbPerformanceMonitor.test.js   # Tests monitoring performance DB
 │   └── 📁 utils/             # Utilitaires partagés
 ├── 📁 frontend/              # Interface utilisateur
 │   ├── 📁 public/            # Pages publiques
@@ -144,10 +154,12 @@ FAF/
 │       ├── form-submission.test.js   # Tests soumission
 │       └── real-form-submission.test.js # Tests réalistes
 ├── 📁 docs/                  # Documentation technique
-│   ├── ARCHITECTURE.md       # Architecture sécurisée
-│   ├── SERVICE_PATTERNS.md   # Patterns de services
-│   ├── SESSION_CONFIG.md     # Configuration sessions
-│   └── ERROR_HANDLING.md     # Gestion d'erreurs
+│   ├── ARCHITECTURE.md              # Architecture sécurisée
+│   ├── SERVICE_PATTERNS.md          # Patterns de services
+│   ├── SESSION_CONFIG.md            # Configuration sessions
+│   ├── ERROR_HANDLING.md            # Gestion d'erreurs
+│   ├── MIGRATION_ROLLBACK_PROCEDURES.md  # Procédures rollback migration
+│   └── enhanced-rate-limiting.md    # Rate limiting avancé
 └── 📚 Documentation/
 ```
 
@@ -241,11 +253,15 @@ block.appendChild(h2);
 - ✅ **Rate Limiting** - 3 soumissions/15min par IP
 - ✅ **Honeypot** - Champ invisible anti-spam
 - ✅ **CORS** - Origins configurés explicitement
-- ✅ **Session Security** - Cookies adaptatifs HTTPS dev/prod
+- ✅ **Session Security** - Cookies adaptatifs HTTPS dev/prod + surveillance temps réel
+- ✅ **Session Management** - Nettoyage automatique + détection activité suspecte
+- ✅ **Performance Monitoring** - Surveillance hybrid index + métriques temps réel
 - ✅ **Body Parser Limits** - 512KB-5MB selon endpoint
 - ✅ **Database Constraints** - Index unique admin/mois
 - ✅ **Modular Architecture** - DRY principle, shared constants
 - ✅ **Error Handling Hierarchy** - Multi-level fallback system
+- ✅ **IP Blocking** - Détection automatique activité malveillante
+- ✅ **Database Performance** - Monitoring requêtes + alertes intelligentes
 
 #### 🚫 **Prévention Admin Duplicate**
 ```javascript
@@ -286,6 +302,9 @@ npm test tests/constraint.unit.test.js          # 14 tests contraintes DB
 npm test tests/dynamic.option.integration.test.js # Tests options formulaires dynamiques
 npm test tests/integration.full.test.js           # Tests intégration complète
 npm test tests/middleware.integration.test.js     # Tests intégration middleware
+npm test tests/sessionMonitoring.test.js          # Tests surveillance sessions (25+ tests)
+npm test tests/sessionManagement.integration.test.js # Tests intégration sessions
+npm test tests/dbPerformanceMonitor.test.js       # Tests monitoring performance
 
 # Tests frontend
 npm run test:frontend                              # Tous les tests frontend
@@ -529,6 +548,12 @@ GET /api/admin/summary       # Résumé par question (sécurisé)
 GET /api/admin/months        # Liste des mois disponibles
 DELETE /api/admin/responses/{id}  # Suppression (vérification admin)
 
+// Session Management & Monitoring (nouveaux endpoints)
+GET /api/admin/session-stats      # Statistiques surveillance sessions temps réel
+POST /api/admin/reset-suspicious-ip # Reset IP bloquées (action admin)
+GET /api/admin/hybrid-index-stats # Métriques performance index dual-auth
+POST /api/admin/hybrid-index-reset # Reset métriques monitoring
+
 // Upload Images (endpoint séparé)
 POST /api/upload             # Body-Limit: 5MB, validation MIME types
 Content-Type: multipart/form-data
@@ -614,6 +639,14 @@ MIT License - Voir [LICENSE.md](LICENSE.md) pour détails.
 
 ## 🆕 Dernières Améliorations (Janvier 2025)
 
+### **🔐 Session Management & Monitoring (Août 2025)**
+- **🔍 Surveillance Temps Réel**: SessionMonitoringService pour détection activité suspecte
+- **🧹 Nettoyage Automatique**: Sessions expirées + utilisateurs inactifs (90j)
+- **🚫 Blocage IP Intelligent**: 5 tentatives échouées = IP bloquée automatiquement
+- **📊 Métriques Détaillées**: Dashboard admin avec statistiques sécurité temps réel
+- **⚡ Performance Monitoring**: HybridIndexMonitor pour surveillance dual-auth
+- **🔄 Rollback Procedures**: Documentation complète procédures migration rollback
+
 ### **🔧 Corrections d'Affichage & UI/UX**
 - **✨ Affichage Naturel Français**: Correction du problème d'affichage des apostrophes (`&#x27;` → `'`) dans admin.html
 - **🎯 Stratégie d'Échappement Intelligente**: Suppression de `.escape()` express-validator trop agressif, conservation de `escapeQuestion()` qui préserve le français
@@ -628,9 +661,10 @@ MIT License - Voir [LICENSE.md](LICENSE.md) pour détails.
 
 ### **🏗️ Architecture & Code**
 - **🧹 Refactoring Module**: Remplacement admin-utils.js + core-utils.js par faf-admin.js ES6 unifié
-- **✅ Tests Robustes**: 15+ nouveaux tests pour ordre questions dynamique
+- **✅ Tests Robustes**: 25+ nouveaux tests session monitoring + intégration
 - **🚀 Cache Intelligent**: Système de cache 10min avec prévention memory leaks
 - **📊 Logging Structuré**: Debug contextuel avec métriques performance
+- **🏭 Service Layer**: Architecture modulaire services avec monitoring intégré
 
 ---
 
