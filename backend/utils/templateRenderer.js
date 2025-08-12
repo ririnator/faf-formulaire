@@ -21,7 +21,7 @@ class TemplateRenderer {
     }
   }
 
-  static async renderWithNonce(filePath, res) {
+  static renderWithNonce(filePath, res) {
     const nonce = res.locals.nonce || '';
     const variables = { nonce };
     

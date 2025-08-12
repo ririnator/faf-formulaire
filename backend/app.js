@@ -133,7 +133,12 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.error("Erreur de connexion à la DB :", err));
 
-// 6) Front public (index.html, view.html…)
+// 6) Route d'accueil - redirection vers page de choix auth
+app.get('/', (req, res) => {
+  res.redirect('/auth-choice');
+});
+
+// 7) Front public (form.html, view.html…)
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 
 // 7) Pages d'authentification avec CSP nonce
@@ -335,12 +340,7 @@ app.use((req, res) => {
   res.status(HTTP_STATUS.NOT_FOUND).sendFile(path.join(__dirname, '../frontend/404.html'));
 });
 
-// 14) Route d'accueil - redirection vers page de choix auth
-app.get('/', (req, res) => {
-  res.redirect('/auth-choice');
-});
-
-// 15) Lancement du serveur
+// 14) Lancement du serveur
 if (require.main === module) {
   const server = app.listen(port, () => {
     console.log(`Serveur lancé sur le port ${port}`);
