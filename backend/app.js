@@ -21,6 +21,7 @@ const { createSecurityMiddleware, createSessionOptions } = require('./middleware
 const { createStandardBodyParser, createPayloadErrorHandler } = require('./middleware/bodyParser');
 const { csrfTokenMiddleware } = require('./middleware/csrf');
 const SessionConfig = require('./config/session');
+const sessionMonitoringMiddleware = require('./middleware/sessionMonitoring');
 const DBPerformanceMonitor = require('./services/dbPerformanceMonitor');
 const RealTimeMetrics = require('./services/realTimeMetrics');
 const PerformanceAlerting = require('./services/performanceAlerting');
@@ -99,6 +100,11 @@ app.set('trust proxy', 1);
 // 3) Enhanced Sessions with better dev/prod handling
 app.use(session(createSessionOptions()));
 
+// 3.2) Session monitoring for security
+app.use(sessionMonitoringMiddleware.trackSessionCreation());
+app.use(sessionMonitoringMiddleware.trackSessionDestruction());
+app.use(sessionMonitoringMiddleware.trackFailedLogins());
+
 // 3.5) CSRF Token generation for admin routes
 app.use(csrfTokenMiddleware());
 
@@ -161,8 +167,8 @@ app.get('/admin-login', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/public/admin-login.html'));
 });
 
-// Routes legacy admin
-app.post('/login', authenticateAdmin);
+// Routes legacy admin with session security
+app.post('/login', sessionMonitoringMiddleware.blockSuspiciousSessions(), authenticateAdmin);
 app.get('/logout', destroySession);
 
 // 8) Back-office Admin (HTML + assets)
@@ -229,6 +235,10 @@ if (process.env.NODE_ENV !== 'production') {
 // 9) API Admin
 app.use('/api/admin', ensureAdmin, adminRoutes);
 
+// 9.1) Session monitoring admin endpoints
+app.get('/api/admin/session-stats', ensureAdmin, sessionMonitoringMiddleware.getMonitoringStats());
+app.post('/api/admin/reset-suspicious-ip', ensureAdmin, sessionMonitoringMiddleware.resetSuspiciousIP());
+
 // 10) Consultation privée (JSON)
 app.get('/api/view/:token', async (req, res) => {
   try {
@@ -285,6 +295,14 @@ if (require.main === module) {
       console.log('Session cleanup service initialized');
     } catch (error) {
       console.error('Failed to initialize session cleanup service:', error.message);
+    }
+
+    // Initialize session monitoring service
+    try {
+      sessionMonitoringMiddleware.initialize();
+      console.log('Session monitoring service initialized');
+    } catch (error) {
+      console.error('Failed to initialize session monitoring service:', error.message);
     }
 
     // Initialize performance monitoring
@@ -350,6 +368,10 @@ if (require.main === module) {
       
       // Shutdown cleanup service
       SessionConfig.shutdownCleanupService();
+      
+      // Shutdown session monitoring service
+      sessionMonitoringMiddleware.shutdown();
+      console.log('Session monitoring service stopped');
       
       // Shutdown performance monitoring
       if (server.performanceMonitor) {
