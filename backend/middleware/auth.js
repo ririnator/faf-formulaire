@@ -10,6 +10,12 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
+/**
+ * Ensures admin access supporting both legacy and new auth systems
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 function ensureAdmin(req, res, next) {
   // Support both legacy admin sessions and new user-based admin sessions
   const isLegacyAdmin = req.session?.isAdmin;
@@ -25,7 +31,7 @@ function ensureAdmin(req, res, next) {
           sessionAge: Math.ceil(sessionAge / 1000) 
         });
         req.session.destroy();
-        return res.redirect('/login?timeout=1');
+        return res.redirect('/admin-login?timeout=1');
       }
     }
     
@@ -38,13 +44,13 @@ function ensureAdmin(req, res, next) {
           newIP: currentIP 
         });
         req.session.destroy();
-        return res.redirect('/login?security=1');
+        return res.redirect('/admin-login?security=1');
       }
     }
     
     return next();
   }
-  return res.redirect('/login');
+  return res.redirect('/admin-login');
 }
 
 async function authenticateAdmin(req, res, next) {
