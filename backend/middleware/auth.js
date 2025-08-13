@@ -11,27 +11,35 @@ const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
 function ensureAdmin(req, res, next) {
-  if (req.session?.isAdmin) {
-    // Vérifier timeout de session
-    const sessionAge = Date.now() - (req.session.adminLoginTime || 0);
-    if (sessionAge > SESSION_TIMEOUT) {
-      logSecurityEvent('ADMIN_SESSION_TIMEOUT', { 
-        ip: req.session.adminIP, 
-        sessionAge: Math.ceil(sessionAge / 1000) 
-      });
-      req.session.destroy();
-      return res.redirect('/login?timeout=1');
+  // Support both legacy admin sessions and new user-based admin sessions
+  const isLegacyAdmin = req.session?.isAdmin;
+  const isNewAdmin = req.session?.user?.role === 'admin';
+  
+  if (isLegacyAdmin || isNewAdmin) {
+    // Vérifier timeout de session (pour legacy admin seulement)
+    if (isLegacyAdmin) {
+      const sessionAge = Date.now() - (req.session.adminLoginTime || 0);
+      if (sessionAge > SESSION_TIMEOUT) {
+        logSecurityEvent('ADMIN_SESSION_TIMEOUT', { 
+          ip: req.session.adminIP, 
+          sessionAge: Math.ceil(sessionAge / 1000) 
+        });
+        req.session.destroy();
+        return res.redirect('/login?timeout=1');
+      }
     }
     
-    // Vérifier IP consistency (optionnel) - Support Node.js moderne
-    const currentIP = req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress;
-    if (req.session.adminIP && req.session.adminIP !== currentIP) {
-      logSecurityEvent('ADMIN_SESSION_IP_CHANGE', { 
-        originalIP: req.session.adminIP, 
-        newIP: currentIP 
-      });
-      req.session.destroy();
-      return res.redirect('/login?security=1');
+    // Vérifier IP consistency (pour legacy admin seulement)  
+    if (isLegacyAdmin) {
+      const currentIP = req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress;
+      if (req.session.adminIP && req.session.adminIP !== currentIP) {
+        logSecurityEvent('ADMIN_SESSION_IP_CHANGE', { 
+          originalIP: req.session.adminIP, 
+          newIP: currentIP 
+        });
+        req.session.destroy();
+        return res.redirect('/login?security=1');
+      }
     }
     
     return next();
