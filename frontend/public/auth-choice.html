@@ -15,12 +15,12 @@
         <h1>🎭 FAF</h1>
         <p class="subtitle">Form a Friend - Créez des liens authentiques</p>
 
-        <button onclick="redirectToLogin()" class="auth-btn primary-btn" aria-describedby="login-desc">
+        <button id="loginBtn" class="auth-btn primary-btn" aria-describedby="login-desc">
             Se connecter
         </button>
         <span id="login-desc" class="sr-only">Connectez-vous avec votre compte existant</span>
 
-        <button onclick="redirectToRegister()" class="auth-btn secondary-btn" aria-describedby="register-desc">
+        <button id="registerBtn" class="auth-btn secondary-btn" aria-describedby="register-desc">
             Créer un compte
         </button>
         <span id="register-desc" class="sr-only">Inscrivez-vous pour créer un nouveau compte</span>
@@ -29,7 +29,7 @@
             <span>ou</span>
         </div>
 
-        <button onclick="continueAsGuest()" class="auth-btn guest-btn" aria-describedby="guest-desc">
+        <button id="guestBtn" class="auth-btn guest-btn" aria-describedby="guest-desc">
             Continuer en mode invité
         </button>
         <span id="guest-desc" class="sr-only">Utiliser le formulaire sans créer de compte, avec liens privés</span>
@@ -47,11 +47,11 @@
         }
 
         function redirectToLogin() {
-            window.location.href = '/login.html';
+            window.location.href = '/login';
         }
 
         function redirectToRegister() {
-            window.location.href = '/register.html';
+            window.location.href = '/register';
         }
 
         // Fonction pour vérifier l'authentification avec gestion d'erreurs améliorée
@@ -109,6 +109,11 @@
         // Initialisation de la page
         document.addEventListener('DOMContentLoaded', async function() {
             console.debug('Auth choice page loaded');
+            
+            // Attacher les event listeners aux boutons
+            document.getElementById('loginBtn').addEventListener('click', redirectToLogin);
+            document.getElementById('registerBtn').addEventListener('click', redirectToRegister);
+            document.getElementById('guestBtn').addEventListener('click', continueAsGuest);
             
             // Vérification optionnelle de l'authentification
             // Ne bloque pas le fonctionnement de la page si elle échoue
