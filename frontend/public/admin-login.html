@@ -171,7 +171,7 @@
 
     <div id="errorMessage" class="error-message"></div>
 
-    <form action="/login" method="post">
+    <form action="/admin-login" method="post">
       <div class="form-group">
         <label for="username">Utilisateur :</label>
         <input type="text" id="username" name="username" required autocomplete="username">
@@ -195,9 +195,16 @@
     // Afficher les erreurs d'URL si présentes
     window.addEventListener('DOMContentLoaded', function() {
       const urlParams = new URLSearchParams(window.location.search);
+      const errorDiv = document.getElementById('errorMessage');
+      
       if (urlParams.get('error') === '1') {
-        const errorDiv = document.getElementById('errorMessage');
         errorDiv.textContent = 'Identifiants invalides. Veuillez réessayer.';
+        errorDiv.style.display = 'block';
+      } else if (urlParams.get('timeout') === '1') {
+        errorDiv.textContent = 'Session expirée. Veuillez vous reconnecter.';
+        errorDiv.style.display = 'block';
+      } else if (urlParams.get('security') === '1') {
+        errorDiv.textContent = 'Problème de sécurité détecté. Reconnexion nécessaire.';
         errorDiv.style.display = 'block';
       }
     });
