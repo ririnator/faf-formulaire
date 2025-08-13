@@ -17,6 +17,7 @@ const Response       = require('./models/Response');
 const { HTTP_STATUS, APP_CONSTANTS } = require('./constants');
 const TemplateRenderer = require('./utils/templateRenderer');
 const { ensureAdmin, authenticateAdmin, destroySession } = require('./middleware/auth');
+const { requireAdminAccess, detectAuthMethod } = require('./middleware/hybridAuth');
 const { createSecurityMiddleware, createSessionOptions } = require('./middleware/security');
 const { createStandardBodyParser, createPayloadErrorHandler } = require('./middleware/bodyParser');
 const { csrfTokenMiddleware } = require('./middleware/csrf');
@@ -200,11 +201,11 @@ app.get('/logout', destroySession);
 
 // 8) Back-office Admin (HTML + assets)
 // Dashboard route that redirects to the admin interface
-app.get('/dashboard', ensureAdmin, (req, res) => {
+app.get('/dashboard', detectAuthMethod, requireAdminAccess, (req, res) => {
   res.redirect('/admin');
 });
 
-app.get('/admin', ensureAdmin, (req, res) => {
+app.get('/admin', detectAuthMethod, requireAdminAccess, (req, res) => {
   try {
     const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/admin/admin.html'), res);
     res.send(html);
@@ -212,7 +213,7 @@ app.get('/admin', ensureAdmin, (req, res) => {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Admin dashboard not available');
   }
 });
-app.get('/admin/gestion', ensureAdmin, (req, res) => {
+app.get('/admin/gestion', detectAuthMethod, requireAdminAccess, (req, res) => {
   try {
     const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/admin/admin_gestion.html'), res);
     res.send(html);
