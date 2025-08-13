@@ -197,6 +197,7 @@ app.get('/admin-login', (req, res) => {
 
 // Routes legacy admin with session security
 app.post('/login', sessionMonitoringMiddleware.blockSuspiciousSessions(), authenticateAdmin);
+app.post('/admin-login', sessionMonitoringMiddleware.blockSuspiciousSessions(), authenticateAdmin);
 app.get('/logout', destroySession);
 
 // 8) Back-office Admin (HTML + assets)

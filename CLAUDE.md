@@ -68,6 +68,7 @@ The frontend consists of static files served directly by Express from `frontend/
   - `performanceAlerting.js` - Intelligent performance alerting system
 - `middleware/` - Modular security middleware architecture:
   - `auth.js` - Admin authentication with bcrypt and session management
+  - `hybridAuth.js` - Hybrid authentication system supporting both legacy and new user-based authentication
   - `validation.js` - Smart XSS escaping with Cloudinary URL preservation + null/undefined edge case handling
     - `smartEscape()` - Intelligent escaping that preserves valid Cloudinary URLs while protecting against XSS
     - `isCloudinaryUrl()` - Validates Cloudinary URLs with security checks for malicious content
@@ -93,6 +94,8 @@ The frontend consists of static files served directly by Express from `frontend/
   - `sessionMonitoring.test.js` - Session monitoring unit tests (25+ tests)
   - `sessionManagement.integration.test.js` - Session management integration tests
   - `dbPerformanceMonitor.test.js` - Database performance monitoring tests
+  - `admin-login.dual-endpoint.test.js` - Dual endpoint consistency tests for POST /login and POST /admin-login
+  - `admin-login.frontend-errors.test.js` - Frontend error message handling validation
 - `routes/` - API endpoints with layered security and optimized body parsing:
   - `responseRoutes.js` - Public form submission (2MB body limit) with strict validation, XSS escaping, admin duplicate prevention
   - `adminRoutes.js` - Admin dashboard APIs (1MB body limit) with pagination, summary, CRUD operations
@@ -115,6 +118,37 @@ The frontend consists of static files served directly by Express from `frontend/
   - `real-form-submission.test.js` - Real-world form submission scenarios
   - `jest.config.js` - Frontend-specific Jest configuration
   - `setup.js` - Test environment setup and utilities
+
+### Authentication System Architecture
+
+**Dual Endpoint System** - The application supports both legacy and modern authentication through parallel endpoints:
+
+#### Admin Authentication Endpoints
+- **`POST /login`** - Legacy admin authentication endpoint (original system)
+- **`POST /admin-login`** - Dedicated admin login endpoint for consistency and clarity
+- **Identical Behavior**: Both endpoints use the same middleware stack and authentication logic:
+  ```javascript
+  app.post('/login', sessionMonitoringMiddleware.blockSuspiciousSessions(), authenticateAdmin);
+  app.post('/admin-login', sessionMonitoringMiddleware.blockSuspiciousSessions(), authenticateAdmin);
+  ```
+
+#### User Redirection Flow
+- **Regular Users**: `/login` → `/form` (main application functionality)
+- **Admin Users**: `/login` or `/admin-login` → `/admin` (dashboard)
+- **Legacy Admin**: `/admin-login` with dedicated UI emphasizing legacy system
+
+#### Error Message Handling
+Enhanced error parameter support in admin-login.html:
+- `?error=1` - Invalid credentials message
+- `?timeout=1` - Session expiration message  
+- `?security=1` - Security issue detected message
+
+#### Hybrid Authentication Middleware
+The `hybridAuth.js` middleware provides:
+- **`detectAuthMethod`** - Automatically detects user session vs token-based authentication
+- **`requireAdminAccess`** - Supports both new User.role='admin' and legacy session.isAdmin
+- **`requireUserAuth`** - Ensures modern user account authentication
+- **`enrichUserData`** - Maintains session data consistency with database
 
 ### Key Features
 - **Nonce-based CSP Security** - Dynamic nonces per request, eliminates unsafe-inline completely
