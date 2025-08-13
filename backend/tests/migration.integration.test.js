@@ -73,7 +73,6 @@ describe('Migration Integration Tests', () => {
         username: 'jeandupont',
         email: 'jean@example.com',
         password: 'SecurePass123!',
-        displayName: 'Jean Dupont',
         migrateToken: legacyToken
       };
 
@@ -113,7 +112,6 @@ describe('Migration Integration Tests', () => {
         username: 'testuser',
         email: 'test@example.com',
         password: 'SecurePass123!',
-        displayName: 'Test User',
         migrateToken: 'invalid-token-here'
       };
 
@@ -146,7 +144,6 @@ describe('Migration Integration Tests', () => {
         username: 'jeandupont2',
         email: 'jean2@example.com',
         password: 'SecurePass123!',
-        displayName: 'Jean Dupont',
         migrateToken: legacyToken
       };
 
@@ -169,7 +166,6 @@ describe('Migration Integration Tests', () => {
         username: 'user1',
         email: 'user1@example.com',
         password: 'SecurePass123!',
-        displayName: 'User One',
         migrateToken: legacyToken
       };
 
@@ -183,7 +179,6 @@ describe('Migration Integration Tests', () => {
         username: 'user2',
         email: 'user2@example.com',
         password: 'SecurePass123!',
-        displayName: 'User Two',
         migrateToken: legacyToken
       };
 
@@ -210,8 +205,7 @@ describe('Migration Integration Tests', () => {
         .send({
           username: 'hybriduser',
           email: 'hybrid@example.com',
-          password: 'Pass123!',
-          displayName: 'Hybrid User'
+          password: 'Pass123!'
         });
 
       // Create a legacy response
@@ -321,7 +315,6 @@ describe('Migration Integration Tests', () => {
         username: 'adminuser',
         email: 'admin@example.com',
         password: await require('bcrypt').hash('AdminPass123!', 12),
-        displayName: 'Admin User',
         role: 'admin'
       });
 
@@ -384,7 +377,6 @@ describe('Migration Integration Tests', () => {
           username: 'errortest',
           email: 'error@test.com',
           password: 'Pass123!',
-          displayName: 'Error Test',
           migrateToken: 'some-token'
         })
         .expect(201);
@@ -409,8 +401,7 @@ describe('Migration Integration Tests', () => {
         .send({
           username: 'sessionerror',
           email: 'session@error.com',
-          password: 'Pass123!',
-          displayName: 'Session Error'
+          password: 'Pass123!'
         })
         .expect(201);
 

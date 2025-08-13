@@ -46,8 +46,7 @@ describe('🏥 Migration Health Monitoring Integration', () => {
       const user = await User.create({
         username: 'testuser',
         email: 'test@test.com',
-        password: 'TestPass123!',
-        displayName: 'Test User'
+        password: 'TestPass123!'
       });
 
       await Response.create({
@@ -135,8 +134,7 @@ describe('🏥 Migration Health Monitoring Integration', () => {
       const user = await User.create({
         username: 'mixuser',
         email: 'mix@test.com',
-        password: 'MixTest123!',
-        displayName: 'Mix User'
+        password: 'MixTest123!'
       });
 
       await Response.create({
@@ -171,8 +169,7 @@ describe('🏥 Migration Health Monitoring Integration', () => {
         Array(10).fill(null).map((_, i) => ({
           username: `perfuser${i}`,
           email: `perf${i}@test.com`,
-          password: 'PerfTest123!',
-          displayName: `Perf User ${i}`
+          password: 'PerfTest123!'
         }))
       );
 

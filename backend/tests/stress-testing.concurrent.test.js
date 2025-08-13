@@ -60,7 +60,6 @@ describe('🚀 High-Concurrency Migration Stress Tests', () => {
           username: `stressuser${i}`,
           email: `stress${i}@test.com`,
           password: 'StressTest123!',
-          displayName: `Legacy User ${i}`,
           migrateToken: data.token
         };
 
@@ -119,7 +118,6 @@ describe('🚀 High-Concurrency Migration Stress Tests', () => {
           username: `admin${i}`,
           email: `admin${i}@test.com`,
           password: 'AdminTest123!',
-          displayName: 'Stress Admin',
           role: 'admin'
         };
 
@@ -158,8 +156,7 @@ describe('🚀 High-Concurrency Migration Stress Tests', () => {
         Array(50).fill(null).map((_, i) => ({
           username: `respuser${i}`,
           email: `resp${i}@test.com`,
-          password: 'ResponseTest123!',
-          displayName: `Response User ${i}`
+          password: 'ResponseTest123!'
         }))
       );
 
@@ -218,8 +215,7 @@ describe('🚀 High-Concurrency Migration Stress Tests', () => {
         Array(25).fill(null).map((_, i) => ({
           username: `mixuser${i}`,
           email: `mix${i}@test.com`,
-          password: 'MixTest123!',
-          displayName: `Mix User ${i}`
+          password: 'MixTest123!'
         }))
       );
 
@@ -284,8 +280,7 @@ describe('🚀 High-Concurrency Migration Stress Tests', () => {
         Array(100).fill(null).map((_, i) => ({
           username: `perfuser${i}`,
           email: `perf${i}@test.com`,
-          password: 'PerfTest123!',
-          displayName: `Perf User ${i}`
+          password: 'PerfTest123!'
         }))
       );
 
@@ -417,8 +412,7 @@ describe('🚀 High-Concurrency Migration Stress Tests', () => {
       const users = Array(10).fill(null).map((_, i) => ({
         username: `erroruser${i}`,
         email: `error${i}@test.com`,
-        password: 'ErrorTest123!',
-        displayName: `Error User ${i}`
+        password: 'ErrorTest123!'
       }));
       
       await User.insertMany(users);

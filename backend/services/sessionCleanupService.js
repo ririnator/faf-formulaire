@@ -188,7 +188,7 @@ class SessionCleanupService {
             }
           }
         ]
-      }).select('_id email displayName metadata.registeredAt metadata.lastLoginAt').limit(this.config.batchSize);
+      }).select('_id email username metadata.registeredAt metadata.lastLoginAt').limit(this.config.batchSize);
 
       if (dryRun) {
         this.cleanupStats.inactiveUsers = inactiveUsers.length;

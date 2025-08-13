@@ -26,12 +26,6 @@ const UserSchema = new Schema({
     required: true,
     minlength: 6
   },
-  displayName: { 
-    type: String, 
-    required: true,
-    maxlength: 50,
-    trim: true
-  },
   role: {
     type: String,
     enum: ['user', 'admin'],
@@ -108,7 +102,7 @@ UserSchema.methods.toPublicJSON = function() {
     id: this._id,
     username: this.username,
     email: this.email,
-    displayName: this.displayName,
+    displayName: this.username,
     role: this.role,
     profile: this.profile,
     metadata: {

@@ -162,13 +162,37 @@ The frontend consists of static files served directly by Express from `frontend/
 - `CLOUDINARY_*` - Cloudinary configuration for file uploads
 
 ### Database Schema
-The `Response` model contains:
+**Response Model** contains:
 - `name` - User's name (admin detection via `FORM_ADMIN_NAME` env var)
 - `responses[]` - Array of question/answer pairs
 - `month` - YYYY-MM format for monthly grouping
 - `isAdmin` - Boolean flag for admin responses
 - `token` - Unique token for private viewing (null for admin)
 - `createdAt` - Timestamp with index
+
+**User Model** contains:
+- `username` - Unique identifier for login (3-30 chars, also serves as display name)
+- `email` - Unique email address for authentication
+- `password` - Hashed password with bcrypt (min 6 chars)
+- `role` - User role ('user' or 'admin', defaults to 'user')
+- `profile` - Optional profile data (firstName, lastName, dateOfBirth, profession, location)
+- `metadata` - System metadata (isActive, emailVerified, lastActive, responseCount, registeredAt)
+- `migrationData` - Legacy migration data (legacyName, migratedAt, source)
+
+**API Response Format**:
+The `toPublicJSON()` method returns:
+```json
+{
+  "id": "user_id",
+  "username": "john_doe",
+  "email": "john@example.com",
+  "displayName": "john_doe",  // ⚠️ Returns username value for backward compatibility
+  "role": "user",
+  "profile": { ... },
+  "metadata": { ... }
+}
+```
+**Note**: `displayName` field was removed from the schema but is still returned in API responses as an alias for `username` to maintain backward compatibility.
 
 ### Security Features
 - **Helmet.js security headers** with Content Security Policy (CSP) protecting against XSS, clickjacking, and MIME sniffing
@@ -246,6 +270,15 @@ The `Response` model contains:
 - **Test Results**: 257+ tests pass (January 2025), comprehensive security validation
 - **Performance Testing**: Large payload handling, concurrent request processing, validation speed
 - **Architecture Validation**: Middleware modularity, Express parser optimization, environment adaptation
+
+### User Authentication Simplification (August 2025)
+**displayName Field Removal**:
+- **🎯 Simplified Authentication**: Removed separate `displayName` field from User model to eliminate user confusion
+- **✅ Backward Compatibility**: `toPublicJSON()` method now returns `username` as `displayName` for API compatibility
+- **📝 No Migration Required**: Existing users unaffected as displayName was computed field, not stored data
+- **🔧 Frontend Simplified**: Registration form no longer requires separate display name input
+- **🧪 Test Coverage Updated**: 100+ test cases updated to reflect new username-only approach
+- **📋 Decision Rationale**: Users found separate username/displayName confusing; username serves both purposes effectively
 
 ### Recent Architecture Improvements (January 2025)
 **Security & XSS Fixes**:

@@ -28,8 +28,7 @@ describe('Authentication Flow Integration Tests', () => {
     testUser = {
       username: 'testuser',
       email: 'test@example.com',
-      password: 'SecurePass123!',
-      displayName: 'Test User'
+      password: 'SecurePass123!'
     };
   });
 
@@ -72,8 +71,7 @@ describe('Authentication Flow Integration Tests', () => {
       const invalidUser = {
         username: 'ab', // Too short
         email: 'invalid-email',
-        password: '123', // Too short
-        displayName: ''
+        password: '123' // Too short
       };
 
       const res = await request(app)
@@ -216,7 +214,7 @@ describe('Authentication Flow Integration Tests', () => {
 
     test('should update profile successfully', async () => {
       const updates = {
-        displayName: 'Updated Name',
+        username: 'UpdatedName',
         profile: {
           firstName: 'John',
           lastName: 'Doe',
@@ -229,13 +227,13 @@ describe('Authentication Flow Integration Tests', () => {
         .send(updates)
         .expect(200);
 
-      expect(res.body.user.displayName).toBe(updates.displayName);
+      expect(res.body.user.displayName).toBe(updates.username);
       expect(res.body.user.profile.firstName).toBe(updates.profile.firstName);
     });
 
     test('should validate profile updates', async () => {
       const invalidUpdates = {
-        displayName: '', // Too short
+        username: '', // Too short
         email: 'invalid-email' // Should not be updatable
       };
 
@@ -282,8 +280,7 @@ describe('Authentication Flow Integration Tests', () => {
           .send({
             username: `user${i}`,
             email: `user${i}@test.com`,
-            password: 'Pass123!',
-            displayName: `User ${i}`
+            password: 'Pass123!'
           })
       );
 

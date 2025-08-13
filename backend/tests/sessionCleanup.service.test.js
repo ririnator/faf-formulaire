@@ -158,7 +158,6 @@ describe('SessionCleanupService', () => {
       activeUser = await User.create({
         username: 'activeuser',
         email: 'active@test.com',
-        displayName: 'Active User',
         password: 'hashedpassword',
         metadata: {
           registeredAt: oldDate,
@@ -169,7 +168,6 @@ describe('SessionCleanupService', () => {
       inactiveUser = await User.create({
         username: 'inactiveuser',
         email: 'inactive@test.com',
-        displayName: 'Inactive User',
         password: 'hashedpassword',
         metadata: {
           registeredAt: veryOldDate,
@@ -180,7 +178,6 @@ describe('SessionCleanupService', () => {
       userWithRecentResponse = await User.create({
         username: 'recentuser',
         email: 'recent@test.com',
-        displayName: 'Recent Response User',
         password: 'hashedpassword',
         metadata: {
           registeredAt: veryOldDate,
@@ -256,7 +253,6 @@ describe('SessionCleanupService', () => {
       validUser = await User.create({
         username: 'validuser',
         email: 'valid@test.com',
-        displayName: 'Valid User',
         password: 'hashedpassword'
       });
 
@@ -345,7 +341,6 @@ describe('SessionCleanupService', () => {
       const inactiveUser = await User.create({
         username: 'cleanupuser',
         email: 'cleanup@test.com',
-        displayName: 'Cleanup User',
         password: 'hashed',
         metadata: {
           registeredAt: oldDate,
@@ -419,7 +414,6 @@ describe('SessionCleanupService', () => {
       const validUser = await User.create({
         username: 'validuser',
         email: 'valid@test.com',
-        displayName: 'Valid User',
         password: 'hashed'
       });
 

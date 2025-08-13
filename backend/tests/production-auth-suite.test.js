@@ -15,15 +15,13 @@ describe('🚀 Production Authentication Test Suite', () => {
     testUser = {
       username: 'produser',
       email: 'prod@test.com',
-      password: 'ProductionPass123!',
-      displayName: 'Production User'
+      password: 'ProductionPass123!'
     };
 
     adminUser = {
       username: 'prodadmin',
       email: 'admin@test.com',
       password: 'AdminPass123!',
-      displayName: 'Production Admin',
       role: 'admin'
     };
 
@@ -166,7 +164,6 @@ describe('🚀 Production Authentication Test Suite', () => {
         ...testUser,
         username: 'migrateduser',
         email: 'migrated@test.com',
-        displayName: 'Legacy User',
         migrateToken: legacyToken
       };
 
@@ -215,7 +212,6 @@ describe('🚀 Production Authentication Test Suite', () => {
           ...testUser,
           username: 'user1',
           email: 'user1@test.com',
-          displayName: 'Legacy User',
           migrateToken: legacyToken
         })
         .expect(201);
@@ -227,7 +223,6 @@ describe('🚀 Production Authentication Test Suite', () => {
           ...testUser,
           username: 'user2',
           email: 'user2@test.com',
-          displayName: 'Legacy User',
           migrateToken: legacyToken
         })
         .expect(201);
@@ -243,7 +238,6 @@ describe('🚀 Production Authentication Test Suite', () => {
         username: 'admin1',
         email: 'admin1@test.com',
         password: 'AdminPass123!',
-        displayName: 'Admin One',
         role: 'admin'
       });
 
@@ -251,7 +245,6 @@ describe('🚀 Production Authentication Test Suite', () => {
         username: 'admin2',
         email: 'admin2@test.com',
         password: 'AdminPass123!',
-        displayName: 'Admin Two',
         role: 'admin'
       });
 
@@ -307,7 +300,6 @@ describe('🚀 Production Authentication Test Suite', () => {
         username: 'newadmin',
         email: 'newadmin@test.com',
         password: 'AdminPass123!',
-        displayName: 'New Admin',
         role: 'admin'
       });
 
@@ -458,8 +450,7 @@ describe('🚀 Production Authentication Test Suite', () => {
       const users = Array(10).fill(null).map((_, i) => ({
         username: `user${i}`,
         email: `user${i}@test.com`,
-        password: 'TestPass123!',
-        displayName: `User ${i}`
+        password: 'TestPass123!'
       }));
 
       const startTime = process.hrtime.bigint();

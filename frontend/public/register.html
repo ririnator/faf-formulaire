@@ -31,12 +31,6 @@
                 <div class="error-message" id="emailError"></div>
             </div>
 
-            <div class="form-group">
-                <label for="displayName">Nom d'affichage</label>
-                <input type="text" id="displayName" name="displayName" required 
-                       placeholder="Votre nom complet" maxlength="50">
-                <div class="error-message" id="displayNameError"></div>
-            </div>
 
             <div class="form-group">
                 <label for="password">Mot de passe</label>
@@ -191,12 +185,6 @@
                 isValid = false;
             }
 
-            // Display name validation
-            const displayName = document.getElementById('displayName').value.trim();
-            if (displayName.length < 2) {
-                showError('displayNameError', 'Le nom d\'affichage doit contenir au moins 2 caractères');
-                isValid = false;
-            }
 
             return isValid;
         }
@@ -236,9 +224,6 @@
                         break;
                     case 'password':
                         showError('passwordError', message);
-                        break;
-                    case 'displayName':
-                        showError('displayNameError', message);
                         break;
                     default:
                         alert(message);

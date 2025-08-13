@@ -42,7 +42,6 @@ class SessionCleanupDemo {
     const inactiveUser = await User.create({
       username: 'inactive_demo',
       email: 'inactive@test.demo',
-      displayName: 'Inactive Demo User',
       password: 'hashedpassword',
       metadata: {
         registeredAt: veryOldDate,
@@ -55,7 +54,6 @@ class SessionCleanupDemo {
     const activeUser = await User.create({
       username: 'active_demo',
       email: 'active@test.demo',
-      displayName: 'Active Demo User',
       password: 'hashedpassword',
       metadata: {
         registeredAt: oldDate,

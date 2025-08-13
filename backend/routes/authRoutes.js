@@ -26,10 +26,6 @@ const registerValidation = [
     .isLength({ min: APP_CONSTANTS.MIN_PASSWORD_LENGTH })
     .withMessage('Le mot de passe doit contenir au moins 6 caractères'),
   
-  body('displayName')
-    .trim()
-    .isLength({ min: 1, max: APP_CONSTANTS.MAX_DISPLAY_NAME_LENGTH })
-    .withMessage('Le nom d\'affichage est requis (max 50 caractères)'),
   
   body('migrateToken')
     .optional()
@@ -60,7 +56,7 @@ router.post('/register', authLimiters.register, registerValidation, async (req, 
       });
     }
 
-    const { username, email, password, displayName, profile, migrateToken } = req.body;
+    const { username, email, password, profile, migrateToken } = req.body;
 
     // Vérifier si l'utilisateur existe déjà
     const existingUser = await User.findOne({
@@ -94,7 +90,6 @@ router.post('/register', authLimiters.register, registerValidation, async (req, 
       username,
       email,
       password, // Sera hashé automatiquement par le pre-save hook
-      displayName,
       profile: profile || {},
       metadata: {
         registeredAt: new Date(),
@@ -269,11 +264,6 @@ router.get('/me', async (req, res) => {
 
 // PUT /api/auth/profile - Mettre à jour le profil avec rate limiting
 router.put('/profile', authLimiters.profileUpdate, [
-  body('displayName')
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('Le nom d\'affichage doit contenir entre 1 et 50 caractères'),
   
   body('profile.firstName')
     .optional()
@@ -319,9 +309,7 @@ router.put('/profile', authLimiters.profileUpdate, [
     }
 
     // Mettre à jour les champs autorisés
-    const { displayName, profile } = req.body;
-    
-    if (displayName) user.displayName = displayName;
+    const { profile } = req.body;
     if (profile) {
       if (profile.firstName !== undefined) user.profile.firstName = profile.firstName;
       if (profile.lastName !== undefined) user.profile.lastName = profile.lastName;
