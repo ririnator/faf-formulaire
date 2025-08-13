@@ -83,6 +83,28 @@ describe('CSS Migration Tests', () => {
         expect(elementsWithStyle.length).toBe(0);
       }
     });
+
+    test('no inline event handlers should be present in HTML', async () => {
+      const pages = ['/auth-choice', '/login', '/register'];
+      
+      for (const page of pages) {
+        const response = await request(app).get(page);
+        const $ = cheerio.load(response.text);
+        
+        // Check for onclick handlers
+        const onclickElements = $('[onclick]');
+        expect(onclickElements.length).toBe(0);
+        
+        // Check for other inline event handlers
+        const inlineEventHandlers = $('[onload], [onmouseover], [onsubmit]');
+        expect(inlineEventHandlers.length).toBe(0);
+        
+        // Verify addEventListener is used instead (auth-choice specific)
+        if (page === '/auth-choice') {
+          expect(response.text).toContain('addEventListener');
+        }
+      }
+    });
   });
   
   describe('⚠️ Visual Regression', () => {
