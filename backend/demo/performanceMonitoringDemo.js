@@ -79,7 +79,6 @@ class PerformanceMonitoringDemo {
       const user = await User.create({
         username: `perfuser${i}`,
         email: `user${i}@perf-demo.com`,
-        displayName: `Performance Demo User ${i}`,
         password: 'hashedpassword'
       });
       users.push(user);
