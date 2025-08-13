@@ -53,10 +53,7 @@ const parser = multer({
 function uploadRateLimit(req, res, next) {
   const clientIP = req.ip || req.connection.remoteAddress;
   const now = Date.now();
-  const userAttempts = uploadAttempts.get(clientIP) || {
-    uploads: [],
-    totalSize: 0
-  };
+  const userAttempts = getUploadAttempts(clientIP);
   
   // Nettoyer les anciennes tentatives
   userAttempts.uploads = userAttempts.uploads.filter(
@@ -110,7 +107,7 @@ function recordSuccessfulUpload(req, fileSize) {
   });
   
   userAttempts.totalSize += fileSize;
-  uploadAttempts.set(clientIP, userAttempts);
+  setUploadAttempts(clientIP, userAttempts);
   
   // Log pour monitoring
   console.log('📤 Upload recorded:', {
@@ -153,63 +150,151 @@ router.post('/', uploadRateLimit, (req, res) => {
     });
   });
 
-// Cleanup périodique des tentatives expirées pour éviter les fuites mémoire
+// Cleanup périodique optimisé avec LRU cache
 setInterval(() => {
   const now = Date.now();
   let cleanedCount = 0;
   
-  for (const [ip, attempts] of uploadAttempts.entries()) {
+  for (const [ip, attempts] of optimizedUploadAttempts.entries()) {
     const validUploads = attempts.uploads.filter(
       upload => now - upload.timestamp < UPLOAD_RATE_LIMIT.windowMs
     );
     
     if (validUploads.length === 0) {
-      uploadAttempts.delete(ip);
+      optimizedUploadAttempts.delete(ip);
       cleanedCount++;
     } else if (validUploads.length !== attempts.uploads.length) {
       attempts.uploads = validUploads;
       attempts.totalSize = validUploads.reduce((total, upload) => total + upload.size, 0);
-      uploadAttempts.set(ip, attempts);
+      setUploadAttempts(ip, attempts);
     }
   }
   
   if (cleanedCount > 0) {
-    console.log(`🧹 Upload rate limit cleanup: removed ${cleanedCount} expired entries`);
+    console.log(`🧹 Upload rate limit cleanup: removed ${cleanedCount} expired entries (LRU optimized)`);
   }
 }, 5 * 60 * 1000); // Cleanup toutes les 5 minutes
 
-// Surveillance mémoire et nettoyage d'urgence
+// LRU Cache implementation with optimization
+class OptimizedLRUUploadCache {
+  constructor(maxSize = 1000) {
+    this.maxSize = maxSize;
+    this.cache = new Map(); // Maintains insertion order in modern JS
+    this.accessOrder = new Map(); // Track access frequency
+  }
+
+  get(ip) {
+    if (!this.cache.has(ip)) return undefined;
+    
+    // Update access order (LRU tracking)
+    const item = this.cache.get(ip);
+    this.cache.delete(ip);
+    this.cache.set(ip, item);
+    
+    // Track access frequency for intelligent cleanup
+    const currentFreq = this.accessOrder.get(ip) || 0;
+    this.accessOrder.set(ip, currentFreq + 1);
+    
+    return item;
+  }
+
+  set(ip, value) {
+    if (this.cache.has(ip)) {
+      // Update existing entry
+      this.cache.delete(ip);
+    } else if (this.cache.size >= this.maxSize) {
+      // Remove LRU items intelligently
+      this.performIntelligentCleanup();
+    }
+    
+    this.cache.set(ip, value);
+    this.accessOrder.set(ip, (this.accessOrder.get(ip) || 0) + 1);
+  }
+
+  delete(ip) {
+    const result = this.cache.delete(ip);
+    this.accessOrder.delete(ip);
+    return result;
+  }
+
+  performIntelligentCleanup() {
+    if (this.cache.size <= this.maxSize * 0.7) return; // Only cleanup when 70% full
+    
+    const entries = Array.from(this.cache.entries());
+    const accessFreqs = this.accessOrder;
+    const now = Date.now();
+    
+    // Score-based cleanup: consider both age and frequency
+    const scoredEntries = entries.map(([ip, attempts]) => {
+      const lastActivity = Math.max(...attempts.uploads.map(u => u.timestamp));
+      const age = now - lastActivity;
+      const frequency = accessFreqs.get(ip) || 1;
+      
+      // Lower score = higher priority for removal
+      const score = (frequency * 1000) / (age + 1); // Frequency bonus / age penalty
+      
+      return { ip, score, lastActivity, frequency };
+    });
+    
+    // Sort by score (lowest first = candidates for removal)
+    scoredEntries.sort((a, b) => a.score - b.score);
+    
+    // Remove bottom 30% of entries
+    const toRemove = Math.floor(this.cache.size * 0.3);
+    let removedCount = 0;
+    
+    for (let i = 0; i < Math.min(toRemove, scoredEntries.length); i++) {
+      const { ip } = scoredEntries[i];
+      if (this.delete(ip)) {
+        removedCount++;
+      }
+    }
+    
+    console.log(`🧹 Intelligent LRU cleanup: removed ${removedCount} entries (score-based)`);
+  }
+
+  size() {
+    return this.cache.size;
+  }
+
+  entries() {
+    return this.cache.entries();
+  }
+
+  has(ip) {
+    return this.cache.has(ip);
+  }
+}
+
+// Replace Map with optimized LRU cache
+const optimizedUploadAttempts = new OptimizedLRUUploadCache(MEMORY_THRESHOLDS.maxMapSize);
+
+// Updated functions to use LRU cache
+function getUploadAttempts(ip) {
+  return optimizedUploadAttempts.get(ip) || { uploads: [], totalSize: 0 };
+}
+
+function setUploadAttempts(ip, attempts) {
+  optimizedUploadAttempts.set(ip, attempts);
+}
+
+// Surveillance mémoire et nettoyage d'urgence optimisé
 function performEmergencyMemoryCleanup() {
-  const mapSize = uploadAttempts.size;
+  const mapSize = optimizedUploadAttempts.size();
   
   if (mapSize <= MEMORY_THRESHOLDS.emergencyCleanup) return;
   
   console.warn(`⚠️ Emergency cleanup triggered: ${mapSize} IPs tracked`);
   
-  // Trier les IPs par ancienneté des derniers uploads
-  const sortedEntries = Array.from(uploadAttempts.entries())
-    .map(([ip, attempts]) => ({
-      ip,
-      lastActivity: Math.max(...attempts.uploads.map(u => u.timestamp))
-    }))
-    .sort((a, b) => a.lastActivity - b.lastActivity);
+  // Use optimized LRU cleanup
+  optimizedUploadAttempts.performIntelligentCleanup();
   
-  // Supprimer les plus anciennes entrées
-  const toRemove = Math.max(100, mapSize - MEMORY_THRESHOLDS.emergencyCleanup);
-  let removedCount = 0;
-  
-  for (let i = 0; i < Math.min(toRemove, sortedEntries.length); i++) {
-    if (uploadAttempts.delete(sortedEntries[i].ip)) {
-      removedCount++;
-    }
-  }
-  
-  console.warn(`🚨 Emergency cleanup completed: removed ${removedCount} entries`);
+  console.warn(`🚨 Emergency cleanup completed: ${optimizedUploadAttempts.size()} entries remaining`);
 }
 
-// Monitoring mémoire périodique
+// Monitoring mémoire périodique optimisé
 setInterval(() => {
-  const mapSize = uploadAttempts.size;
+  const mapSize = optimizedUploadAttempts.size();
   const heapUsed = process.memoryUsage().heapUsed;
   const heapUsedMB = Math.round(heapUsed / 1024 / 1024);
   
@@ -218,24 +303,36 @@ setInterval(() => {
     performEmergencyMemoryCleanup();
   }
   
+  // Déclencher nettoyage préventif intelligent
+  if (mapSize >= MEMORY_THRESHOLDS.maxMapSize * 0.7) {
+    optimizedUploadAttempts.performIntelligentCleanup();
+  }
+  
   // Alerter si proche du seuil critique
   if (mapSize >= MEMORY_THRESHOLDS.maxMapSize * 0.8) {
     console.warn(`🔔 Memory warning: ${mapSize}/${MEMORY_THRESHOLDS.maxMapSize} IPs tracked (${heapUsedMB}MB heap)`);
   }
   
-  // Log périodique pour monitoring
+  // Log périodique pour monitoring avec métriques LRU
   if (mapSize > 50) {
-    console.log(`📊 Upload tracking: ${mapSize} IPs, ${heapUsedMB}MB heap`);
+    console.log(`📊 Upload tracking: ${mapSize} IPs, ${heapUsedMB}MB heap (LRU optimized)`);
   }
 }, MEMORY_THRESHOLDS.memoryCheckInterval);
 
-// Export pour monitoring
+// Export pour monitoring avec métriques LRU optimisées
 router.getUploadStats = () => ({
-  activeIPs: uploadAttempts.size,
+  activeIPs: optimizedUploadAttempts.size(),
   rateLimits: UPLOAD_RATE_LIMIT,
-  totalAttempts: Array.from(uploadAttempts.values()).reduce(
-    (total, attempts) => total + attempts.uploads.length, 0
-  )
+  memoryThresholds: MEMORY_THRESHOLDS,
+  totalAttempts: Array.from(optimizedUploadAttempts.entries()).reduce(
+    (total, [ip, attempts]) => total + attempts.uploads.length, 0
+  ),
+  cacheEfficiency: {
+    accessPatterns: optimizedUploadAttempts.accessOrder.size,
+    avgAccessFreq: Array.from(optimizedUploadAttempts.accessOrder.values()).reduce(
+      (sum, freq) => sum + freq, 0
+    ) / (optimizedUploadAttempts.accessOrder.size || 1)
+  }
 });
 
 module.exports = router;

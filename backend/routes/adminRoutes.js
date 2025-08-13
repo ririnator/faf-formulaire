@@ -18,6 +18,88 @@ const questionOrderCache = new Map(); // Key: "YYYY-MM", Value: { order: [...], 
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
 const MAX_CACHE_SIZE = 50; // Prevent memory leaks from unlimited month caching
 
+// Language detection cache for repeated text searches
+const languageDetectionCache = new Map(); // Key: search text, Value: { language: string, timestamp: Date }
+const LANGUAGE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes cache (longer than search)
+const MAX_LANGUAGE_CACHE_SIZE = 200; // Cache up to 200 unique search terms
+
+/**
+ * Language detection with caching for performance optimization
+ */
+function detectLanguageWithCache(searchText) {
+  if (!searchText || searchText.length < 2) {
+    return 'none';
+  }
+  
+  // Normalize search text for consistent caching
+  const normalizedText = searchText.toLowerCase().trim().substring(0, 100);
+  const now = Date.now();
+  
+  // Check cache first
+  const cached = languageDetectionCache.get(normalizedText);
+  if (cached && (now - cached.timestamp) <= LANGUAGE_CACHE_TTL) {
+    return cached.language;
+  }
+  
+  // Perform language detection
+  const hasAccents = /[àáâäæãåāèéêëēėęîïíīįìôöòóœøōõûüùúūñń]/i.test(normalizedText);
+  const hasEnglishWords = /\b(the|and|or|in|on|at|to|for|of|with|by|this|that|is|are|was|were)\b/i.test(normalizedText);
+  
+  let detectedLanguage;
+  if (hasAccents || (!hasEnglishWords && normalizedText.length > 0)) {
+    detectedLanguage = 'french';
+  } else if (hasEnglishWords) {
+    detectedLanguage = 'english';
+  } else {
+    detectedLanguage = 'none';
+  }
+  
+  // Cache the result
+  languageDetectionCache.set(normalizedText, {
+    language: detectedLanguage,
+    timestamp: now
+  });
+  
+  // Cleanup cache if it gets too large
+  if (languageDetectionCache.size > MAX_LANGUAGE_CACHE_SIZE) {
+    cleanupLanguageCache();
+  }
+  
+  return detectedLanguage;
+}
+
+/**
+ * Cleanup function for language detection cache
+ */
+function cleanupLanguageCache() {
+  const now = Date.now();
+  let removedCount = 0;
+  
+  // Remove expired entries
+  for (const [key, value] of languageDetectionCache.entries()) {
+    if ((now - value.timestamp) > LANGUAGE_CACHE_TTL) {
+      languageDetectionCache.delete(key);
+      removedCount++;
+    }
+  }
+  
+  // If still too large, remove oldest entries (LRU)
+  if (languageDetectionCache.size > MAX_LANGUAGE_CACHE_SIZE) {
+    const entries = Array.from(languageDetectionCache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    
+    const toRemove = entries.slice(0, languageDetectionCache.size - MAX_LANGUAGE_CACHE_SIZE);
+    toRemove.forEach(([key]) => {
+      languageDetectionCache.delete(key);
+      removedCount++;
+    });
+  }
+  
+  if (removedCount > 0) {
+    console.log(`🧹 Language cache cleanup: removed ${removedCount} entries, size: ${languageDetectionCache.size}`);
+  }
+}
+
 /**
  * Cache cleanup utility to prevent memory leaks
  * Removes expired entries and enforces size limits
@@ -46,6 +128,9 @@ function cleanupCache() {
       removedCount++;
     });
   }
+  
+  // Also cleanup language cache
+  cleanupLanguageCache();
   
   if (removedCount > 0) {
     console.log(`🧹 Cache cleanup: removed ${removedCount} entries, size: ${questionOrderCache.size}`);
@@ -336,24 +421,15 @@ router.get('/responses', async (req, res) => {
       const sanitizedSearch = search.trim().replace(/["\\]/g, '').substring(0, 100);
       
       if (sanitizedSearch.length >= 2) {
-        // Utiliser MongoDB text search avec fallback linguistique
+        // Utiliser MongoDB text search avec détection linguistique mise en cache
         const textSearchOptions = {
           $search: sanitizedSearch,
           $caseSensitive: false
         };
         
-        // Détecter la langue et appliquer le fallback approprié
-        const hasAccents = /[àáâäæãåāèéêëēėęîïíīįìôöòóœøōõûüùúūñń]/i.test(sanitizedSearch);
-        const hasEnglishWords = /\b(the|and|or|in|on|at|to|for|of|with|by)\b/i.test(sanitizedSearch);
-        
-        if (hasAccents || (!hasEnglishWords && sanitizedSearch.length > 0)) {
-          textSearchOptions.$language = 'french';
-        } else if (hasEnglishWords) {
-          textSearchOptions.$language = 'english';
-        } else {
-          // Pas de langue spécifique - MongoDB utilisera la langue par défaut
-          textSearchOptions.$language = 'none';
-        }
+        // Détecter la langue avec mise en cache pour les performances
+        const detectedLanguage = detectLanguageWithCache(sanitizedSearch);
+        textSearchOptions.$language = detectedLanguage;
         
         filter.$text = textSearchOptions;
       } else {
