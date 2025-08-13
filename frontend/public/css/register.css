@@ -1,0 +1,278 @@
+/* Register Page Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #9ca3af 0%, #4b5563 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.container {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 500px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    color: #1f2937;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.header p {
+    color: #6b7280;
+    font-size: 1rem;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #f9fafb;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #6b7280;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1);
+}
+
+.form-group input:invalid {
+    border-color: #ef4444;
+}
+
+.form-group input:valid {
+    border-color: #10b981;
+}
+
+.error-message {
+    color: #ef4444;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    display: none;
+}
+
+.success-message {
+    color: #10b981;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    display: none;
+}
+
+.migration-section {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    border-left: 4px solid #6b7280;
+}
+
+.migration-section h3 {
+    color: #6b7280;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.migration-section p {
+    color: #555;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 15px;
+    background: #6b7280;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+    background: #4b5563;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(107, 114, 128, 0.4);
+}
+
+.submit-btn:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.login-link {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.login-link a {
+    color: #6b7280;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.login-link a:hover {
+    color: #4b5563;
+    text-decoration: underline;
+}
+
+/* Loading state */
+.submit-btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.submit-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Password strength indicator */
+.password-strength {
+    margin-top: 5px;
+    height: 4px;
+    border-radius: 2px;
+    background: #e5e7eb;
+    overflow: hidden;
+}
+
+.password-strength-bar {
+    height: 100%;
+    width: 0%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.strength-weak {
+    background: #ef4444;
+    width: 25%;
+}
+
+.strength-medium {
+    background: #f59e0b;
+    width: 50%;
+}
+
+.strength-strong {
+    background: #10b981;
+    width: 100%;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        padding: 30px 20px;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .form-group input {
+        padding: 10px 12px;
+    }
+    
+    .submit-btn {
+        padding: 12px;
+        font-size: 1rem;
+    }
+}
+
+/* Focus visible for accessibility */
+.submit-btn:focus-visible {
+    outline: 2px solid #6b7280;
+    outline-offset: 2px;
+}
+
+.form-group input:focus-visible {
+    outline: 2px solid #6b7280;
+    outline-offset: -2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .container {
+        border: 2px solid #000;
+    }
+    
+    .form-group input {
+        border-color: #000;
+    }
+    
+    .submit-btn {
+        border: 2px solid #000;
+    }
+}
+
+/* Print styles */
+@media print {
+    body {
+        background: white;
+    }
+    
+    .container {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .submit-btn {
+        display: none;
+    }
+}
