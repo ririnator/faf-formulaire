@@ -27,9 +27,7 @@ describe('CSS Migration Tests', () => {
       expect(cssLinks.length).toBeGreaterThan(0);
       cssLinks.each((i, el) => {
         const nonce = $(el).attr('nonce');
-        expect(nonce).toBeDefined();
-        expect(nonce).not.toBe('{{nonce}}'); // Ensure template is replaced
-        expect(nonce.length).toBeGreaterThan(20); // Valid nonce length
+        expect(nonce).toBeUndefined(); // CSS links should NOT have nonces
       });
     });
     
@@ -46,10 +44,9 @@ describe('CSS Migration Tests', () => {
       expect(sharedBase.length).toBe(1);
       expect(loginCss.length).toBe(1);
       
-      // Verify nonces
-      expect(sharedBase.attr('nonce')).toBeDefined();
-      expect(loginCss.attr('nonce')).toBeDefined();
-      expect(sharedBase.attr('nonce')).toBe(loginCss.attr('nonce')); // Same nonce
+      // Verify CSS links do NOT have nonces (external files use 'self' directive)
+      expect(sharedBase.attr('nonce')).toBeUndefined();
+      expect(loginCss.attr('nonce')).toBeUndefined();
     });
     
     test('register page should have proper CSP headers with nonce', async () => {
@@ -63,8 +60,10 @@ describe('CSS Migration Tests', () => {
       
       expect(sharedBase.length).toBe(1);
       expect(registerCss.length).toBe(1);
-      expect(sharedBase.attr('nonce')).toBeDefined();
-      expect(registerCss.attr('nonce')).toBeDefined();
+      
+      // CSS links should NOT have nonces
+      expect(sharedBase.attr('nonce')).toBeUndefined();
+      expect(registerCss.attr('nonce')).toBeUndefined();
     });
     
     test('no inline styles should be present in HTML', async () => {
@@ -310,8 +309,8 @@ describe('CSS Migration Tests', () => {
   });
 });
 
-// Additional integration test for full page load
-describe('Integration Tests', () => {
+// Additional integration tests for CSP compliance and registration flow
+describe('🔒 CSP Compliance Integration Tests', () => {
   test('pages should load without CSP violations', async () => {
     const pages = ['/auth-choice', '/login', '/register'];
     
@@ -327,12 +326,136 @@ describe('Integration Tests', () => {
       const inlineScripts = $('script').not('[nonce]');
       
       expect(inlineStyles.length).toBe(0);
-      expect(inlineScripts.length).toBeGreaterThan(0); // Scripts should have nonces
       
-      // All scripts should have nonces
+      // All inline scripts should have nonces (if any exist)
       inlineScripts.each((i, el) => {
         expect($(el).attr('nonce')).toBeDefined();
       });
     }
+  });
+
+  test('CSS files should be loadable with CSP self directive', async () => {
+    const cssFiles = [
+      '/css/shared-base.css',
+      '/css/login.css', 
+      '/css/register.css',
+      '/css/auth-choice.css'
+    ];
+
+    for (const cssFile of cssFiles) {
+      const response = await request(app).get(cssFile);
+      
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toContain('text/css');
+      
+      // CSS should be valid (no JavaScript injection)
+      expect(response.text).not.toContain('<script');
+      expect(response.text).not.toContain('javascript:');
+    }
+  });
+
+  test('nonce values should be unique per request', async () => {
+    const requests = await Promise.all([
+      request(app).get('/login'),
+      request(app).get('/login'),
+      request(app).get('/register')
+    ]);
+
+    const nonces = requests.map(res => {
+      const $ = cheerio.load(res.text);
+      return $('script[nonce]').first().attr('nonce');
+    });
+
+    // All nonces should be defined and unique
+    expect(nonces.every(n => n && n.length > 20)).toBe(true);
+    expect(new Set(nonces).size).toBe(nonces.length); // All unique
+  });
+
+  test('CSP headers should include all necessary directives', async () => {
+    const response = await request(app).get('/login');
+    const cspHeader = response.headers['content-security-policy'];
+    
+    expect(cspHeader).toContain("default-src 'self'");
+    expect(cspHeader).toContain("style-src 'self'");
+    expect(cspHeader).toContain("script-src 'self'");
+    expect(cspHeader).toContain("img-src 'self' res.cloudinary.com");
+    expect(cspHeader).toContain("frame-src 'none'");
+    expect(cspHeader).toContain("frame-ancestors 'none'");
+  });
+});
+
+describe('🔄 Registration Flow Integration Tests', () => {
+  test('registration success should redirect to login with correct URL', async () => {
+    const response = await request(app).get('/register');
+    const $ = cheerio.load(response.text);
+    
+    // Check that the redirect URL in JavaScript is correct
+    const scriptContent = $('script[nonce]').text();
+    expect(scriptContent).toContain("window.location.href = '/login?registered=1'");
+    expect(scriptContent).not.toContain('/login.html'); // Old incorrect URL
+  });
+
+  test('login page should handle registered parameter', async () => {
+    const response = await request(app).get('/login?registered=1');
+    
+    expect(response.status).toBe(200);
+    // The page should load normally with the registered parameter
+    const $ = cheerio.load(response.text);
+    expect($('title').text()).toContain('Connexion');
+  });
+
+  test('auth page routes should be consistent', async () => {
+    const routes = [
+      { path: '/login', title: 'Connexion' },
+      { path: '/register', title: 'Inscription' },
+      { path: '/auth-choice', title: 'Bienvenue' }
+    ];
+
+    for (const route of routes) {
+      const response = await request(app).get(route.path);
+      
+      expect(response.status).toBe(200);
+      
+      const $ = cheerio.load(response.text);
+      expect($('title').text()).toContain(route.title);
+      
+      // All auth pages should have proper nonce injection
+      const scripts = $('script[nonce]');
+      expect(scripts.length).toBeGreaterThan(0);
+      
+      scripts.each((i, el) => {
+        const nonce = $(el).attr('nonce');
+        expect(nonce).toBeDefined();
+        expect(nonce).not.toBe('{{nonce}}'); // Template should be replaced
+      });
+    }
+  });
+
+  test('form validation should work without CSP violations', async () => {
+    const response = await request(app).get('/register');
+    const $ = cheerio.load(response.text);
+    const scriptContent = $('script[nonce]').text();
+    
+    // Check that validation functions are present
+    expect(scriptContent).toContain('validateForm');
+    expect(scriptContent).toContain('addEventListener');
+    
+    // No inline event handlers should be used
+    expect(response.text).not.toContain('onclick=');
+    expect(response.text).not.toContain('onsubmit=');
+  });
+
+  test('error handling should not compromise CSP', async () => {
+    const response = await request(app).get('/register');
+    const $ = cheerio.load(response.text);
+    const scriptContent = $('script[nonce]').text();
+    
+    // Error display functions should use safe DOM methods
+    expect(scriptContent).toContain('textContent');
+    expect(scriptContent).not.toContain('innerHTML'); // Unsafe for user content
+    
+    // All error containers should be present in HTML
+    const errorElements = $('[id$="Error"]');
+    expect(errorElements.length).toBeGreaterThan(0);
   });
 });
