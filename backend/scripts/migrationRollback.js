@@ -110,7 +110,7 @@ class MigrationRollback {
                   $set: {
                     authMethod: 'token',
                     token: newToken,
-                    name: user ? user.displayName : 'Unknown User'
+                    name: user ? user.username : 'Unknown User'
                   },
                   $unset: {
                     userId: 1

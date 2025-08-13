@@ -22,7 +22,6 @@ async function testHybridSystem() {
     const testUserData = {
       username: 'testuser',
       email: 'test@example.com',
-      displayName: 'Test User',
       password: 'password123',
       role: 'user'
     };
