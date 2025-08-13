@@ -14,6 +14,13 @@ const UPLOAD_RATE_LIMIT = {
   maxTotalSize: 20 * 1024 * 1024 // 20MB total par période
 };
 
+// Seuils de surveillance mémoire
+const MEMORY_THRESHOLDS = {
+  maxMapSize: 1000,        // Seuil d'urgence: max 1000 IPs trackées
+  emergencyCleanup: 500,   // Déclencher nettoyage d'urgence à 500 IPs
+  memoryCheckInterval: 60000 // Vérifier la mémoire toutes les minutes
+};
+
 // ← configuration du storage Cloudinary
 const storage = new CloudinaryStorage({
   cloudinary,
@@ -170,6 +177,57 @@ setInterval(() => {
     console.log(`🧹 Upload rate limit cleanup: removed ${cleanedCount} expired entries`);
   }
 }, 5 * 60 * 1000); // Cleanup toutes les 5 minutes
+
+// Surveillance mémoire et nettoyage d'urgence
+function performEmergencyMemoryCleanup() {
+  const mapSize = uploadAttempts.size;
+  
+  if (mapSize <= MEMORY_THRESHOLDS.emergencyCleanup) return;
+  
+  console.warn(`⚠️ Emergency cleanup triggered: ${mapSize} IPs tracked`);
+  
+  // Trier les IPs par ancienneté des derniers uploads
+  const sortedEntries = Array.from(uploadAttempts.entries())
+    .map(([ip, attempts]) => ({
+      ip,
+      lastActivity: Math.max(...attempts.uploads.map(u => u.timestamp))
+    }))
+    .sort((a, b) => a.lastActivity - b.lastActivity);
+  
+  // Supprimer les plus anciennes entrées
+  const toRemove = Math.max(100, mapSize - MEMORY_THRESHOLDS.emergencyCleanup);
+  let removedCount = 0;
+  
+  for (let i = 0; i < Math.min(toRemove, sortedEntries.length); i++) {
+    if (uploadAttempts.delete(sortedEntries[i].ip)) {
+      removedCount++;
+    }
+  }
+  
+  console.warn(`🚨 Emergency cleanup completed: removed ${removedCount} entries`);
+}
+
+// Monitoring mémoire périodique
+setInterval(() => {
+  const mapSize = uploadAttempts.size;
+  const heapUsed = process.memoryUsage().heapUsed;
+  const heapUsedMB = Math.round(heapUsed / 1024 / 1024);
+  
+  // Déclencher nettoyage d'urgence si nécessaire
+  if (mapSize >= MEMORY_THRESHOLDS.emergencyCleanup) {
+    performEmergencyMemoryCleanup();
+  }
+  
+  // Alerter si proche du seuil critique
+  if (mapSize >= MEMORY_THRESHOLDS.maxMapSize * 0.8) {
+    console.warn(`🔔 Memory warning: ${mapSize}/${MEMORY_THRESHOLDS.maxMapSize} IPs tracked (${heapUsedMB}MB heap)`);
+  }
+  
+  // Log périodique pour monitoring
+  if (mapSize > 50) {
+    console.log(`📊 Upload tracking: ${mapSize} IPs, ${heapUsedMB}MB heap`);
+  }
+}, MEMORY_THRESHOLDS.memoryCheckInterval);
 
 // Export pour monitoring
 router.getUploadStats = () => ({

@@ -23,8 +23,8 @@ function ensureAdmin(req, res, next) {
       return res.redirect('/login?timeout=1');
     }
     
-    // Vérifier IP consistency (optionnel)
-    const currentIP = req.ip || req.connection.remoteAddress;
+    // Vérifier IP consistency (optionnel) - Support Node.js moderne
+    const currentIP = req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress;
     if (req.session.adminIP && req.session.adminIP !== currentIP) {
       logSecurityEvent('ADMIN_SESSION_IP_CHANGE', { 
         originalIP: req.session.adminIP, 
@@ -42,7 +42,7 @@ function ensureAdmin(req, res, next) {
 async function authenticateAdmin(req, res, next) {
   try {
     const { username, password } = req.body;
-    const clientIP = req.ip || req.connection.remoteAddress;
+    const clientIP = req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress;
     const userAgent = req.get('User-Agent') || 'unknown';
     
     // Validation des entrées

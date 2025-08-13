@@ -336,12 +336,26 @@ router.get('/responses', async (req, res) => {
       const sanitizedSearch = search.trim().replace(/["\\]/g, '').substring(0, 100);
       
       if (sanitizedSearch.length >= 2) {
-        // Utiliser MongoDB text search au lieu de regex pour éviter les injections
-        filter.$text = { 
+        // Utiliser MongoDB text search avec fallback linguistique
+        const textSearchOptions = {
           $search: sanitizedSearch,
-          $language: 'french',
           $caseSensitive: false
         };
+        
+        // Détecter la langue et appliquer le fallback approprié
+        const hasAccents = /[àáâäæãåāèéêëēėęîïíīįìôöòóœøōõûüùúūñń]/i.test(sanitizedSearch);
+        const hasEnglishWords = /\b(the|and|or|in|on|at|to|for|of|with|by)\b/i.test(sanitizedSearch);
+        
+        if (hasAccents || (!hasEnglishWords && sanitizedSearch.length > 0)) {
+          textSearchOptions.$language = 'french';
+        } else if (hasEnglishWords) {
+          textSearchOptions.$language = 'english';
+        } else {
+          // Pas de langue spécifique - MongoDB utilisera la langue par défaut
+          textSearchOptions.$language = 'none';
+        }
+        
+        filter.$text = textSearchOptions;
       } else {
         // Fallback pour recherches courtes avec une approche sécurisée
         filter.name = { 
@@ -351,15 +365,50 @@ router.get('/responses', async (req, res) => {
       }
     }
 
-    const totalCount = await Response.countDocuments(filter);
-    const totalPages = Math.ceil(totalCount / limit);
+    let totalCount, data;
+    
+    try {
+      totalCount = await Response.countDocuments(filter);
+      const totalPages = Math.ceil(totalCount / limit);
 
-    const data = await Response.find(filter)
-      .select('name month createdAt isAdmin token')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+      data = await Response.find(filter)
+        .select('name month createdAt isAdmin token')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+    } catch (searchError) {
+      // Fallback si la recherche text échoue (ex: langue non supportée)
+      if (searchError.name === 'MongoServerError' && searchError.code === 17124) {
+        console.warn('⚠️ Text search failed, falling back to regex:', searchError.message);
+        
+        // Utiliser regex comme fallback
+        if (search && search.trim().length >= 2) {
+          const sanitizedSearch = search.trim().replace(/["\\]/g, '').substring(0, 100);
+          filter = {
+            $or: [
+              { name: { $regex: sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
+              { 'responses.question': { $regex: sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
+              { 'responses.answer': { $regex: sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
+            ]
+          };
+        } else {
+          filter = {}; // Recherche vide si fallback impossible
+        }
+        
+        totalCount = await Response.countDocuments(filter);
+        data = await Response.find(filter)
+          .select('name month createdAt isAdmin token')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean();
+      } else {
+        throw searchError; // Re-throw si ce n'est pas une erreur de text search
+      }
+    }
+    
+    const totalPages = Math.ceil(totalCount / limit);
 
     res.json({
       responses:  data,
