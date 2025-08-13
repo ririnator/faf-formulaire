@@ -19,101 +19,119 @@
 
 /* CSS Custom Properties (Design System Variables) */
 :root {
-    /* Colors */
+    /* ===== CORE COLOR PALETTE ===== */
+    
+    /* Primary colors (Gray theme) */
     --color-primary: #6b7280;
     --color-primary-hover: #4b5563;
     --color-primary-light: #9ca3af;
     
+    /* Secondary colors (Blue theme) */
     --color-secondary: #3b82f6;
     --color-secondary-hover: #1d4ed8;
     
+    /* Status colors */
     --color-success: #10b981;
     --color-error: #ef4444;
     --color-warning: #f59e0b;
     
-    --color-text-primary: #1f2937;
-    --color-text-secondary: #374151;
-    --color-text-muted: #6b7280;
-    --color-text-light: #9ca3af;
+    /* ===== TEXT COLORS ===== */
+    --color-text-primary: #1f2937;     /* Darkest text */
+    --color-text-secondary: #374151;   /* Secondary text */
+    --color-text-muted: #6b7280;       /* Muted text */
+    --color-text-light: #9ca3af;       /* Light text */
+    --color-text-medium: #555;         /* Medium gray text */
     
-    --color-border: #e5e7eb;
-    --color-border-light: #e2e8f0;
-    --color-border-focus: var(--color-primary);
+    /* ===== BORDER COLORS ===== */
+    --color-border: #e5e7eb;           /* Standard border */
+    --color-border-light: #e2e8f0;     /* Light border */
+    --color-border-secondary: #d1d5db; /* Alternative border */
+    --color-border-focus: var(--color-primary); /* Focus state border */
     
-    --color-bg-main: #ffffff;
-    --color-bg-light: #f9fafb;
-    --color-bg-lighter: #f8fafc;
-    --color-bg-translucent: rgba(255, 255, 255, 0.95);
+    /* ===== BACKGROUND COLORS ===== */
+    --color-bg-main: #ffffff;          /* Main background */
+    --color-bg-light: #f9fafb;         /* Light background */
+    --color-bg-lighter: #f8fafc;       /* Lightest background */
+    --color-bg-translucent: rgba(255, 255, 255, 0.95); /* Glassmorphism */
     
-    /* Admin section colors */
+    /* ===== COMPONENT-SPECIFIC COLORS ===== */
+    
+    /* Admin section theme */
     --color-admin-bg: #fffaf0;
     --color-admin-border: #fed7aa;
     --color-admin-text: #9a3412;
     --color-admin-text-secondary: #a16207;
     
-    /* Additional specific colors */
-    --color-text-medium: #555;
-    --color-border-secondary: #d1d5db;
-    --color-disabled: #cbd5e0;
+    /* Success message theme */
     --color-success-bg: #f0fff4;
     --color-success-border: #9ae6b4;
     --color-success-text: #276749;
     
-    /* Gradients */
-    --gradient-main: linear-gradient(135deg, #9ca3af 0%, #4b5563 100%);
+    /* Disabled state */
+    --color-disabled: #cbd5e0;
+    
+    /* ===== GRADIENTS ===== */
+    --gradient-main: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-hover) 100%);
     --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
     --gradient-secondary: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-hover) 100%);
     
-    /* Spacing */
-    --spacing-xs: 5px;
-    --spacing-sm: 8px;
-    --spacing-md: 12px;
-    --spacing-lg: 15px;
-    --spacing-xl: 20px;
-    --spacing-2xl: 30px;
-    --spacing-3xl: 40px;
+    /* ===== SPACING SYSTEM ===== */
     
-    /* Additional spacing values */
-    --spacing-2xs: 2px;
+    /* Standard spacing scale */
+    --spacing-2xs: 2px;   /* Micro spacing */
+    --spacing-xs: 5px;    /* Extra small */
+    --spacing-sm: 8px;    /* Small */
+    --spacing-md: 12px;   /* Medium */
+    --spacing-lg: 15px;   /* Large */
+    --spacing-xl: 20px;   /* Extra large */
+    --spacing-2xl: 30px;  /* 2x large */
+    --spacing-3xl: 40px;  /* 3x large */
+    
+    /* Specific pixel values for legacy compatibility */
     --spacing-4px: 4px;
     --spacing-10px: 10px;
     --spacing-16px: 16px;
     --spacing-25px: 25px;
     
-    /* Border Radius */
-    --radius-xs: 2px;
-    --radius-sm: 10px;
-    --radius-md: 12px;
-    --radius-lg: 15px;
-    --radius-xl: 16px;
-    --radius-2xl: 20px;
+    /* ===== BORDER RADIUS SCALE ===== */
+    --radius-xs: 2px;     /* Minimal radius */
+    --radius-sm: 10px;    /* Small radius */
+    --radius-md: 12px;    /* Medium radius */
+    --radius-lg: 15px;    /* Large radius */
+    --radius-xl: 16px;    /* Extra large radius */
+    --radius-2xl: 20px;   /* 2x large radius */
     
-    /* Shadows */
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.1);
-    --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    /* ===== SHADOW SYSTEM ===== */
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);        /* Subtle shadow */
+    --shadow-md: 0 4px 14px 0 rgba(0, 0, 0, 0.1);       /* Medium shadow */
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.1);        /* Large shadow */
+    --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* Extra large shadow */
     
-    /* Focus shadow */
-    --shadow-focus-primary: 0 0 0 3px rgba(107, 114, 128, 0.1);
-    --shadow-focus-secondary: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    /* Focus states */
+    --shadow-focus-primary: 0 0 0 3px rgba(107, 114, 128, 0.1);   /* Gray focus */
+    --shadow-focus-secondary: 0 0 0 3px rgba(59, 130, 246, 0.3);  /* Blue focus */
     
-    /* Transitions */
-    --transition-fast: all 0.2s ease-in-out;
-    --transition-normal: all 0.3s ease;
+    /* ===== ANIMATION & TRANSITIONS ===== */
+    --transition-fast: all 0.2s ease-in-out;    /* Fast interactions */
+    --transition-normal: all 0.3s ease;         /* Standard transitions */
     
-    /* Typography */
+    /* ===== TYPOGRAPHY SYSTEM ===== */
+    
+    /* Font family */
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    --font-size-sm: 0.85rem;
-    --font-size-normal: 1rem;
-    --font-size-lg: 1.1rem;
-    --font-size-xl: 1.8rem;
-    --font-size-2xl: 2rem;
-    --font-size-3xl: 2.5rem;
     
-    --font-weight-normal: 400;
-    --font-weight-medium: 600;
-    --font-weight-bold: 700;
+    /* Font sizes */
+    --font-size-sm: 0.85rem;     /* Small text */
+    --font-size-normal: 1rem;    /* Body text */
+    --font-size-lg: 1.1rem;      /* Large text */
+    --font-size-xl: 1.8rem;      /* Heading */
+    --font-size-2xl: 2rem;       /* Large heading */
+    --font-size-3xl: 2.5rem;     /* Logo/hero text */
+    
+    /* Font weights */
+    --font-weight-normal: 400;   /* Regular text */
+    --font-weight-medium: 600;   /* Semi-bold */
+    --font-weight-bold: 700;     /* Bold headings */
 }
 
 /* Reset */
@@ -430,13 +448,26 @@ input:focus-visible {
     font-size: var(--font-size-sm);
 }
 
-.admin-section a {
+.admin-section a,
+.admin-link {
     color: var(--color-admin-text);
     text-decoration: none;
     font-weight: var(--font-weight-medium);
 }
 
-.admin-section a:hover {
+.admin-section a:hover,
+.admin-link:hover {
+    text-decoration: underline;
+}
+
+/* Admin links with specific orange color for consistency */
+.admin-link-orange {
+    color: var(--color-admin-text-secondary);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+}
+
+.admin-link-orange:hover {
     text-decoration: underline;
 }
 
