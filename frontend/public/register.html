@@ -4,186 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription - FAF</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #9ca3af 0%, #4b5563 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .form-container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 500px;
-            width: 100%;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            color: #6b7280;
-        }
-
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.8rem;
-        }
-
-        .subtitle {
-            color: #666;
-            font-size: 1rem;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #6b7280;
-            box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1);
-        }
-
-        input.error {
-            border-color: #f56565;
-        }
-
-        .error-message {
-            color: #f56565;
-            font-size: 0.9rem;
-            margin-top: 5px;
-            display: none;
-        }
-
-        .migration-section {
-            background: #f8f9ff;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .migration-section h3 {
-            color: #6b7280;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
-
-        .migration-section p {
-            color: #555;
-            font-size: 0.9rem;
-            margin-bottom: 15px;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 15px;
-            background: #6b7280;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .submit-btn:hover {
-            background: #4b5563;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(107, 114, 128, 0.4);
-        }
-
-        .submit-btn:disabled {
-            background: #cbd5e0;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .login-link {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .login-link a {
-            color: #6b7280;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .login-link a:hover {
-            text-decoration: underline;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        .success-message {
-            background: #f0fff4;
-            border: 1px solid #9ae6b4;
-            color: #276749;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        @media (max-width: 500px) {
-            .form-container {
-                padding: 30px 20px;
-            }
-            
-            .logo {
-                font-size: 2rem;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/css/register.css" nonce="{{nonce}}">
 </head>
 <body>
-    <div class="form-container">
+    <div class="container">
         <div class="header">
-            <div class="logo">👥</div>
-            <h1>Créer un compte</h1>
-            <p class="subtitle">Rejoignez FAF et sauvegardez vos réponses</p>
+            <h1>👥 Créer un compte</h1>
+            <p>Rejoignez FAF et sauvegardez vos réponses</p>
         </div>
 
         <div id="successMessage" class="success-message"></div>
@@ -213,19 +40,23 @@
             <div class="form-group">
                 <label for="password">Mot de passe</label>
                 <input type="password" id="password" name="password" required 
-                       placeholder="Minimum 6 caractères" minlength="6">
+                       placeholder="Au moins 6 caractères" minlength="6">
+                <div class="password-strength">
+                    <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                </div>
                 <div class="error-message" id="passwordError"></div>
             </div>
 
+            <div class="form-group">
+                <label for="confirmPassword">Confirmer le mot de passe</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required 
+                       placeholder="Retapez votre mot de passe">
+                <div class="error-message" id="confirmPasswordError"></div>
+            </div>
+
             <div class="migration-section">
-                <h3>🔄 Migration des anciennes réponses</h3>
-                <p>Si vous avez déjà répondu au formulaire avec un lien privé, copiez le token pour récupérer vos anciennes réponses.</p>
-                <div class="form-group">
-                    <label for="migrateToken">Token de migration (optionnel)</label>
-                    <input type="text" id="migrateToken" name="migrateToken" 
-                           placeholder="Ex: abc123...xyz789" maxlength="64">
-                    <div class="error-message" id="migrateTokenError"></div>
-                </div>
+                <h3>🔄 Migration des données existantes</h3>
+                <p>Si vous avez déjà utilisé FAF avec des liens privés, vos réponses seront automatiquement associées à votre nouveau compte lors de votre première connexion.</p>
             </div>
 
             <button type="submit" class="submit-btn" id="submitBtn">
@@ -233,139 +64,209 @@
             </button>
 
             <div class="loading" id="loading">
-                <p>Création du compte en cours...</p>
+                Création du compte en cours...
             </div>
         </form>
 
         <div class="login-link">
-            <p>Vous avez déjà un compte ? <a href="/login">Se connecter</a></p>
-            <p><a href="/auth-choice">← Retour aux options</a></p>
+            <p>Déjà un compte ? <a href="/login.html">Se connecter</a></p>
         </div>
     </div>
 
     <script nonce="{{nonce}}">
-        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        // Form validation and submission
+        const form = document.getElementById('registerForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const successMessage = document.getElementById('successMessage');
+
+        // Password strength checker
+        const passwordInput = document.getElementById('password');
+        const strengthBar = document.getElementById('passwordStrengthBar');
+
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            const strength = calculatePasswordStrength(password);
+            
+            strengthBar.className = 'password-strength-bar';
+            
+            if (strength < 30) {
+                strengthBar.classList.add('strength-weak');
+            } else if (strength < 70) {
+                strengthBar.classList.add('strength-medium');
+            } else {
+                strengthBar.classList.add('strength-strong');
+            }
+        });
+
+        function calculatePasswordStrength(password) {
+            let strength = 0;
+            
+            if (password.length >= 8) strength += 25;
+            if (/[a-z]/.test(password)) strength += 25;
+            if (/[A-Z]/.test(password)) strength += 25;
+            if (/[0-9]/.test(password)) strength += 25;
+            
+            return strength;
+        }
+
+        // Form submission
+        form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const submitBtn = document.getElementById('submitBtn');
-            const loading = document.getElementById('loading');
-            const successMessage = document.getElementById('successMessage');
-            
-            // Reset errors
-            clearErrors();
-            
-            // Show loading
+            if (!validateForm()) {
+                return;
+            }
+
             submitBtn.disabled = true;
-            loading.style.display = 'block';
+            submitBtn.classList.add('loading');
             
-            const formData = {
-                username: document.getElementById('username').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                displayName: document.getElementById('displayName').value.trim(),
-                password: document.getElementById('password').value,
-                migrateToken: document.getElementById('migrateToken').value.trim() || undefined
-            };
-            
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
             try {
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(formData)
+                    credentials: 'include',
+                    body: JSON.stringify(data)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok) {
-                    // Succès - session créée côté serveur via cookie sécurisé
-                    
-                    // Afficher message de succès
-                    let message = 'Compte créé avec succès ! Redirection...';
-                    if (result.migrated && result.migratedCount > 0) {
-                        message += ` ${result.migratedCount} réponse(s) récupérée(s).`;
-                    }
-                    
-                    successMessage.textContent = message;
+                    successMessage.textContent = 'Compte créé avec succès ! Redirection vers la connexion...';
                     successMessage.style.display = 'block';
                     
-                    // Redirection après 2 secondes
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
+                        window.location.href = '/login.html?registered=1';
                     }, 2000);
-                    
                 } else {
-                    // Erreur - afficher les erreurs
-                    if (result.details && Array.isArray(result.details)) {
-                        result.details.forEach(error => {
-                            showError(error.path, error.msg);
-                        });
-                    } else {
-                        showError('general', result.error || 'Erreur lors de la création du compte');
-                    }
+                    displayErrors(result.errors || [{ msg: result.error || 'Erreur lors de la création du compte' }]);
                 }
-                
             } catch (error) {
-                console.error('Erreur:', error);
-                showError('general', 'Erreur de connexion au serveur');
+                console.error('Registration error:', error);
+                displayErrors([{ msg: 'Erreur réseau. Veuillez réessayer.' }]);
             } finally {
                 submitBtn.disabled = false;
-                loading.style.display = 'none';
+                submitBtn.classList.remove('loading');
             }
         });
-        
+
+        function validateForm() {
+            clearErrors();
+            let isValid = true;
+
+            // Username validation
+            const username = document.getElementById('username').value;
+            if (username.length < 3) {
+                showError('usernameError', 'Le nom d\'utilisateur doit contenir au moins 3 caractères');
+                isValid = false;
+            } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+                showError('usernameError', 'Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores');
+                isValid = false;
+            }
+
+            // Email validation
+            const email = document.getElementById('email').value;
+            if (!isValidEmail(email)) {
+                showError('emailError', 'Veuillez entrer un email valide');
+                isValid = false;
+            }
+
+            // Password validation
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password.length < 6) {
+                showError('passwordError', 'Le mot de passe doit contenir au moins 6 caractères');
+                isValid = false;
+            }
+
+            if (password !== confirmPassword) {
+                showError('confirmPasswordError', 'Les mots de passe ne correspondent pas');
+                isValid = false;
+            }
+
+            // Display name validation
+            const displayName = document.getElementById('displayName').value.trim();
+            if (displayName.length < 2) {
+                showError('displayNameError', 'Le nom d\'affichage doit contenir au moins 2 caractères');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
         function clearErrors() {
             const errorElements = document.querySelectorAll('.error-message');
-            const inputElements = document.querySelectorAll('input');
-            
-            errorElements.forEach(el => {
-                el.style.display = 'none';
-                el.textContent = '';
+            errorElements.forEach(element => {
+                element.style.display = 'none';
+                element.textContent = '';
             });
+            successMessage.style.display = 'none';
+        }
+
+        function displayErrors(errors) {
+            clearErrors();
             
-            inputElements.forEach(el => {
-                el.classList.remove('error');
+            errors.forEach(error => {
+                const field = error.param || 'general';
+                const message = error.msg || error.message || 'Erreur inconnue';
+                
+                switch(field) {
+                    case 'username':
+                        showError('usernameError', message);
+                        break;
+                    case 'email':
+                        showError('emailError', message);
+                        break;
+                    case 'password':
+                        showError('passwordError', message);
+                        break;
+                    case 'displayName':
+                        showError('displayNameError', message);
+                        break;
+                    default:
+                        alert(message);
+                }
             });
         }
-        
-        function showError(field, message) {
-            const errorElement = document.getElementById(field + 'Error');
-            const inputElement = document.getElementById(field);
-            
-            if (errorElement) {
-                errorElement.textContent = message;
-                errorElement.style.display = 'block';
-            }
-            
-            if (inputElement) {
-                inputElement.classList.add('error');
-            } else {
-                // Erreur générale
-                alert(message);
-            }
-        }
-        
-        // Validation en temps réel
-        document.getElementById('username').addEventListener('input', function() {
-            const value = this.value;
-            if (value && !/^[a-zA-Z0-9_-]+$/.test(value)) {
-                showError('username', 'Seuls les lettres, chiffres, tirets et underscores sont autorisés');
-            } else {
-                clearFieldError('username');
+
+        // Real-time validation
+        document.getElementById('username').addEventListener('blur', function() {
+            const username = this.value;
+            if (username && (username.length < 3 || !/^[a-zA-Z0-9_-]+$/.test(username))) {
+                showError('usernameError', 'Nom d\'utilisateur invalide');
             }
         });
-        
-        function clearFieldError(field) {
-            const errorElement = document.getElementById(field + 'Error');
-            const inputElement = document.getElementById(field);
-            
-            if (errorElement) {
-                errorElement.style.display = 'none';
+
+        document.getElementById('email').addEventListener('blur', function() {
+            const email = this.value;
+            if (email && !isValidEmail(email)) {
+                showError('emailError', 'Email invalide');
             }
-            if (inputElement) {
-                inputElement.classList.remove('error');
+        });
+
+        document.getElementById('confirmPassword').addEventListener('blur', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            if (confirmPassword && password !== confirmPassword) {
+                showError('confirmPasswordError', 'Les mots de passe ne correspondent pas');
             }
-        }
+        });
     </script>
 </body>
 </html>
