@@ -229,7 +229,8 @@ async function getQuestionOrderForMonth(monthKey, match, PIE_Q) {
     console.error(`❌ Error fetching question order for ${monthKey}:`, {
       ...logContext,
       error: error.message,
-      stack: error.stack,
+      // Stack trace seulement en développement
+      ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
       duration: `${Date.now() - startTime}ms`
     });
     
@@ -328,13 +329,26 @@ router.get('/responses', async (req, res) => {
     const skip  = (page - 1) * limit;
     const search = req.query.search?.trim();
 
-    // Construction du filtre de recherche avec protection ReDoS
+    // Construction du filtre de recherche sécurisée avec text search
     let filter = {};
     if (search) {
-      // Échapper les caractères spéciaux regex pour éviter ReDoS
-      const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const escapedSearch = escapeRegex(search);
-      filter.name = { $regex: escapedSearch, $options: 'i' };
+      // Validation basique de la recherche
+      const sanitizedSearch = search.trim().replace(/["\\]/g, '').substring(0, 100);
+      
+      if (sanitizedSearch.length >= 2) {
+        // Utiliser MongoDB text search au lieu de regex pour éviter les injections
+        filter.$text = { 
+          $search: sanitizedSearch,
+          $language: 'french',
+          $caseSensitive: false
+        };
+      } else {
+        // Fallback pour recherches courtes avec une approche sécurisée
+        filter.name = { 
+          $regex: `^${sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+          $options: 'i'
+        };
+      }
     }
 
     const totalCount = await Response.countDocuments(filter);
@@ -558,12 +572,13 @@ router.get('/summary', async (req, res) => {
       return indexA - indexB; // Sort by natural form position
     });
 
-    // Debug pour vérifier l'ordre (dev uniquement)
-    if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
+    // Debug pour vérifier l'ordre (dev uniquement) - contenu anonymisé
+    if (process.env.NODE_ENV === 'development' && !process.env.RENDER && process.env.DEBUG_VERBOSE) {
       console.log('📋 Ordre des questions basé sur première soumission:');
       questionOrder.forEach((q, i) => {
-        const shortQ = q.substring(0, 50) + (q.length > 50 ? '...' : '');
-        console.log(`  ${i + 1}. ${shortQ}`);
+        // Log seulement la longueur et hash pour sécurité
+        const questionHash = q.length > 0 ? `[Q${i+1}_${q.length}chars]` : '[empty]';
+        console.log(`  ${i + 1}. ${questionHash}`);
       });
       console.log('📋 Résumé final:');
       sortedSummary.forEach((item, index) => {
