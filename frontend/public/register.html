@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription - FAF</title>
-    <link rel="stylesheet" href="/css/shared-base.css" nonce="{{nonce}}">
-    <link rel="stylesheet" href="/css/register.css" nonce="{{nonce}}">
+    <link rel="stylesheet" href="/css/shared-base.css">
+    <link rel="stylesheet" href="/css/register.css">
 </head>
 <body>
     <div class="container">
@@ -136,7 +136,7 @@
                     successMessage.style.display = 'block';
                     
                     setTimeout(() => {
-                        window.location.href = '/login.html?registered=1';
+                        window.location.href = '/login?registered=1';
                     }, 2000);
                 } else {
                     displayErrors(result.errors || [{ msg: result.error || 'Erreur lors de la création du compte' }]);
