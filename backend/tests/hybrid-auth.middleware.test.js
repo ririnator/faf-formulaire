@@ -84,8 +84,7 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
       const user = await User.create({
         username: 'testuser',
         email: 'test@example.com',
-        password: 'TestPass123!',
-        displayName: 'Test User'
+        password: 'TestPass123!'
       });
 
       const agent = request.agent(app);
@@ -150,8 +149,7 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
       const user = await User.create({
         username: 'priorityuser',
         email: 'priority@example.com',
-        password: 'PriorityPass123!',
-        displayName: 'Priority User'
+        password: 'PriorityPass123!'
       });
 
       const token = TokenGenerator.generateTestToken(32);
@@ -182,7 +180,6 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
         username: 'enrichuser',
         email: 'enrich@example.com',
         password: 'EnrichPass123!',
-        displayName: 'Enrich User',
         profile: {
           firstName: 'John',
           lastName: 'Doe'
@@ -205,8 +202,7 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
       const user = await User.create({
         username: 'erroruser',
         email: 'error@example.com',
-        password: 'ErrorPass123!',
-        displayName: 'Error User'
+        password: 'ErrorPass123!'
       });
 
       const agent = request.agent(app);
@@ -228,7 +224,6 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
         username: 'inactiveuser',
         email: 'inactive@example.com',
         password: 'InactivePass123!',
-        displayName: 'Inactive User',
         metadata: { isActive: false }
       });
 
@@ -250,8 +245,7 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
       const user = await User.create({
         username: 'authuser',
         email: 'auth@example.com',
-        password: 'AuthPass123!',
-        displayName: 'Auth User'
+        password: 'AuthPass123!'
       });
 
       const agent = request.agent(app);
@@ -309,7 +303,6 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
         username: 'adminuser',
         email: 'admin@example.com',
         password: 'AdminPass123!',
-        displayName: 'Admin User',
         role: 'admin'
       });
 
@@ -328,7 +321,6 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
         username: 'regularuser',
         email: 'regular@example.com',
         password: 'RegularPass123!',
-        displayName: 'Regular User',
         role: 'user'
       });
 
@@ -381,8 +373,7 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
       const user = await User.create({
         username: 'concurrentuser',
         email: 'concurrent@example.com',
-        password: 'ConcurrentPass123!',
-        displayName: 'Concurrent User'
+        password: 'ConcurrentPass123!'
       });
 
       const agent = request.agent(app);
@@ -407,8 +398,7 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
       const user = await User.create({
         username: 'activeuser',
         email: 'active@example.com',
-        password: 'ActivePass123!',
-        displayName: 'Active User'
+        password: 'ActivePass123!'
       });
 
       const initialLastActive = user.metadata.lastActive;
@@ -484,8 +474,7 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
       const user = await User.create({
         username: 'chainuser',
         email: 'chain@example.com',
-        password: 'ChainPass123!',
-        displayName: 'Chain User'
+        password: 'ChainPass123!'
       });
 
       // Mock console.log to capture middleware order
@@ -534,8 +523,7 @@ describe('Hybrid Auth Middleware Comprehensive Tests', () => {
       const user = await User.create({
         username: 'perfuser',
         email: 'perf@example.com',
-        password: 'PerfPass123!',
-        displayName: 'Perf User'
+        password: 'PerfPass123!'
       });
 
       const agent = request.agent(app);

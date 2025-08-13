@@ -65,15 +65,13 @@ describe('✅ PRODUCTION READY - Authentication System Tests', () => {
     testUser = {
       username: `testuser${Date.now()}`,
       email: `test${Date.now()}@example.com`,
-      password: 'TestPassword123!',
-      displayName: 'Test User'
+      password: 'TestPassword123!'
     };
 
     adminUser = {
       username: `admin${Date.now()}`,
       email: `admin${Date.now()}@example.com`,
       password: 'AdminPassword123!',
-      displayName: 'Admin User',
       role: 'admin'
     };
 
@@ -143,7 +141,6 @@ describe('✅ PRODUCTION READY - Authentication System Tests', () => {
       // Register user with migration
       const migrationUser = {
         ...testUser,
-        displayName: 'Legacy User',
         migrateToken: legacyToken
       };
 
@@ -402,7 +399,6 @@ describe('✅ PRODUCTION READY - Authentication System Tests', () => {
         .post('/api/auth/register')
         .send({
           ...testUser,
-          displayName: 'Migration Test',
           migrateToken: token
         })
         .expect(201);
