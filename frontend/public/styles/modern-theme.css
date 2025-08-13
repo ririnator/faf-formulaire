@@ -3,9 +3,9 @@
 /* Variables CSS pour cohérence */
 :root {
   /* Couleurs principales */
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --primary-color: #667eea;
-  --primary-dark: #5a67d8;
+  --primary-gradient: linear-gradient(135deg, #6b7280 0%, #374151 100%);
+  --primary-color: #6b7280;
+  --primary-dark: #4b5563;
   --secondary-color: #48bb78;
   --secondary-dark: #38a169;
   
