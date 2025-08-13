@@ -72,8 +72,7 @@ describe('Dual Authentication Performance Tests', () => {
       const users = Array(10).fill(null).map((_, i) => ({
         username: `perfuser${i}`,
         email: `perf${i}@test.com`,
-        password: 'PerfPass123!',
-        displayName: `Perf User ${i}`
+        password: 'PerfPass123!'
       }));
 
       const startTime = process.hrtime.bigint();
@@ -106,8 +105,7 @@ describe('Dual Authentication Performance Tests', () => {
       const users = Array(10).fill(null).map((_, i) => ({
         username: `loginuser${i}`,
         email: `login${i}@test.com`,
-        password: 'LoginPass123!',
-        displayName: `Login User ${i}`
+        password: 'LoginPass123!'
       }));
 
       for (const user of users) {
@@ -146,8 +144,7 @@ describe('Dual Authentication Performance Tests', () => {
       const user = await User.create({
         username: 'sessionuser',
         email: 'session@test.com',
-        password: 'SessionPass123!',
-        displayName: 'Session User'
+        password: 'SessionPass123!'
       });
 
       const agent = request.agent(app);
@@ -187,8 +184,7 @@ describe('Dual Authentication Performance Tests', () => {
       const user = await User.create({
         username: 'respuser',
         email: 'resp@test.com',
-        password: 'RespPass123!',
-        displayName: 'Response User'
+        password: 'RespPass123!'
       });
 
       const agent = request.agent(app);
@@ -245,7 +241,6 @@ describe('Dual Authentication Performance Tests', () => {
         username: 'adminperf',
         email: 'adminperf@test.com',
         password: 'AdminPerf123!',
-        displayName: 'Admin Perf',
         role: 'admin'
       });
 
@@ -313,7 +308,6 @@ describe('Dual Authentication Performance Tests', () => {
             username: `migrateuser${testCase.responseCount}`,
             email: `migrate${testCase.responseCount}@test.com`,
             password: 'MigratePass123!',
-            displayName: 'Migration User',
             migrateToken: legacyToken
           });
 
@@ -365,7 +359,6 @@ describe('Dual Authentication Performance Tests', () => {
             username: `concurrent${i}`,
             email: `concurrent${i}@test.com`,
             password: 'ConcurrentPass123!',
-            displayName: user.name,
             migrateToken: user.token
           })
       );
@@ -394,8 +387,7 @@ describe('Dual Authentication Performance Tests', () => {
       const users = Array(20).fill(null).map((_, i) => ({
         username: `dbuser${i}`,
         email: `db${i}@test.com`,
-        password: 'DbPass123!',
-        displayName: `DB User ${i}`
+        password: 'DbPass123!'
       }));
 
       const createdUsers = await User.insertMany(users);
@@ -469,8 +461,7 @@ describe('Dual Authentication Performance Tests', () => {
       const users = Array(100).fill(null).map((_, i) => ({
         username: `memuser${i}`,
         email: `mem${i}@test.com`,
-        password: 'MemPass123!',
-        displayName: `Mem User ${i}`
+        password: 'MemPass123!'
       }));
 
       await User.insertMany(users);

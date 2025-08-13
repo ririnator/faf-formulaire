@@ -56,7 +56,6 @@ describe('Critical Edge Cases for Production', () => {
         username: 'admin1',
         email: 'admin1@test.com',
         password: 'AdminPass123!',
-        displayName: 'Admin One',
         role: 'admin'
       });
 
@@ -64,7 +63,6 @@ describe('Critical Edge Cases for Production', () => {
         username: 'admin2', 
         email: 'admin2@test.com',
         password: 'AdminPass123!',
-        displayName: 'Admin Two',
         role: 'admin'
       });
 
@@ -122,7 +120,6 @@ describe('Critical Edge Cases for Production', () => {
         username: 'newadmin',
         email: 'newadmin@test.com', 
         password: 'AdminPass123!',
-        displayName: 'New Admin',
         role: 'admin'
       });
 
@@ -151,8 +148,7 @@ describe('Critical Edge Cases for Production', () => {
       testUser = await User.create({
         username: 'testuser',
         email: 'test@example.com',
-        password: 'TestPass123!',
-        displayName: 'Test User'
+        password: 'TestPass123!'
       });
 
       agent = request.agent(app);
@@ -209,7 +205,6 @@ describe('Critical Edge Cases for Production', () => {
         username: 'migrateuser',
         email: 'migrate@test.com',
         password: 'MigratePass123!',
-        displayName: 'Legacy User',
         migrateToken: legacyToken
       };
 
@@ -244,8 +239,7 @@ describe('Critical Edge Cases for Production', () => {
       const user = await User.create({
         username: 'sessionuser',
         email: 'session@test.com',
-        password: 'SessionPass123!',
-        displayName: 'Session User'
+        password: 'SessionPass123!'
       });
 
       const agent = request.agent(app);
@@ -271,8 +265,7 @@ describe('Critical Edge Cases for Production', () => {
       const user = await User.create({
         username: 'concurrentuser',
         email: 'concurrent@test.com',
-        password: 'ConcurrentPass123!',
-        displayName: 'Concurrent User'
+        password: 'ConcurrentPass123!'
       });
 
       // Create multiple agents for same user
@@ -292,7 +285,7 @@ describe('Critical Edge Cases for Production', () => {
       // Concurrent profile updates
       const updatePromises = agents.map((agent, index) => 
         agent.put('/api/auth/profile').send({
-          displayName: `Updated Name ${index}`
+          username: `UpdatedName${index}`
         })
       );
 
@@ -303,7 +296,7 @@ describe('Critical Edge Cases for Production', () => {
 
       // Verify final state
       const finalUser = await User.findById(user._id);
-      expect(finalUser.displayName).toMatch(/Updated Name \d/);
+      expect(finalUser.username).toMatch(/UpdatedName\d/);
     });
   });
 
@@ -318,8 +311,7 @@ describe('Critical Edge Cases for Production', () => {
         .send({
           username: 'dbtest',
           email: 'db@test.com', 
-          password: 'DbTest123!',
-          displayName: 'DB Test'
+          password: 'DbTest123!'
         })
         .expect(500);
 
@@ -350,7 +342,6 @@ describe('Critical Edge Cases for Production', () => {
           username: 'migrationerror',
           email: 'error@test.com',
           password: 'ErrorPass123!',
-          displayName: 'Legacy User',
           migrateToken: legacyToken
         })
         .expect(201);
@@ -388,8 +379,7 @@ describe('Critical Edge Cases for Production', () => {
         .send({
           username: longString,
           email: 'long@test.com',
-          password: 'LongTest123!',
-          displayName: 'Long Test'
+          password: 'LongTest123!'
         })
         .expect(400);
 
@@ -402,8 +392,7 @@ describe('Critical Edge Cases for Production', () => {
         .send({
           username: null,
           email: undefined,
-          password: '',
-          displayName: 'Null Test'
+          password: ''
         })
         .expect(400);
 
@@ -419,8 +408,7 @@ describe('Critical Edge Cases for Production', () => {
           .send({
             username: `rapiduser${i}`,
             email: `rapid${i}@test.com`,
-            password: 'RapidPass123!',
-            displayName: `Rapid User ${i}`
+            password: 'RapidPass123!'
           })
       );
 
@@ -441,8 +429,7 @@ describe('Critical Edge Cases for Production', () => {
       const user = await User.create({
         username: 'largeuser',
         email: 'large@test.com',
-        password: 'LargePass123!',
-        displayName: 'Large User'
+        password: 'LargePass123!'
       });
 
       const agent = request.agent(app);
@@ -485,8 +472,7 @@ describe('Critical Edge Cases for Production', () => {
       const user = await User.create({
         username: 'tokenuser',
         email: 'token@test.com',
-        password: 'TokenPass123!',
-        displayName: 'Token User'
+        password: 'TokenPass123!'
       });
 
       // Create response first

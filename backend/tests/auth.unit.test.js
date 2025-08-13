@@ -31,7 +31,6 @@ describe('User Model Unit Tests', () => {
         username: 'testuser',
         email: 'test@example.com',
         password: plainPassword,
-        displayName: 'Test User'
       });
 
       await user.save();
@@ -45,12 +44,11 @@ describe('User Model Unit Tests', () => {
         username: 'testuser',
         email: 'test@example.com',
         password: 'TestPassword123!',
-        displayName: 'Test User'
       });
 
       const originalHash = user.password;
       
-      user.displayName = 'Updated Name';
+      user.username = 'UpdatedName';
       await user.save();
 
       expect(user.password).toBe(originalHash);
@@ -62,8 +60,7 @@ describe('User Model Unit Tests', () => {
       await User.create({
         username: 'salttest',
         email: 'salt@test.com',
-        password: 'Password123!',
-        displayName: 'Salt Test'
+        password: 'Password123!'
       });
 
       expect(spy).toHaveBeenCalledWith(APP_CONSTANTS.BCRYPT_SALT_ROUNDS);
@@ -80,7 +77,6 @@ describe('User Model Unit Tests', () => {
         username: 'comparetest',
         email: 'compare@test.com',
         password: correctPassword,
-        displayName: 'Compare Test'
       });
     });
 
@@ -107,8 +103,7 @@ describe('User Model Unit Tests', () => {
       user = await User.create({
         username: 'methodtest',
         email: 'method@test.com',
-        password: 'Password123!',
-        displayName: 'Method Test'
+        password: 'Password123!'
       });
     });
 
@@ -142,7 +137,7 @@ describe('User Model Unit Tests', () => {
       expect(publicData).toHaveProperty('id');
       expect(publicData).toHaveProperty('username', user.username);
       expect(publicData).toHaveProperty('email', user.email);
-      expect(publicData).toHaveProperty('displayName', user.displayName);
+      expect(publicData).toHaveProperty('displayName', user.username);
       expect(publicData).not.toHaveProperty('password');
       expect(publicData).not.toHaveProperty('_id');
     });
@@ -156,15 +151,13 @@ describe('User Model Unit Tests', () => {
       expect(validationError.errors).toHaveProperty('username');
       expect(validationError.errors).toHaveProperty('email');
       expect(validationError.errors).toHaveProperty('password');
-      expect(validationError.errors).toHaveProperty('displayName');
     });
 
     test('should validate email format', async () => {
       const user = new User({
         username: 'emailtest',
         email: 'invalid-email',
-        password: 'Password123!',
-        displayName: 'Email Test'
+        password: 'Password123!'
       });
 
       const validationError = user.validateSync();
@@ -175,16 +168,14 @@ describe('User Model Unit Tests', () => {
       await User.create({
         username: 'unique',
         email: 'unique@test.com',
-        password: 'Password123!',
-        displayName: 'Unique Test'
+        password: 'Password123!'
       });
 
       // Try to create duplicate
       const duplicate = new User({
         username: 'unique', // Duplicate username
         email: 'different@test.com',
-        password: 'Password123!',
-        displayName: 'Duplicate Test'
+        password: 'Password123!'
       });
 
       await expect(duplicate.save()).rejects.toThrow();
@@ -194,14 +185,12 @@ describe('User Model Unit Tests', () => {
       const user = new User({
         username: 'ab', // Too short
         email: 'test@test.com',
-        password: '12345', // Too short
-        displayName: 'a'.repeat(51), // Too long
+        password: '12345' // Too short
       });
 
       const validationError = user.validateSync();
       expect(validationError.errors).toHaveProperty('username');
       expect(validationError.errors).toHaveProperty('password');
-      expect(validationError.errors).toHaveProperty('displayName');
     });
   });
 
@@ -210,8 +199,7 @@ describe('User Model Unit Tests', () => {
       const user = await User.create({
         username: 'migrationtest',
         email: 'migration@test.com',
-        password: 'Password123!',
-        displayName: 'Migration Test'
+        password: 'Password123!'
       });
 
       expect(user.migrationData.source).toBe('registration');
@@ -222,7 +210,6 @@ describe('User Model Unit Tests', () => {
         username: 'migrationtest2',
         email: 'migration2@test.com',
         password: 'Password123!',
-        displayName: 'Migration Test 2',
         migrationData: {
           legacyName: 'Old Name',
           migratedAt: new Date(),
