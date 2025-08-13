@@ -1,0 +1,34 @@
+/* Login Page Specific Styles */
+/* Page-specific overrides and unique components */
+
+/* Logo emoji specific to login */
+.logo {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-primary);
+}
+
+/* Login-specific form container adjustments */
+.form-container {
+    max-width: 450px; /* Specific to login form */
+    border-radius: var(--radius-2xl);
+}
+
+/* Login header styling */
+h1 {
+    font-size: var(--font-size-xl);
+}
+
+/* Loading message specific styling */
+.loading {
+    display: none;
+    text-align: center;
+    margin-top: var(--spacing-sm);
+}
+
+/* Mobile specific adjustments for login */
+@media (max-width: 500px) {
+    .logo {
+        font-size: var(--font-size-2xl);
+    }
+}

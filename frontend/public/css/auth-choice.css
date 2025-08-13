@@ -1,0 +1,97 @@
+/* Auth Choice Page Specific Styles */
+/* Page-specific overrides and unique button variants */
+
+/* Auth choice specific container styling */
+.container {
+    background: var(--color-bg-translucent);
+    padding: 2.5rem; /* Specific to auth choice */
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    max-width: 400px; /* Specific to auth choice */
+    text-align: center;
+    backdrop-filter: blur(10px); /* Glassmorphism effect */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Translucent border */
+}
+
+/* Auth choice specific typography */
+h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.025em;
+}
+
+.subtitle {
+    margin-bottom: 2rem; /* Specific spacing */
+    line-height: 1.5;
+}
+
+/* Button variants specific to auth choice - specialized padding/spacing */
+.auth-btn {
+    padding: 0.875rem 1.5rem; /* Specific auth choice button padding */
+    font-size: var(--font-size-normal);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition-fast);
+}
+
+.auth-btn:focus {
+    outline: none;
+    box-shadow: var(--shadow-focus-secondary);
+}
+
+/* Divider styling - unique to auth choice */
+.divider {
+    position: relative;
+    margin: 1.5rem 0; /* Divider spacing */
+    color: var(--color-text-light);
+    font-size: var(--font-size-sm);
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px; /* Divider line */
+    background: var(--color-border);
+}
+
+.divider span {
+    background: var(--color-bg-translucent);
+    padding: 0 1rem; /* Divider text spacing */
+    position: relative;
+}
+
+/* Guest description */
+.guest-description {
+    margin-top: var(--spacing-16px);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-light);
+    line-height: 1.5;
+}
+
+/* Auth choice specific responsive */
+@media (max-width: 480px) {
+    .container {
+        padding: 2rem 1.5rem; /* Mobile padding */
+    }
+    
+    h1 {
+        font-size: 1.75rem; /* Mobile title size */
+    }
+    
+    .subtitle {
+        font-size: 0.9rem; /* Mobile subtitle size */
+    }
+}
+
+/* Auth choice accessibility overrides */
+.auth-btn:focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 2px;
+}

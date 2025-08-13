@@ -124,6 +124,16 @@
       text-decoration: underline;
     }
 
+    .warning-link {
+      color: #856404;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .warning-link:hover {
+      text-decoration: underline;
+    }
+
     .error-message {
       background: #f8d7da;
       border: 1px solid #f5c2c7;
@@ -156,7 +166,7 @@
 
     <div class="warning">
       ⚠️ <strong>Système Legacy</strong><br>
-      Ceci est l'ancien système d'administration. Les nouveaux admins peuvent utiliser le <a href="/login" style="color: #856404;">système moderne</a>.
+      Ceci est l'ancien système d'administration. Les nouveaux admins peuvent utiliser le <a href="/login" class="warning-link">système moderne</a>.
     </div>
 
     <div id="errorMessage" class="error-message"></div>

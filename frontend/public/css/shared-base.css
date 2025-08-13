@@ -1,0 +1,548 @@
+/**
+ * FAF Shared Base Styles
+ * 
+ * This file contains the foundational CSS architecture for the Form-a-Friend application.
+ * It establishes a design system with consistent variables, base components, and utilities
+ * that are shared across all authentication pages (login, register, auth-choice).
+ * 
+ * Architecture:
+ * - CSS Custom Properties for colors, spacing, typography, shadows
+ * - Base component styles (buttons, forms, containers, inputs)
+ * - Accessibility features (focus indicators, high contrast, screen readers)
+ * - Responsive design patterns
+ * - Reusable component classes (admin-section, migration-section, etc.)
+ * 
+ * Usage: Include this file first, then page-specific CSS files
+ * Example: <link rel="stylesheet" href="/css/shared-base.css">
+ *          <link rel="stylesheet" href="/css/login.css">
+ */
+
+/* CSS Custom Properties (Design System Variables) */
+:root {
+    /* ===== CORE COLOR PALETTE ===== */
+    
+    /* Primary colors (Gray theme) */
+    --color-primary: #6b7280;
+    --color-primary-hover: #4b5563;
+    --color-primary-light: #9ca3af;
+    
+    /* Secondary colors (Blue theme) */
+    --color-secondary: #3b82f6;
+    --color-secondary-hover: #1d4ed8;
+    
+    /* Status colors */
+    --color-success: #10b981;
+    --color-error: #ef4444;
+    --color-warning: #f59e0b;
+    
+    /* ===== TEXT COLORS ===== */
+    --color-text-primary: #1f2937;     /* Darkest text */
+    --color-text-secondary: #374151;   /* Secondary text */
+    --color-text-muted: #6b7280;       /* Muted text */
+    --color-text-light: #9ca3af;       /* Light text */
+    --color-text-medium: #555;         /* Medium gray text */
+    
+    /* ===== BORDER COLORS ===== */
+    --color-border: #e5e7eb;           /* Standard border */
+    --color-border-light: #e2e8f0;     /* Light border */
+    --color-border-secondary: #d1d5db; /* Alternative border */
+    --color-border-focus: var(--color-primary); /* Focus state border */
+    
+    /* ===== BACKGROUND COLORS ===== */
+    --color-bg-main: #ffffff;          /* Main background */
+    --color-bg-light: #f9fafb;         /* Light background */
+    --color-bg-lighter: #f8fafc;       /* Lightest background */
+    --color-bg-translucent: rgba(255, 255, 255, 0.95); /* Glassmorphism */
+    
+    /* ===== COMPONENT-SPECIFIC COLORS ===== */
+    
+    /* Admin section theme */
+    --color-admin-bg: #fffaf0;
+    --color-admin-border: #fed7aa;
+    --color-admin-text: #9a3412;
+    --color-admin-text-secondary: #a16207;
+    
+    /* Success message theme */
+    --color-success-bg: #f0fff4;
+    --color-success-border: #9ae6b4;
+    --color-success-text: #276749;
+    
+    /* Disabled state */
+    --color-disabled: #cbd5e0;
+    
+    /* ===== GRADIENTS ===== */
+    --gradient-main: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-hover) 100%);
+    --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+    --gradient-secondary: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-hover) 100%);
+    
+    /* ===== SPACING SYSTEM ===== */
+    
+    /* Standard spacing scale */
+    --spacing-2xs: 2px;   /* Micro spacing */
+    --spacing-xs: 5px;    /* Extra small */
+    --spacing-sm: 8px;    /* Small */
+    --spacing-md: 12px;   /* Medium */
+    --spacing-lg: 15px;   /* Large */
+    --spacing-xl: 20px;   /* Extra large */
+    --spacing-2xl: 30px;  /* 2x large */
+    --spacing-3xl: 40px;  /* 3x large */
+    
+    /* Specific pixel values for legacy compatibility */
+    --spacing-4px: 4px;
+    --spacing-10px: 10px;
+    --spacing-16px: 16px;
+    --spacing-25px: 25px;
+    
+    /* ===== BORDER RADIUS SCALE ===== */
+    --radius-xs: 2px;     /* Minimal radius */
+    --radius-sm: 10px;    /* Small radius */
+    --radius-md: 12px;    /* Medium radius */
+    --radius-lg: 15px;    /* Large radius */
+    --radius-xl: 16px;    /* Extra large radius */
+    --radius-2xl: 20px;   /* 2x large radius */
+    
+    /* ===== SHADOW SYSTEM ===== */
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);        /* Subtle shadow */
+    --shadow-md: 0 4px 14px 0 rgba(0, 0, 0, 0.1);       /* Medium shadow */
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.1);        /* Large shadow */
+    --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* Extra large shadow */
+    
+    /* Focus states */
+    --shadow-focus-primary: 0 0 0 3px rgba(107, 114, 128, 0.1);   /* Gray focus */
+    --shadow-focus-secondary: 0 0 0 3px rgba(59, 130, 246, 0.3);  /* Blue focus */
+    
+    /* ===== ANIMATION & TRANSITIONS ===== */
+    --transition-fast: all 0.2s ease-in-out;    /* Fast interactions */
+    --transition-normal: all 0.3s ease;         /* Standard transitions */
+    
+    /* ===== TYPOGRAPHY SYSTEM ===== */
+    
+    /* Font family */
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    
+    /* Font sizes */
+    --font-size-sm: 0.85rem;     /* Small text */
+    --font-size-normal: 1rem;    /* Body text */
+    --font-size-lg: 1.1rem;      /* Large text */
+    --font-size-xl: 1.8rem;      /* Heading */
+    --font-size-2xl: 2rem;       /* Large heading */
+    --font-size-3xl: 2.5rem;     /* Logo/hero text */
+    
+    /* Font weights */
+    --font-weight-normal: 400;   /* Regular text */
+    --font-weight-medium: 600;   /* Semi-bold */
+    --font-weight-bold: 700;     /* Bold headings */
+}
+
+/* Reset */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Base Body Styles */
+body {
+    font-family: var(--font-family);
+    background: var(--gradient-main);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+}
+
+/* Container Base */
+.container,
+.form-container {
+    background: var(--color-bg-main);
+    padding: var(--spacing-3xl);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 500px;
+}
+
+/* Header Styles */
+.header {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.header h1,
+h1 {
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-sm);
+    font-weight: var(--font-weight-bold);
+}
+
+.header p,
+.subtitle {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-normal);
+}
+
+/* Form Elements Base */
+.form-group {
+    margin-bottom: var(--spacing-xl);
+}
+
+.form-group label,
+label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+}
+
+.form-group input,
+input {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-normal);
+    transition: var(--transition-normal);
+    background: var(--color-bg-light);
+}
+
+.form-group input:focus,
+input:focus {
+    outline: none;
+    border-color: var(--color-border-focus);
+    background: var(--color-bg-main);
+    box-shadow: var(--shadow-focus-primary);
+}
+
+.form-group input.error,
+input.error {
+    border-color: var(--color-error);
+}
+
+/* Button Base Styles */
+.submit-btn,
+.auth-btn {
+    width: 100%;
+    padding: var(--spacing-lg);
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: var(--transition-normal);
+}
+
+.submit-btn:hover,
+.auth-btn:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(107, 114, 128, 0.4);
+}
+
+.submit-btn:disabled,
+.auth-btn:disabled {
+    background: var(--color-disabled);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.6;
+}
+
+/* Message Styles */
+.error-message {
+    color: var(--color-error);
+    font-size: var(--font-size-sm);
+    margin-top: var(--spacing-xs);
+    display: none;
+}
+
+.success-message {
+    background: var(--color-success-bg);
+    border: 1px solid var(--color-success-border);
+    color: var(--color-success-text);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-xl);
+    display: none;
+}
+
+/* Loading Animation */
+.submit-btn.loading,
+.auth-btn.loading {
+    position: relative;
+    color: transparent; /* Hide text during loading */
+}
+
+.submit-btn.loading::after,
+.auth-btn.loading::after {
+    content: '';
+    position: absolute;
+    /* Center the spinner: 50% - half width/height */
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px; /* Negative margin for perfect centering */
+    border: 2px solid transparent;
+    border-top: 2px solid white; /* Only top border visible for spinner effect */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Link Styles */
+.login-link,
+.register-link {
+    text-align: center;
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-xl);
+    border-top: 1px solid var(--color-border-light);
+}
+
+.login-link a,
+.register-link a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+}
+
+.login-link a:hover,
+.register-link a:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+/* Responsive Base */
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container,
+    .form-container {
+        padding: var(--spacing-2xl) var(--spacing-xl);
+    }
+    
+    .header h1,
+    h1 {
+        font-size: var(--font-size-2xl);
+    }
+    
+    .form-group input,
+    input {
+        padding: 10px 12px;
+    }
+    
+    .submit-btn,
+    .auth-btn {
+        padding: 12px;
+        font-size: var(--font-size-normal);
+    }
+}
+
+/* Accessibility - Focus indicators for keyboard navigation */
+.submit-btn:focus-visible,
+.auth-btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px; /* Space between element and outline */
+}
+
+.form-group input:focus-visible,
+input:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px; /* Negative offset keeps outline inside border */
+}
+
+/* High Contrast Support - Enhanced visibility for users with visual impairments */
+@media (prefers-contrast: high) {
+    .container,
+    .form-container {
+        border: 2px solid #000; /* Strong border for better definition */
+    }
+    
+    .form-group input,
+    input {
+        border-color: #000; /* Ensure form elements are clearly visible */
+    }
+    
+    .submit-btn,
+    .auth-btn {
+        border: 2px solid #000; /* Button borders for better contrast */
+    }
+}
+
+/* Button Variants - Common patterns */
+.primary-btn {
+    background: var(--gradient-secondary);
+    color: white;
+    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+}
+
+.primary-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px 0 rgba(59, 130, 246, 0.5);
+}
+
+.primary-btn:active {
+    transform: translateY(0);
+}
+
+.secondary-btn {
+    background: white;
+    color: var(--color-text-secondary);
+    border: 2px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.secondary-btn:hover:not(:disabled) {
+    background: var(--color-bg-light);
+    border-color: var(--color-border-secondary);
+    transform: translateY(-1px);
+}
+
+.guest-btn {
+    background: var(--gradient-primary);
+    color: white;
+    box-shadow: 0 4px 14px 0 rgba(107, 114, 128, 0.39);
+}
+
+.guest-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px 0 rgba(107, 114, 128, 0.5);
+}
+
+/* Loading states for button variants */
+.primary-btn.loading::after,
+.guest-btn.loading::after {
+    border-top-color: white;
+}
+
+.secondary-btn.loading::after {
+    border-top-color: var(--color-text-secondary);
+}
+
+/* Admin Section - Reusable component */
+.admin-section {
+    background: var(--color-admin-bg);
+    border: 2px solid var(--color-admin-border);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.admin-section h3 {
+    color: var(--color-admin-text);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-normal);
+}
+
+.admin-section p {
+    color: var(--color-admin-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.admin-section a,
+.admin-link {
+    color: var(--color-admin-text);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+}
+
+.admin-section a:hover,
+.admin-link:hover {
+    text-decoration: underline;
+}
+
+/* Admin links with specific orange color for consistency */
+.admin-link-orange {
+    color: var(--color-admin-text-secondary);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+}
+
+.admin-link-orange:hover {
+    text-decoration: underline;
+}
+
+/* Migration Section - Reusable component */
+.migration-section {
+    background: var(--color-bg-lighter);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-25px);
+    border-left: var(--spacing-4px) solid var(--color-primary);
+}
+
+.migration-section h3 {
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-lg);
+}
+
+.migration-section p {
+    color: var(--color-text-medium);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Password Strength Indicator - Reusable component */
+.password-strength {
+    margin-top: var(--spacing-xs);
+    height: var(--spacing-4px);
+    border-radius: var(--radius-xs);
+    background: var(--color-border);
+    overflow: hidden;
+}
+
+.password-strength-bar {
+    height: 100%;
+    width: 0%;
+    transition: var(--transition-normal);
+    border-radius: var(--radius-xs);
+}
+
+.strength-weak {
+    background: var(--color-error);
+    width: 25%;
+}
+
+.strength-medium {
+    background: var(--color-warning);
+    width: 50%;
+}
+
+.strength-strong {
+    background: var(--color-success);
+    width: 100%;
+}
+
+/* Input Validation States - Common patterns */
+.form-group input:invalid,
+input:invalid {
+    border-color: var(--color-error);
+}
+
+.form-group input:valid,
+input:valid {
+    border-color: var(--color-success);
+}
+
+/* Screen Reader Only - Visually hidden but accessible to assistive technology */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px; /* Negative margin removes element from normal flow */
+    overflow: hidden; /* Hide any content overflow */
+    clip: rect(0, 0, 0, 0); /* Legacy clipping for older browsers */
+    white-space: nowrap; /* Prevent line breaks */
+    border: 0;
+}

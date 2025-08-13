@@ -1,0 +1,15 @@
+/* Register Page Specific Styles */
+/* Page-specific overrides and unique components */
+
+/* Register-specific header styling */
+.header h1 {
+    font-size: var(--font-size-3xl);
+}
+
+/* Success message variant - specific to register */
+.success-message {
+    color: var(--color-success);
+    font-size: var(--font-size-sm);
+    margin-top: var(--spacing-xs);
+    display: none;
+}
