@@ -6,70 +6,10 @@
     font-size: var(--font-size-3xl);
 }
 
-/* Input validation states - specific to register */
-.form-group input:invalid {
-    border-color: var(--color-error);
-}
-
-.form-group input:valid {
-    border-color: var(--color-success);
-}
-
+/* Success message variant - specific to register */
 .success-message {
     color: var(--color-success);
     font-size: var(--font-size-sm);
     margin-top: var(--spacing-xs);
     display: none;
-}
-
-/* Migration section - unique to register page */
-.migration-section {
-    background: var(--color-bg-lighter);
-    padding: var(--spacing-xl);
-    border-radius: var(--radius-sm);
-    margin-bottom: 25px;
-    border-left: 4px solid var(--color-primary);
-}
-
-.migration-section h3 {
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-sm);
-    font-size: var(--font-size-lg);
-}
-
-.migration-section p {
-    color: #555;
-    font-size: var(--font-size-sm);
-    margin-bottom: var(--spacing-lg);
-}
-
-/* Password strength indicator - unique to register */
-.password-strength {
-    margin-top: var(--spacing-xs);
-    height: 4px;
-    border-radius: 2px;
-    background: var(--color-border);
-    overflow: hidden;
-}
-
-.password-strength-bar {
-    height: 100%;
-    width: 0%;
-    transition: var(--transition-normal);
-    border-radius: 2px;
-}
-
-.strength-weak {
-    background: var(--color-error);
-    width: 25%;
-}
-
-.strength-medium {
-    background: var(--color-warning);
-    width: 50%;
-}
-
-.strength-strong {
-    background: var(--color-success);
-    width: 100%;
 }
