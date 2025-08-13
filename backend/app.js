@@ -246,7 +246,9 @@ if (process.env.NODE_ENV !== 'production') {
         environment: process.env.NODE_ENV || 'development',
         version: 'debug-1.0'
       };
-      console.log('Sending response:', JSON.stringify(response, null, 2));
+      if (process.env.NODE_ENV === 'development' && process.env.DEBUG_VERBOSE) {
+        console.log('Debug endpoint accessed - response prepared');
+      }
       res.status(HTTP_STATUS.OK).json(response);
     } catch (error) {
       console.error('ERROR in debug endpoint:', error);

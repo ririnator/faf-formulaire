@@ -37,7 +37,19 @@ class SessionMonitoringMiddleware {
 
       } catch (error) {
         console.error('Session tracking error:', error);
-        // Don't block request if tracking fails
+        
+        // Alerte pour échecs critiques de monitoring
+        if (this.isMonitoringCritical(error)) {
+          this.sendCriticalAlert('SESSION_MONITORING_FAILURE', {
+            error: error.message,
+            ip: clientIP,
+            userAgent,
+            timestamp: Date.now()
+          });
+        }
+        
+        // Don't block request if tracking fails, but track failure
+        this.trackMonitoringFailure(error);
       }
 
       next();
@@ -206,6 +218,113 @@ class SessionMonitoringMiddleware {
    */
   getMonitoringService() {
     return this.monitoringService;
+  }
+
+  /**
+   * Determine if monitoring error is critical
+   */
+  isMonitoringCritical(error) {
+    const criticalErrors = [
+      'ECONNREFUSED', // Base de données inaccessible
+      'MongoNetworkError', // Erreur réseau MongoDB
+      'Database not connected', // DB déconnectée
+      'Out of memory' // Problème mémoire
+    ];
+    
+    return criticalErrors.some(criticalError => 
+      error.message.includes(criticalError) || error.name === criticalError
+    );
+  }
+
+  /**
+   * Send critical alert for monitoring failures
+   */
+  sendCriticalAlert(alertType, data) {
+    const alert = {
+      type: alertType,
+      severity: 'CRITICAL',
+      timestamp: new Date().toISOString(),
+      data,
+      hostname: require('os').hostname(),
+      pid: process.pid
+    };
+
+    // Log immédiatement
+    console.error('🚨 CRITICAL_MONITORING_ALERT:', JSON.stringify(alert));
+
+    // TODO: En production, intégrer avec:
+    // - Slack/Teams webhook
+    // - PagerDuty
+    // - Email alerts
+    // - SMS notifications
+    // - Monitoring dashboards (Grafana, DataDog)
+    
+    // Pour démonstration, on peut utiliser process.send() si disponible
+    if (process.send) {
+      process.send({ type: 'critical_alert', alert });
+    }
+    
+    this.trackAlert(alert);
+  }
+
+  /**
+   * Track monitoring failures for pattern analysis
+   */
+  trackMonitoringFailure(error) {
+    if (!this.failureStats) {
+      this.failureStats = {
+        count: 0,
+        lastFailure: null,
+        errorTypes: new Map()
+      };
+    }
+
+    this.failureStats.count++;
+    this.failureStats.lastFailure = Date.now();
+    
+    const errorType = error.name || 'Unknown';
+    const current = this.failureStats.errorTypes.get(errorType) || 0;
+    this.failureStats.errorTypes.set(errorType, current + 1);
+
+    // Alerte si trop d'échecs
+    if (this.failureStats.count % 10 === 0) {
+      this.sendCriticalAlert('MONITORING_FAILURE_PATTERN', {
+        totalFailures: this.failureStats.count,
+        errorTypes: Array.from(this.failureStats.errorTypes.entries()),
+        timeWindow: '10 minutes'
+      });
+    }
+  }
+
+  /**
+   * Track alerts for analysis
+   */
+  trackAlert(alert) {
+    if (!this.alertHistory) {
+      this.alertHistory = [];
+    }
+    
+    this.alertHistory.push(alert);
+    
+    // Garder seulement les 100 dernières alertes
+    if (this.alertHistory.length > 100) {
+      this.alertHistory.shift();
+    }
+  }
+
+  /**
+   * Get monitoring health status
+   */
+  getMonitoringHealth() {
+    return {
+      status: this.failureStats ? 
+        (this.failureStats.count > 50 ? 'CRITICAL' : 
+         this.failureStats.count > 10 ? 'WARNING' : 'HEALTHY') : 'HEALTHY',
+      failures: this.failureStats?.count || 0,
+      lastFailure: this.failureStats?.lastFailure,
+      alerts: this.alertHistory?.length || 0,
+      uptime: process.uptime()
+    };
   }
 
   /**

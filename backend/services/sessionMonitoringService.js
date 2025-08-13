@@ -24,6 +24,15 @@ class SessionMonitoringService {
       lastReset: Date.now()
     };
 
+    // Batch alert system for performance optimization
+    this.alertQueue = [];
+    this.alertBatchConfig = {
+      batchSize: 10, // Maximum alerts per batch
+      batchTimeout: 30000, // 30 seconds max wait
+      enableBatching: true
+    };
+    this.batchTimer = null;
+
     this.monitoringInterval = null;
   }
 
@@ -303,12 +312,104 @@ class SessionMonitoringService {
   }
 
   /**
-   * Handle suspicious activity detection
+   * Batch alert processing for performance optimization
+   */
+  queueAlert(alertData) {
+    if (!this.alertBatchConfig.enableBatching) {
+      this.processSingleAlert(alertData);
+      return;
+    }
+
+    this.alertQueue.push({
+      ...alertData,
+      queuedAt: Date.now()
+    });
+
+    // Process immediately if batch is full
+    if (this.alertQueue.length >= this.alertBatchConfig.batchSize) {
+      this.processBatchedAlerts();
+      return;
+    }
+
+    // Set timer for batch timeout if not already set
+    if (!this.batchTimer) {
+      this.batchTimer = setTimeout(() => {
+        this.processBatchedAlerts();
+      }, this.alertBatchConfig.batchTimeout);
+    }
+  }
+
+  /**
+   * Process batched alerts efficiently
+   */
+  processBatchedAlerts() {
+    if (this.alertQueue.length === 0) return;
+
+    // Clear the timer
+    if (this.batchTimer) {
+      clearTimeout(this.batchTimer);
+      this.batchTimer = null;
+    }
+
+    const batch = this.alertQueue.splice(0); // Take all alerts
+    const now = Date.now();
+
+    // Group alerts by type for efficient processing
+    const groupedAlerts = batch.reduce((groups, alert) => {
+      const key = `${alert.activityType}-${alert.clientIP}`;
+      if (!groups[key]) {
+        groups[key] = { ...alert, count: 1, firstSeen: alert.queuedAt, lastSeen: alert.queuedAt };
+      } else {
+        groups[key].count++;
+        groups[key].lastSeen = alert.queuedAt;
+        // Merge details if needed
+        groups[key].details = { ...groups[key].details, ...alert.details };
+      }
+      return groups;
+    }, {});
+
+    // Process grouped alerts
+    Object.values(groupedAlerts).forEach(groupedAlert => {
+      const logData = {
+        activityType: groupedAlert.activityType,
+        sessionId: groupedAlert.sessionId,
+        clientIP: groupedAlert.clientIP,
+        userId: groupedAlert.userId,
+        details: {
+          ...groupedAlert.details,
+          alertCount: groupedAlert.count,
+          timeSpan: groupedAlert.lastSeen - groupedAlert.firstSeen,
+          processedAt: now
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      SecureLogger.logWarning(
+        `Batch alert [${groupedAlert.count}x]: ${groupedAlert.activityType}`, 
+        logData
+      );
+    });
+
+    // Log batch processing stats
+    if (batch.length > 1) {
+      SecureLogger.logInfo(`Processed ${batch.length} alerts in batch (${Object.keys(groupedAlerts).length} unique)`);
+    }
+  }
+
+  /**
+   * Process single alert (fallback when batching disabled)
+   */
+  processSingleAlert(alertData) {
+    SecureLogger.logWarning('Suspicious session activity detected: ' + alertData.activityType, alertData);
+  }
+
+  /**
+   * Handle suspicious activity detection with optimized batch processing
    */
   handleSuspiciousActivity(sessionId, clientIP, userId, activityType, details) {
     this.sessionMetrics.suspiciousActivities++;
 
-    const logData = {
+    const alertData = {
       activityType,
       sessionId: sessionId ? sessionId.substring(0, 8) + '...' : null,
       clientIP: clientIP ? this.maskIP(clientIP) : null,
@@ -317,14 +418,40 @@ class SessionMonitoringService {
       timestamp: new Date().toISOString()
     };
 
-    // Use logWarning instead of logError since this is a warning about suspicious activity, not an error
-    SecureLogger.logWarning('Suspicious session activity detected: ' + activityType, logData);
+    // Queue alert for batch processing
+    this.queueAlert(alertData);
 
-    // In production, you might want to:
-    // 1. Send alerts to administrators
-    // 2. Temporarily block the IP
-    // 3. Require additional authentication
-    // 4. Log to external security systems
+    // Immediate action for critical alerts
+    if (this.isCriticalActivity(activityType)) {
+      this.handleCriticalAlert(alertData);
+    }
+  }
+
+  /**
+   * Determine if activity requires immediate attention
+   */
+  isCriticalActivity(activityType) {
+    const criticalActivities = [
+      'brute_force_detected',
+      'session_hijacking_attempt',
+      'privilege_escalation',
+      'multiple_failed_logins'
+    ];
+    return criticalActivities.includes(activityType);
+  }
+
+  /**
+   * Handle critical alerts that need immediate processing
+   */
+  handleCriticalAlert(alertData) {
+    // Process critical alerts immediately, bypassing batch queue
+    SecureLogger.logError('CRITICAL SECURITY ALERT: ' + alertData.activityType, alertData);
+    
+    // Additional immediate actions for critical alerts
+    if (alertData.clientIP && alertData.activityType === 'brute_force_detected') {
+      this.suspiciousIPs.add(alertData.clientIP.split('.').slice(0, 3).join('.') + '.xxx');
+      this.sessionMetrics.blockedAttempts++;
+    }
   }
 
   /**
@@ -404,14 +531,20 @@ class SessionMonitoringService {
       }
     }
 
+    // Process any remaining queued alerts before cleanup
+    if (this.alertQueue.length > 0) {
+      this.processBatchedAlerts();
+    }
+
     SecureLogger.logInfo('Session monitoring data cleaned up', {
       suspiciousIPs: this.suspiciousIPs.size,
-      trackedFailures: this.failedLogins.size
+      trackedFailures: this.failedLogins.size,
+      queuedAlerts: this.alertQueue.length
     });
   }
 
   /**
-   * Get monitoring statistics
+   * Get monitoring statistics with batch processing metrics
    */
   getMonitoringStats() {
     return {
@@ -420,6 +553,12 @@ class SessionMonitoringService {
       uniqueIPs: this.activeSessions.size,
       uniqueUsers: this.userSessions.size,
       suspiciousIPs: this.suspiciousIPs.size,
+      batchProcessing: {
+        queuedAlerts: this.alertQueue.length,
+        batchingEnabled: this.alertBatchConfig.enableBatching,
+        batchSize: this.alertBatchConfig.batchSize,
+        batchTimeout: this.alertBatchConfig.batchTimeout
+      },
       trackedFailures: this.failedLogins.size
     };
   }

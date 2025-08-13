@@ -18,6 +18,88 @@ const questionOrderCache = new Map(); // Key: "YYYY-MM", Value: { order: [...], 
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
 const MAX_CACHE_SIZE = 50; // Prevent memory leaks from unlimited month caching
 
+// Language detection cache for repeated text searches
+const languageDetectionCache = new Map(); // Key: search text, Value: { language: string, timestamp: Date }
+const LANGUAGE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes cache (longer than search)
+const MAX_LANGUAGE_CACHE_SIZE = 200; // Cache up to 200 unique search terms
+
+/**
+ * Language detection with caching for performance optimization
+ */
+function detectLanguageWithCache(searchText) {
+  if (!searchText || searchText.length < 2) {
+    return 'none';
+  }
+  
+  // Normalize search text for consistent caching
+  const normalizedText = searchText.toLowerCase().trim().substring(0, 100);
+  const now = Date.now();
+  
+  // Check cache first
+  const cached = languageDetectionCache.get(normalizedText);
+  if (cached && (now - cached.timestamp) <= LANGUAGE_CACHE_TTL) {
+    return cached.language;
+  }
+  
+  // Perform language detection
+  const hasAccents = /[àáâäæãåāèéêëēėęîïíīįìôöòóœøōõûüùúūñń]/i.test(normalizedText);
+  const hasEnglishWords = /\b(the|and|or|in|on|at|to|for|of|with|by|this|that|is|are|was|were)\b/i.test(normalizedText);
+  
+  let detectedLanguage;
+  if (hasAccents || (!hasEnglishWords && normalizedText.length > 0)) {
+    detectedLanguage = 'french';
+  } else if (hasEnglishWords) {
+    detectedLanguage = 'english';
+  } else {
+    detectedLanguage = 'none';
+  }
+  
+  // Cache the result
+  languageDetectionCache.set(normalizedText, {
+    language: detectedLanguage,
+    timestamp: now
+  });
+  
+  // Cleanup cache if it gets too large
+  if (languageDetectionCache.size > MAX_LANGUAGE_CACHE_SIZE) {
+    cleanupLanguageCache();
+  }
+  
+  return detectedLanguage;
+}
+
+/**
+ * Cleanup function for language detection cache
+ */
+function cleanupLanguageCache() {
+  const now = Date.now();
+  let removedCount = 0;
+  
+  // Remove expired entries
+  for (const [key, value] of languageDetectionCache.entries()) {
+    if ((now - value.timestamp) > LANGUAGE_CACHE_TTL) {
+      languageDetectionCache.delete(key);
+      removedCount++;
+    }
+  }
+  
+  // If still too large, remove oldest entries (LRU)
+  if (languageDetectionCache.size > MAX_LANGUAGE_CACHE_SIZE) {
+    const entries = Array.from(languageDetectionCache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    
+    const toRemove = entries.slice(0, languageDetectionCache.size - MAX_LANGUAGE_CACHE_SIZE);
+    toRemove.forEach(([key]) => {
+      languageDetectionCache.delete(key);
+      removedCount++;
+    });
+  }
+  
+  if (removedCount > 0) {
+    console.log(`🧹 Language cache cleanup: removed ${removedCount} entries, size: ${languageDetectionCache.size}`);
+  }
+}
+
 /**
  * Cache cleanup utility to prevent memory leaks
  * Removes expired entries and enforces size limits
@@ -46,6 +128,9 @@ function cleanupCache() {
       removedCount++;
     });
   }
+  
+  // Also cleanup language cache
+  cleanupLanguageCache();
   
   if (removedCount > 0) {
     console.log(`🧹 Cache cleanup: removed ${removedCount} entries, size: ${questionOrderCache.size}`);
@@ -229,7 +314,8 @@ async function getQuestionOrderForMonth(monthKey, match, PIE_Q) {
     console.error(`❌ Error fetching question order for ${monthKey}:`, {
       ...logContext,
       error: error.message,
-      stack: error.stack,
+      // Stack trace seulement en développement
+      ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
       duration: `${Date.now() - startTime}ms`
     });
     
@@ -328,24 +414,77 @@ router.get('/responses', async (req, res) => {
     const skip  = (page - 1) * limit;
     const search = req.query.search?.trim();
 
-    // Construction du filtre de recherche avec protection ReDoS
+    // Construction du filtre de recherche sécurisée avec text search
     let filter = {};
     if (search) {
-      // Échapper les caractères spéciaux regex pour éviter ReDoS
-      const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const escapedSearch = escapeRegex(search);
-      filter.name = { $regex: escapedSearch, $options: 'i' };
+      // Validation basique de la recherche
+      const sanitizedSearch = search.trim().replace(/["\\]/g, '').substring(0, 100);
+      
+      if (sanitizedSearch.length >= 2) {
+        // Utiliser MongoDB text search avec détection linguistique mise en cache
+        const textSearchOptions = {
+          $search: sanitizedSearch,
+          $caseSensitive: false
+        };
+        
+        // Détecter la langue avec mise en cache pour les performances
+        const detectedLanguage = detectLanguageWithCache(sanitizedSearch);
+        textSearchOptions.$language = detectedLanguage;
+        
+        filter.$text = textSearchOptions;
+      } else {
+        // Fallback pour recherches courtes avec une approche sécurisée
+        filter.name = { 
+          $regex: `^${sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+          $options: 'i'
+        };
+      }
     }
 
-    const totalCount = await Response.countDocuments(filter);
-    const totalPages = Math.ceil(totalCount / limit);
+    let totalCount, data;
+    
+    try {
+      totalCount = await Response.countDocuments(filter);
+      const totalPages = Math.ceil(totalCount / limit);
 
-    const data = await Response.find(filter)
-      .select('name month createdAt isAdmin token')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+      data = await Response.find(filter)
+        .select('name month createdAt isAdmin token')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+    } catch (searchError) {
+      // Fallback si la recherche text échoue (ex: langue non supportée)
+      if (searchError.name === 'MongoServerError' && searchError.code === 17124) {
+        console.warn('⚠️ Text search failed, falling back to regex:', searchError.message);
+        
+        // Utiliser regex comme fallback
+        if (search && search.trim().length >= 2) {
+          const sanitizedSearch = search.trim().replace(/["\\]/g, '').substring(0, 100);
+          filter = {
+            $or: [
+              { name: { $regex: sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
+              { 'responses.question': { $regex: sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
+              { 'responses.answer': { $regex: sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
+            ]
+          };
+        } else {
+          filter = {}; // Recherche vide si fallback impossible
+        }
+        
+        totalCount = await Response.countDocuments(filter);
+        data = await Response.find(filter)
+          .select('name month createdAt isAdmin token')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean();
+      } else {
+        throw searchError; // Re-throw si ce n'est pas une erreur de text search
+      }
+    }
+    
+    const totalPages = Math.ceil(totalCount / limit);
 
     res.json({
       responses:  data,
@@ -558,12 +697,13 @@ router.get('/summary', async (req, res) => {
       return indexA - indexB; // Sort by natural form position
     });
 
-    // Debug pour vérifier l'ordre (dev uniquement)
-    if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
+    // Debug pour vérifier l'ordre (dev uniquement) - contenu anonymisé
+    if (process.env.NODE_ENV === 'development' && !process.env.RENDER && process.env.DEBUG_VERBOSE) {
       console.log('📋 Ordre des questions basé sur première soumission:');
       questionOrder.forEach((q, i) => {
-        const shortQ = q.substring(0, 50) + (q.length > 50 ? '...' : '');
-        console.log(`  ${i + 1}. ${shortQ}`);
+        // Log seulement la longueur et hash pour sécurité
+        const questionHash = q.length > 0 ? `[Q${i+1}_${q.length}chars]` : '[empty]';
+        console.log(`  ${i + 1}. ${questionHash}`);
       });
       console.log('📋 Résumé final:');
       sortedSummary.forEach((item, index) => {

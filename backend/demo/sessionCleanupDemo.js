@@ -213,7 +213,10 @@ class SessionCleanupDemo {
       
     } catch (error) {
       console.error('❌ Demo failed:', error.message);
-      console.error('Stack:', error.stack);
+      // Stack trace seulement en développement
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Stack:', error.stack);
+      }
     } finally {
       await this.cleanup();
     }
