@@ -150,33 +150,8 @@
             }
         }
         
-        // Fonction pour vérifier l'authentification
-        async function checkAuthStatus() {
-            try {
-                const response = await fetch('/api/auth/me', {
-                    credentials: 'include'
-                });
-                if (response.ok) {
-                    return await response.json();
-                }
-            } catch (error) {
-                console.error('Erreur lors de la vérification auth:', error);
-            }
-            return null;
-        }
-
-        // Vérifier si l'utilisateur est déjà connecté
-        window.addEventListener('DOMContentLoaded', async function() {
-            const auth = await checkAuthStatus();
-            if (auth && auth.user) {
-                const role = auth.user.role;
-                if (role === 'admin') {
-                    window.location.href = '/admin';
-                } else {
-                    window.location.href = '/dashboard';
-                }
-            }
-        });
+        // Note: Auto-redirect removed to prevent infinite loop
+        // The login page should always be accessible for explicit user authentication
     </script>
 </body>
 </html>
