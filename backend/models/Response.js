@@ -52,4 +52,10 @@ ResponseSchema.index({ createdAt: -1 });
 ResponseSchema.index({ token: 1 }, { unique: true, sparse: true }); // Index unique pour tokens
 ResponseSchema.index({ userId: 1, createdAt: -1 }, { sparse: true });
 
+// Index texte pour recherche sécurisée
+ResponseSchema.index({ name: 'text' }, { 
+  default_language: 'french',
+  name: 'name_text_search'
+});
+
 module.exports = mongoose.model('Response', ResponseSchema);

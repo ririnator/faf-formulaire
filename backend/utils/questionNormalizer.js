@@ -29,10 +29,10 @@ function normalizeQuestion(question) {
     .replace(/[^\p{L}\p{N}\s]/gu, '')
     .trim();
     
-  // Debug détaillé pour diagnostiquer (STRICTEMENT développement local)
+  // Debug sécurisé pour diagnostiquer (STRICTEMENT développement local)
   if (process.env.NODE_ENV === 'development' && !process.env.RENDER && process.env.DEBUG_NORMALIZATION) {
-    const questionHex = Array.from(question).map(c => `${c}(${c.charCodeAt(0).toString(16)})`).join(' ');
-    console.log(`🔍 Normalisation: "${question.substring(0, 50)}..." → "${normalized.substring(0, 50)}..."`);
+    // Log seulement des métriques, pas le contenu
+    console.log(`🔍 Normalisation: [${question.length}chars] → [${normalized.length}chars] ratio=${(normalized.length/question.length).toFixed(2)}`);
   }
   
   return normalized;
