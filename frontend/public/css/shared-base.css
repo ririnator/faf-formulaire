@@ -1,5 +1,23 @@
-/* FAF Shared Base Styles */
-/* CSS Custom Properties (Variables) */
+/**
+ * FAF Shared Base Styles
+ * 
+ * This file contains the foundational CSS architecture for the Form-a-Friend application.
+ * It establishes a design system with consistent variables, base components, and utilities
+ * that are shared across all authentication pages (login, register, auth-choice).
+ * 
+ * Architecture:
+ * - CSS Custom Properties for colors, spacing, typography, shadows
+ * - Base component styles (buttons, forms, containers, inputs)
+ * - Accessibility features (focus indicators, high contrast, screen readers)
+ * - Responsive design patterns
+ * - Reusable component classes (admin-section, migration-section, etc.)
+ * 
+ * Usage: Include this file first, then page-specific CSS files
+ * Example: <link rel="stylesheet" href="/css/shared-base.css">
+ *          <link rel="stylesheet" href="/css/login.css">
+ */
+
+/* CSS Custom Properties (Design System Variables) */
 :root {
     /* Colors */
     --color-primary: #6b7280;
@@ -25,6 +43,21 @@
     --color-bg-main: #ffffff;
     --color-bg-light: #f9fafb;
     --color-bg-lighter: #f8fafc;
+    --color-bg-translucent: rgba(255, 255, 255, 0.95);
+    
+    /* Admin section colors */
+    --color-admin-bg: #fffaf0;
+    --color-admin-border: #fed7aa;
+    --color-admin-text: #9a3412;
+    --color-admin-text-secondary: #a16207;
+    
+    /* Additional specific colors */
+    --color-text-medium: #555;
+    --color-border-secondary: #d1d5db;
+    --color-disabled: #cbd5e0;
+    --color-success-bg: #f0fff4;
+    --color-success-border: #9ae6b4;
+    --color-success-text: #276749;
     
     /* Gradients */
     --gradient-main: linear-gradient(135deg, #9ca3af 0%, #4b5563 100%);
@@ -40,7 +73,15 @@
     --spacing-2xl: 30px;
     --spacing-3xl: 40px;
     
+    /* Additional spacing values */
+    --spacing-2xs: 2px;
+    --spacing-4px: 4px;
+    --spacing-10px: 10px;
+    --spacing-16px: 16px;
+    --spacing-25px: 25px;
+    
     /* Border Radius */
+    --radius-xs: 2px;
     --radius-sm: 10px;
     --radius-md: 12px;
     --radius-lg: 15px;
@@ -185,7 +226,7 @@ input.error {
 
 .submit-btn:disabled,
 .auth-btn:disabled {
-    background: #cbd5e0;
+    background: var(--color-disabled);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -201,9 +242,9 @@ input.error {
 }
 
 .success-message {
-    background: #f0fff4;
-    border: 1px solid #9ae6b4;
-    color: #276749;
+    background: var(--color-success-bg);
+    border: 1px solid var(--color-success-border);
+    color: var(--color-success-text);
     padding: var(--spacing-lg);
     border-radius: var(--radius-sm);
     margin-bottom: var(--spacing-xl);
@@ -214,20 +255,21 @@ input.error {
 .submit-btn.loading,
 .auth-btn.loading {
     position: relative;
-    color: transparent;
+    color: transparent; /* Hide text during loading */
 }
 
 .submit-btn.loading::after,
 .auth-btn.loading::after {
     content: '';
     position: absolute;
+    /* Center the spinner: 50% - half width/height */
     top: 50%;
     left: 50%;
     width: 20px;
     height: 20px;
-    margin: -10px 0 0 -10px;
+    margin: -10px 0 0 -10px; /* Negative margin for perfect centering */
     border: 2px solid transparent;
-    border-top: 2px solid white;
+    border-top: 2px solid white; /* Only top border visible for spinner effect */
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -287,46 +329,189 @@ input.error {
     }
 }
 
-/* Accessibility */
+/* Accessibility - Focus indicators for keyboard navigation */
 .submit-btn:focus-visible,
 .auth-btn:focus-visible {
     outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
+    outline-offset: 2px; /* Space between element and outline */
 }
 
 .form-group input:focus-visible,
 input:focus-visible {
     outline: 2px solid var(--color-primary);
-    outline-offset: -2px;
+    outline-offset: -2px; /* Negative offset keeps outline inside border */
 }
 
-/* High Contrast Support */
+/* High Contrast Support - Enhanced visibility for users with visual impairments */
 @media (prefers-contrast: high) {
     .container,
     .form-container {
-        border: 2px solid #000;
+        border: 2px solid #000; /* Strong border for better definition */
     }
     
     .form-group input,
     input {
-        border-color: #000;
+        border-color: #000; /* Ensure form elements are clearly visible */
     }
     
     .submit-btn,
     .auth-btn {
-        border: 2px solid #000;
+        border: 2px solid #000; /* Button borders for better contrast */
     }
 }
 
-/* Screen Reader Only */
+/* Button Variants - Common patterns */
+.primary-btn {
+    background: var(--gradient-secondary);
+    color: white;
+    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+}
+
+.primary-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px 0 rgba(59, 130, 246, 0.5);
+}
+
+.primary-btn:active {
+    transform: translateY(0);
+}
+
+.secondary-btn {
+    background: white;
+    color: var(--color-text-secondary);
+    border: 2px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.secondary-btn:hover:not(:disabled) {
+    background: var(--color-bg-light);
+    border-color: var(--color-border-secondary);
+    transform: translateY(-1px);
+}
+
+.guest-btn {
+    background: var(--gradient-primary);
+    color: white;
+    box-shadow: 0 4px 14px 0 rgba(107, 114, 128, 0.39);
+}
+
+.guest-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px 0 rgba(107, 114, 128, 0.5);
+}
+
+/* Loading states for button variants */
+.primary-btn.loading::after,
+.guest-btn.loading::after {
+    border-top-color: white;
+}
+
+.secondary-btn.loading::after {
+    border-top-color: var(--color-text-secondary);
+}
+
+/* Admin Section - Reusable component */
+.admin-section {
+    background: var(--color-admin-bg);
+    border: 2px solid var(--color-admin-border);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.admin-section h3 {
+    color: var(--color-admin-text);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-normal);
+}
+
+.admin-section p {
+    color: var(--color-admin-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.admin-section a {
+    color: var(--color-admin-text);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+}
+
+.admin-section a:hover {
+    text-decoration: underline;
+}
+
+/* Migration Section - Reusable component */
+.migration-section {
+    background: var(--color-bg-lighter);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-25px);
+    border-left: var(--spacing-4px) solid var(--color-primary);
+}
+
+.migration-section h3 {
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-lg);
+}
+
+.migration-section p {
+    color: var(--color-text-medium);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Password Strength Indicator - Reusable component */
+.password-strength {
+    margin-top: var(--spacing-xs);
+    height: var(--spacing-4px);
+    border-radius: var(--radius-xs);
+    background: var(--color-border);
+    overflow: hidden;
+}
+
+.password-strength-bar {
+    height: 100%;
+    width: 0%;
+    transition: var(--transition-normal);
+    border-radius: var(--radius-xs);
+}
+
+.strength-weak {
+    background: var(--color-error);
+    width: 25%;
+}
+
+.strength-medium {
+    background: var(--color-warning);
+    width: 50%;
+}
+
+.strength-strong {
+    background: var(--color-success);
+    width: 100%;
+}
+
+/* Input Validation States - Common patterns */
+.form-group input:invalid,
+input:invalid {
+    border-color: var(--color-error);
+}
+
+.form-group input:valid,
+input:valid {
+    border-color: var(--color-success);
+}
+
+/* Screen Reader Only - Visually hidden but accessible to assistive technology */
 .sr-only {
     position: absolute;
     width: 1px;
     height: 1px;
     padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
+    margin: -1px; /* Negative margin removes element from normal flow */
+    overflow: hidden; /* Hide any content overflow */
+    clip: rect(0, 0, 0, 0); /* Legacy clipping for older browsers */
+    white-space: nowrap; /* Prevent line breaks */
     border: 0;
 }

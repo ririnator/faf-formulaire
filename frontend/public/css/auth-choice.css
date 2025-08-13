@@ -3,14 +3,14 @@
 
 /* Auth choice specific container styling */
 .container {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 2.5rem;
+    background: var(--color-bg-translucent);
+    padding: 2.5rem; /* Specific to auth choice */
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-xl);
-    max-width: 400px;
+    max-width: 400px; /* Specific to auth choice */
     text-align: center;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px); /* Glassmorphism effect */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Translucent border */
 }
 
 /* Auth choice specific typography */
@@ -21,13 +21,13 @@ h1 {
 }
 
 .subtitle {
-    margin-bottom: 2rem;
+    margin-bottom: 2rem; /* Specific spacing */
     line-height: 1.5;
 }
 
-/* Button variants specific to auth choice */
+/* Button variants specific to auth choice - specialized padding/spacing */
 .auth-btn {
-    padding: 0.875rem 1.5rem;
+    padding: 0.875rem 1.5rem; /* Specific auth choice button padding */
     font-size: var(--font-size-normal);
     border-radius: var(--radius-md);
     text-decoration: none;
@@ -43,64 +43,10 @@ h1 {
     box-shadow: var(--shadow-focus-secondary);
 }
 
-/* Primary button - blue gradient */
-.primary-btn {
-    background: var(--gradient-secondary);
-    color: white;
-    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
-}
-
-.primary-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px 0 rgba(59, 130, 246, 0.5);
-}
-
-.primary-btn:active {
-    transform: translateY(0);
-}
-
-.primary-btn.loading::after {
-    border-top-color: white;
-}
-
-/* Secondary button - white with border */
-.secondary-btn {
-    background: white;
-    color: var(--color-text-secondary);
-    border: 2px solid var(--color-border);
-    box-shadow: var(--shadow-sm);
-}
-
-.secondary-btn:hover:not(:disabled) {
-    background: var(--color-bg-light);
-    border-color: #d1d5db;
-    transform: translateY(-1px);
-}
-
-.secondary-btn.loading::after {
-    border-top-color: var(--color-text-secondary);
-}
-
-/* Guest button - gray gradient */
-.guest-btn {
-    background: var(--gradient-primary);
-    color: white;
-    box-shadow: 0 4px 14px 0 rgba(107, 114, 128, 0.39);
-}
-
-.guest-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px 0 rgba(107, 114, 128, 0.5);
-}
-
-.guest-btn.loading::after {
-    border-top-color: white;
-}
-
-/* Divider styling */
+/* Divider styling - unique to auth choice */
 .divider {
     position: relative;
-    margin: 1.5rem 0;
+    margin: 1.5rem 0; /* Divider spacing */
     color: var(--color-text-light);
     font-size: var(--font-size-sm);
 }
@@ -111,19 +57,19 @@ h1 {
     top: 50%;
     left: 0;
     right: 0;
-    height: 1px;
+    height: 1px; /* Divider line */
     background: var(--color-border);
 }
 
 .divider span {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 0 1rem;
+    background: var(--color-bg-translucent);
+    padding: 0 1rem; /* Divider text spacing */
     position: relative;
 }
 
 /* Guest description */
 .guest-description {
-    margin-top: 16px;
+    margin-top: var(--spacing-16px);
     font-size: var(--font-size-sm);
     color: var(--color-text-light);
     line-height: 1.5;
@@ -132,15 +78,15 @@ h1 {
 /* Auth choice specific responsive */
 @media (max-width: 480px) {
     .container {
-        padding: 2rem 1.5rem;
+        padding: 2rem 1.5rem; /* Mobile padding */
     }
     
     h1 {
-        font-size: 1.75rem;
+        font-size: 1.75rem; /* Mobile title size */
     }
     
     .subtitle {
-        font-size: 0.9rem;
+        font-size: 0.9rem; /* Mobile subtitle size */
     }
 }
 

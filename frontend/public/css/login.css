@@ -10,43 +10,13 @@
 
 /* Login-specific form container adjustments */
 .form-container {
-    max-width: 450px;
+    max-width: 450px; /* Specific to login form */
     border-radius: var(--radius-2xl);
 }
 
 /* Login header styling */
 h1 {
     font-size: var(--font-size-xl);
-}
-
-/* Admin section - unique to login page */
-.admin-section {
-    background: #fffaf0;
-    border: 2px solid #fed7aa;
-    border-radius: var(--radius-sm);
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-xl);
-}
-
-.admin-section h3 {
-    color: #9a3412;
-    margin-bottom: var(--spacing-sm);
-    font-size: var(--font-size-normal);
-}
-
-.admin-section p {
-    color: #a16207;
-    font-size: var(--font-size-sm);
-}
-
-.admin-section a {
-    color: #9a3412;
-    text-decoration: none;
-    font-weight: var(--font-weight-medium);
-}
-
-.admin-section a:hover {
-    text-decoration: underline;
 }
 
 /* Loading message specific styling */
