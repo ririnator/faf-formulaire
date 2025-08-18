@@ -1,0 +1,162 @@
+{
+  "url": "https://faf-backend.onrender.com",
+  "timestamp": "2025-08-18T17:17:10.879Z",
+  "duration": 820,
+  "summary": {
+    "429": 6,
+    "503": 1,
+    "INFO": 9,
+    "PASS": 7,
+    "WARN": 1
+  },
+  "results": [
+    {
+      "status": "INFO",
+      "test": "Accès de base",
+      "message": "Test de l'accès à l'application...",
+      "timestamp": "2025-08-18T17:17:10.058Z"
+    },
+    {
+      "status": 503,
+      "test": "Accès homepage",
+      "message": "Impossible d'accéder à l'application",
+      "timestamp": "2025-08-18T17:17:10.211Z",
+      "responseTime": 153
+    },
+    {
+      "status": "INFO",
+      "test": "Performance",
+      "message": "Test des temps de réponse...",
+      "timestamp": "2025-08-18T17:17:10.211Z"
+    },
+    {
+      "status": "PASS",
+      "test": "Performance",
+      "message": "Homepage rapide",
+      "timestamp": "2025-08-18T17:17:10.343Z",
+      "responseTime": 131
+    },
+    {
+      "status": "PASS",
+      "test": "Performance",
+      "message": "Page de connexion rapide",
+      "timestamp": "2025-08-18T17:17:10.401Z",
+      "responseTime": 58
+    },
+    {
+      "status": "PASS",
+      "test": "Performance",
+      "message": "Interface admin rapide",
+      "timestamp": "2025-08-18T17:17:10.430Z",
+      "responseTime": 28
+    },
+    {
+      "status": "INFO",
+      "test": "CSRF",
+      "message": "Test de la protection CSRF...",
+      "timestamp": "2025-08-18T17:17:10.430Z"
+    },
+    {
+      "status": 429,
+      "test": "CSRF Token",
+      "message": "Impossible d'obtenir le token CSRF",
+      "timestamp": "2025-08-18T17:17:10.483Z"
+    },
+    {
+      "status": "INFO",
+      "test": "Base de données",
+      "message": "Test de la connexion MongoDB...",
+      "timestamp": "2025-08-18T17:17:10.483Z"
+    },
+    {
+      "status": 429,
+      "test": "Base de données",
+      "message": "Problème de connexion MongoDB",
+      "timestamp": "2025-08-18T17:17:10.531Z"
+    },
+    {
+      "status": "INFO",
+      "test": "Connexion admin",
+      "message": "Test de la connexion administrateur...",
+      "timestamp": "2025-08-18T17:17:10.532Z"
+    },
+    {
+      "status": "INFO",
+      "test": "CSRF",
+      "message": "Test de la protection CSRF...",
+      "timestamp": "2025-08-18T17:17:10.532Z"
+    },
+    {
+      "status": 429,
+      "test": "CSRF Token",
+      "message": "Impossible d'obtenir le token CSRF",
+      "timestamp": "2025-08-18T17:17:10.600Z"
+    },
+    {
+      "status": 429,
+      "test": "Connexion admin",
+      "message": "Échec de la connexion administrateur",
+      "timestamp": "2025-08-18T17:17:10.664Z"
+    },
+    {
+      "status": "INFO",
+      "test": "Formulaire",
+      "message": "Test de soumission de formulaire...",
+      "timestamp": "2025-08-18T17:17:10.664Z"
+    },
+    {
+      "status": "INFO",
+      "test": "CSRF",
+      "message": "Test de la protection CSRF...",
+      "timestamp": "2025-08-18T17:17:10.664Z"
+    },
+    {
+      "status": 429,
+      "test": "CSRF Token",
+      "message": "Impossible d'obtenir le token CSRF",
+      "timestamp": "2025-08-18T17:17:10.707Z"
+    },
+    {
+      "status": 429,
+      "test": "Formulaire",
+      "message": "Échec de soumission de formulaire",
+      "timestamp": "2025-08-18T17:17:10.829Z"
+    },
+    {
+      "status": "INFO",
+      "test": "Sécurité",
+      "message": "Test des en-têtes de sécurité...",
+      "timestamp": "2025-08-18T17:17:10.830Z"
+    },
+    {
+      "status": "WARN",
+      "test": "En-tête sécurité",
+      "message": "Content-Security-Policy manquant",
+      "timestamp": "2025-08-18T17:17:10.878Z"
+    },
+    {
+      "status": "PASS",
+      "test": "En-tête sécurité",
+      "message": "X-Frame-Options présent",
+      "timestamp": "2025-08-18T17:17:10.878Z"
+    },
+    {
+      "status": "PASS",
+      "test": "En-tête sécurité",
+      "message": "X-Content-Type-Options présent",
+      "timestamp": "2025-08-18T17:17:10.878Z"
+    },
+    {
+      "status": "PASS",
+      "test": "En-tête sécurité",
+      "message": "Referrer-Policy présent",
+      "timestamp": "2025-08-18T17:17:10.878Z"
+    },
+    {
+      "status": "PASS",
+      "test": "Sécurité globale",
+      "message": "Configuration sécurité satisfaisante",
+      "timestamp": "2025-08-18T17:17:10.878Z"
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "url": "https://faf-production.onrender.com",
+  "timestamp": "2025-08-18T17:20:33.734Z",
+  "duration": 1106,
+  "summary": {
+    "200": 1,
+    "401": 1,
+    "404": 1,
+    "INFO": 7,
+    "WARN": 1,
+    "PASS": 10
+  },
+  "results": [
+    {
+      "status": "INFO",
+      "test": "Accès de base",
+      "message": "Test de l'accès à l'application...",
+      "timestamp": "2025-08-18T17:20:32.627Z"
+    },
+    {
+      "status": 200,
+      "test": "Accès homepage",
+      "message": "Application accessible",
+      "timestamp": "2025-08-18T17:20:32.883Z",
+      "responseTime": 255
+    },
+    {
+      "status": "WARN",
+      "test": "HTTPS forcé",
+      "message": "Redirection HTTP vers HTTPS non détectée",
+      "timestamp": "2025-08-18T17:20:32.943Z"
+    },
+    {
+      "status": "INFO",
+      "test": "Performance",
+      "message": "Test des temps de réponse...",
+      "timestamp": "2025-08-18T17:20:32.943Z"
+    },
+    {
+      "status": "PASS",
+      "test": "Performance",
+      "message": "Homepage rapide",
+      "timestamp": "2025-08-18T17:20:33.019Z",
+      "responseTime": 76
+    },
+    {
+      "status": "PASS",
+      "test": "Performance",
+      "message": "Page de connexion rapide",
+      "timestamp": "2025-08-18T17:20:33.086Z",
+      "responseTime": 66
+    },
+    {
+      "status": "PASS",
+      "test": "Performance",
+      "message": "Interface admin rapide",
+      "timestamp": "2025-08-18T17:20:33.206Z",
+      "responseTime": 120
+    },
+    {
+      "status": "INFO",
+      "test": "CSRF",
+      "message": "Test de la protection CSRF...",
+      "timestamp": "2025-08-18T17:20:33.206Z"
+    },
+    {
+      "status": "PASS",
+      "test": "CSRF Token",
+      "message": "Token CSRF obtenu avec succès",
+      "timestamp": "2025-08-18T17:20:33.285Z"
+    },
+    {
+      "status": "INFO",
+      "test": "Base de données",
+      "message": "Test de la connexion MongoDB...",
+      "timestamp": "2025-08-18T17:20:33.286Z"
+    },
+    {
+      "status": "PASS",
+      "test": "Base de données",
+      "message": "Connexion MongoDB active",
+      "timestamp": "2025-08-18T17:20:33.443Z"
+    },
+    {
+      "status": "INFO",
+      "test": "Connexion admin",
+      "message": "Test de la connexion administrateur...",
+      "timestamp": "2025-08-18T17:20:33.443Z"
+    },
+    {
+      "status": 401,
+      "test": "Connexion admin",
+      "message": "Échec de la connexion administrateur",
+      "timestamp": "2025-08-18T17:20:33.523Z"
+    },
+    {
+      "status": "INFO",
+      "test": "Formulaire",
+      "message": "Test de soumission de formulaire...",
+      "timestamp": "2025-08-18T17:20:33.524Z"
+    },
+    {
+      "status": 404,
+      "test": "Formulaire",
+      "message": "Échec de soumission de formulaire",
+      "timestamp": "2025-08-18T17:20:33.597Z"
+    },
+    {
+      "status": "INFO",
+      "test": "Sécurité",
+      "message": "Test des en-têtes de sécurité...",
+      "timestamp": "2025-08-18T17:20:33.597Z"
+    },
+    {
+      "status": "PASS",
+      "test": "En-tête sécurité",
+      "message": "Content-Security-Policy présent",
+      "timestamp": "2025-08-18T17:20:33.733Z"
+    },
+    {
+      "status": "PASS",
+      "test": "En-tête sécurité",
+      "message": "X-Frame-Options présent",
+      "timestamp": "2025-08-18T17:20:33.733Z"
+    },
+    {
+      "status": "PASS",
+      "test": "En-tête sécurité",
+      "message": "X-Content-Type-Options présent",
+      "timestamp": "2025-08-18T17:20:33.733Z"
+    },
+    {
+      "status": "PASS",
+      "test": "En-tête sécurité",
+      "message": "Referrer-Policy présent",
+      "timestamp": "2025-08-18T17:20:33.733Z"
+    },
+    {
+      "status": "PASS",
+      "test": "Sécurité globale",
+      "message": "Configuration sécurité satisfaisante",
+      "timestamp": "2025-08-18T17:20:33.733Z"
+    }
+  ]
+}
