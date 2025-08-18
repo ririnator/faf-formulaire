@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <title>{{senderName}} souhaite se connecter - {{fromName}}</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:AllowPNG/>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            min-width: 100%;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        
+        table {
+            border-collapse: collapse;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        
+        img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+        }
+        
+        /* Container */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: #ffffff;
+            padding: 32px 24px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+            margin: 0;
+        }
+        
+        .connection-icon {
+            font-size: 48px;
+            margin: 16px 0 8px 0;
+            display: block;
+        }
+        
+        /* Content */
+        .content {
+            padding: 32px 24px;
+        }
+        
+        .greeting {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 16px;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 24px;
+            line-height: 1.7;
+        }
+        
+        .sender-box {
+            background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
+            border: 2px solid #4fd1c7;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        
+        .sender-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 50%;
+            margin: 0 auto 16px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .sender-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        
+        .connection-text {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 16px;
+        }
+        
+        .personal-message {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            text-align: left;
+        }
+        
+        .message-label {
+            font-size: 12px;
+            color: #718096;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .message-content {
+            font-size: 15px;
+            color: #2d3748;
+            font-style: italic;
+            line-height: 1.6;
+        }
+        
+        /* Call to Action Buttons */
+        .cta-container {
+            text-align: center;
+            margin: 32px 0;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            min-width: 140px;
+        }
+        
+        .cta-primary {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+        
+        .cta-primary:hover {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .cta-secondary {
+            background: #ffffff;
+            color: #4a5568 !important;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .cta-secondary:hover {
+            background: #f7fafc;
+            border-color: #cbd5e0;
+        }
+        
+        .cta-text {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 16px;
+            line-height: 1.5;
+        }
+        
+        /* Benefits */
+        .benefits {
+            margin: 32px 0;
+        }
+        
+        .benefits h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 12px 0;
+        }
+        
+        .benefit-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 50%;
+            margin-right: 16px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .benefit-text {
+            font-size: 15px;
+            color: #4a5568;
+            line-height: 1.5;
+        }
+        
+        /* Expires info */
+        .expires-box {
+            background: linear-gradient(135deg, #fef5e7 0%, #fed7aa 100%);
+            border: 2px solid #f6ad55;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        
+        .expires-text {
+            font-size: 14px;
+            color: #c05621;
+            font-weight: 600;
+        }
+        
+        /* Footer */
+        .footer {
+            background-color: #f7fafc;
+            padding: 24px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .footer p {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 8px;
+        }
+        
+        .footer a {
+            color: #4facfe;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .unsubscribe {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-top: 16px;
+        }
+        
+        .unsubscribe a {
+            color: #a0aec0;
+        }
+        
+        /* Mobile responsive */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            
+            .header {
+                padding: 24px 16px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 24px 16px;
+            }
+            
+            .sender-box {
+                padding: 16px;
+                margin: 16px 0;
+            }
+            
+            .sender-avatar {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+            
+            .sender-name {
+                font-size: 20px;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .cta-button {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .benefit-item {
+                margin-bottom: 8px;
+            }
+            
+            .footer {
+                padding: 16px;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .email-container {
+                background-color: #1a202c !important;
+            }
+            
+            .content {
+                background-color: #1a202c !important;
+            }
+            
+            .greeting {
+                color: #f7fafc !important;
+            }
+            
+            .message {
+                color: #e2e8f0 !important;
+            }
+            
+            .sender-box {
+                background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
+                border-color: #4fd1c7 !important;
+            }
+            
+            .sender-name {
+                color: #f7fafc !important;
+            }
+            
+            .connection-text {
+                color: #e2e8f0 !important;
+            }
+            
+            .personal-message {
+                background-color: #2d3748 !important;
+                border-color: #4a5568 !important;
+            }
+            
+            .message-content {
+                color: #e2e8f0 !important;
+            }
+            
+            .benefit-text {
+                color: #e2e8f0 !important;
+            }
+            
+            .footer {
+                background-color: #2d3748 !important;
+                border-top-color: #4a5568 !important;
+            }
+        }
+        
+        /* Outlook specific */
+        <!--[if mso]>
+        .email-container {
+            width: 600px !important;
+        }
+        
+        .cta-button {
+            padding: 16px 32px !important;
+        }
+        <![endif]-->
+    </style>
+</head>
+<body>
+    <div style="background-color: #f8f9fa; padding: 20px 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td>
+                    <div class="email-container">
+                        <!-- Header -->
+                        <div class="header">
+                            <span class="connection-icon">🤝</span>
+                            <h1>{{fromName}}</h1>
+                            <p>Nouvelle demande de connexion</p>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="content">
+                            <div class="greeting">
+                                Bonjour {{recipientName}} ! 👋
+                            </div>
+                            
+                            <div class="message">
+                                Vous avez reçu une nouvelle demande de connexion ! Quelqu'un souhaite partager ses réponses avec vous et découvrir les vôtres.
+                            </div>
+                            
+                            <div class="sender-box">
+                                <div class="sender-avatar">
+                                    {{senderName.charAt(0).toUpperCase()}}
+                                </div>
+                                <div class="sender-name">{{senderName}}</div>
+                                <div class="connection-text">
+                                    souhaite se connecter avec vous
+                                </div>
+                                
+                                <div class="personal-message">
+                                    <div class="message-label">Message personnel :</div>
+                                    <div class="message-content">
+                                        "{{message}}"
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="cta-container">
+                                <div class="cta-buttons">
+                                    <a href="{{handshakeUrl}}" class="cta-button cta-primary">
+                                        ✅ Accepter la connexion
+                                    </a>
+                                    <a href="{{handshakeUrl}}&action=decline" class="cta-button cta-secondary">
+                                        ❌ Décliner poliment
+                                    </a>
+                                </div>
+                                <div class="cta-text">
+                                    Votre réponse restera confidentielle jusqu'à ce que vous l'acceptiez.
+                                </div>
+                            </div>
+                            
+                            <div class="benefits">
+                                <h3>🌟 Pourquoi accepter cette connexion ?</h3>
+                                
+                                <div class="benefit-item">
+                                    <div class="benefit-icon">🔗</div>
+                                    <div class="benefit-text">
+                                        <strong>Connexions authentiques</strong> - Découvrez vos amis sous un nouveau jour
+                                    </div>
+                                </div>
+                                
+                                <div class="benefit-item">
+                                    <div class="benefit-icon">💬</div>
+                                    <div class="benefit-text">
+                                        <strong>Conversations enrichissantes</strong> - Créez de nouveaux sujets de discussion
+                                    </div>
+                                </div>
+                                
+                                <div class="benefit-item">
+                                    <div class="benefit-icon">🔒</div>
+                                    <div class="benefit-text">
+                                        <strong>Totalement privé</strong> - Seuls vous deux aurez accès aux réponses partagées
+                                    </div>
+                                </div>
+                                
+                                <div class="benefit-item">
+                                    <div class="benefit-icon">⚡</div>
+                                    <div class="benefit-text">
+                                        <strong>Simple et rapide</strong> - Acceptez en un clic, profitez pour toujours
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="expires-box">
+                                <div class="expires-text">
+                                    ⏰ Cette demande expire le {{expiresAt}}
+                                </div>
+                            </div>
+                            
+                            <div class="message">
+                                <strong>Questions ou préoccupations ?</strong> Répondez simplement à cet email, nous sommes là pour vous aider !
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="footer">
+                            <p>
+                                <strong>{{fromName}}</strong><br>
+                                Connectez-vous avec vos amis d'une nouvelle façon
+                            </p>
+                            
+                            <p>
+                                <a href="{{appBaseUrl}}">Visitez notre site</a>
+                            </p>
+                            
+                            <div class="unsubscribe">
+                                <a href="{{unsubscribeUrl}}">Se désabonner</a> |
+                                <a href="{{appBaseUrl}}/privacy">Politique de confidentialité</a>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

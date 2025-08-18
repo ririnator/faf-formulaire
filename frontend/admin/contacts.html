@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gestion des Contacts – Form-a-Friend</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/admin/mobile-responsive.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script type="module" src="/admin/faf-admin.js"></script>
+  <script src="/admin/js/notificationCenter.js"></script>
+  <script type="module" src="/admin/contacts.js"></script>
+
+  <style>
+    /* Contact Card Styles */
+    .contact-card {
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .contact-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .contact-card.selected {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    
+    .contact-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.25rem;
+    }
+    
+    .contact-status-indicator {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+    
+    .status-active { background-color: #10b981; }
+    .status-pending { background-color: #f59e0b; }
+    .status-declined { background-color: #ef4444; }
+    .status-blocked { background-color: #6b7280; }
+    .status-opted_out { background-color: #9ca3af; }
+    .status-bounced { background-color: #dc2626; }
+    
+    /* Touch-friendly Action Buttons */
+    .action-button {
+      min-height: 44px;
+      min-width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    
+    .action-button:hover {
+      transform: scale(1.05);
+    }
+    
+    .action-button:active {
+      transform: scale(0.95);
+    }
+    
+    /* Swipe Actions */
+    .contact-card-swipeable {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .swipe-actions {
+      position: absolute;
+      top: 0;
+      right: -200px;
+      height: 100%;
+      width: 200px;
+      display: flex;
+      transition: right 0.3s ease;
+    }
+    
+    .contact-card-swipeable.swiped .swipe-actions {
+      right: 0;
+    }
+    
+    .swipe-action {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .swipe-edit { background-color: #3b82f6; }
+    .swipe-timeline { background-color: #6366f1; }
+    .swipe-compare { background-color: #8b5cf6; }
+    .swipe-delete { background-color: #ef4444; }
+    
+    /* Statistics Cards */
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.1);
+      transform: skew(-15deg) translateX(-100%);
+      transition: transform 0.5s ease;
+    }
+    
+    .stat-card:hover::before {
+      transform: skew(-15deg) translateX(100%);
+    }
+    
+    /* Filter Tabs */
+    .filter-tab {
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    
+    .filter-tab.active {
+      color: #3b82f6;
+    }
+    
+    .filter-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 2px;
+      background-color: #3b82f6;
+    }
+    
+    /* Search Input */
+    .search-input {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 0.75rem 1rem 0.75rem 3rem;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .search-container {
+      position: relative;
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      font-size: 1.25rem;
+    }
+    
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: scale(0.8);
+      transition: transform 0.3s ease;
+    }
+    
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+    
+    /* Responsive Grid */
+    .contacts-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1fr;
+    }
+    
+    @media (min-width: 640px) {
+      .contacts-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (min-width: 768px) {
+      .contacts-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    @media (min-width: 1024px) {
+      .contacts-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    
+    /* Loading States */
+    .loading-skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+    
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    /* Role-based visibility */
+    .admin-only.hidden,
+    .user-only.hidden {
+      display: none !important;
+    }
+    
+    /* Contact import/export */
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      background: #3b82f6;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    
+    .file-input-wrapper:hover {
+      background: #2563eb;
+    }
+    
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      left: -9999px;
+      opacity: 0;
+    }
+    
+    /* Tag display */
+    .contact-tag {
+      display: inline-block;
+      background: #e5e7eb;
+      color: #374151;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      margin: 0.125rem;
+    }
+    
+    /* Accessibility improvements */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+    
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: #000;
+      color: #fff;
+      padding: 8px;
+      text-decoration: none;
+      z-index: 100;
+    }
+    
+    .skip-link:focus {
+      top: 6px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Skip link for keyboard navigation -->
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  
+  <!-- Universal Navigation -->
+  <nav class="bg-white shadow-sm border-b" role="navigation" aria-label="Navigation principale">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-4">
+          <h1 class="text-xl font-semibold text-gray-900">Gestion des Contacts</h1>
+          <span id="userRole" class="text-sm text-gray-500"></span>
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="/admin" class="text-blue-600 hover:underline">
+            ← Retour au tableau de bord
+          </a>
+          <a href="/logout" class="text-red-600 hover:underline">
+            Déconnexion
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" role="main">
+    <!-- Alert Message -->
+    <div id="alertMessage" class="hidden mb-6 p-4 rounded-lg" 
+         role="alert" aria-live="assertive"></div>
+
+    <!-- Statistics Dashboard -->
+    <section class="mb-8" aria-label="Statistiques des contacts">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Aperçu des contacts</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="stat-card">
+          <div class="text-3xl font-bold" id="totalContacts">-</div>
+          <div class="text-sm opacity-90">Total contacts</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-3xl font-bold" id="activeContacts">-</div>
+          <div class="text-sm opacity-90">Contacts actifs</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-3xl font-bold" id="pendingHandshakes">-</div>
+          <div class="text-sm opacity-90">Handshakes en attente</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-3xl font-bold" id="responseRate">-</div>
+          <div class="text-sm opacity-90">Taux de réponse moyen</div>
+        </div>
+      </div>
+      
+      <!-- Charts Container -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-4">Répartition par statut</h3>
+          <canvas id="statusChart" width="400" height="200"></canvas>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-4">Activité récente</h3>
+          <canvas id="activityChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filters and Actions -->
+    <section class="mb-6" aria-label="Filtres et actions">
+      <div class="bg-white p-6 rounded-lg shadow">
+        <!-- Search Bar -->
+        <div class="search-container mb-4">
+          <span class="search-icon">🔍</span>
+          <input 
+            type="text" 
+            id="searchInput"
+            class="search-input"
+            placeholder="Rechercher par nom, email ou tag..."
+            aria-label="Rechercher des contacts"
+          >
+        </div>
+        
+        <!-- Filter Tabs -->
+        <div class="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Filtres de statut">
+          <button class="filter-tab active px-4 py-2 text-sm font-medium rounded-lg" 
+                  data-filter="all" role="tab" aria-selected="true">
+            Tous
+          </button>
+          <button class="filter-tab px-4 py-2 text-sm font-medium rounded-lg" 
+                  data-filter="active" role="tab">
+            Actifs
+          </button>
+          <button class="filter-tab px-4 py-2 text-sm font-medium rounded-lg" 
+                  data-filter="pending" role="tab">
+            En attente
+          </button>
+          <button class="filter-tab px-4 py-2 text-sm font-medium rounded-lg" 
+                  data-filter="declined" role="tab">
+            Refusés
+          </button>
+          <button class="filter-tab px-4 py-2 text-sm font-medium rounded-lg" 
+                  data-filter="blocked" role="tab">
+            Bloqués
+          </button>
+        </div>
+        
+        <!-- Advanced Filters -->
+        <div class="flex flex-wrap gap-4 items-center">
+          <select id="tagFilter" class="border border-gray-300 rounded-lg px-3 py-2" 
+                  aria-label="Filtrer par tag">
+            <option value="">Tous les tags</option>
+          </select>
+          
+          <select id="sortBy" class="border border-gray-300 rounded-lg px-3 py-2"
+                  aria-label="Trier par">
+            <option value="name">Nom</option>
+            <option value="email">Email</option>
+            <option value="status">Statut</option>
+            <option value="lastActivity">Dernière activité</option>
+            <option value="responseRate">Taux de réponse</option>
+          </select>
+          
+          <button id="clearFilters" class="text-blue-600 hover:underline text-sm">
+            Effacer les filtres
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Action Bar -->
+    <section class="mb-6" aria-label="Actions sur les contacts">
+      <div class="bg-white p-4 rounded-lg shadow">
+        <div class="flex flex-wrap gap-3 items-center justify-between">
+          <div class="flex flex-wrap gap-3">
+            <button id="addContactBtn" class="action-button bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+              ➕ Ajouter un contact
+            </button>
+            
+            <label class="file-input-wrapper admin-only">
+              📁 Importer CSV
+              <input type="file" id="csvImport" accept=".csv" aria-label="Importer des contacts depuis un fichier CSV">
+            </label>
+            
+            <button id="exportCsvBtn" class="action-button border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg admin-only">
+              📤 Exporter CSV
+            </button>
+          </div>
+          
+          <div class="flex gap-3" id="bulkActions" style="display: none;">
+            <span class="text-sm text-gray-600" id="selectedCount">0 sélectionné(s)</span>
+            <button id="bulkDeleteBtn" class="action-button bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+              🗑️ Supprimer
+            </button>
+            <button id="bulkTagBtn" class="action-button bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg">
+              🏷️ Taguer
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contacts Grid -->
+    <section aria-label="Liste des contacts">
+      <div id="contactsContainer" class="contacts-grid">
+        <!-- Contacts will be dynamically loaded here -->
+      </div>
+      
+      <!-- Loading State -->
+      <div id="loadingState" class="text-center py-12">
+        <div class="loading-skeleton w-full h-32 rounded-lg mb-4"></div>
+        <div class="text-gray-500">Chargement des contacts...</div>
+      </div>
+      
+      <!-- Empty State -->
+      <div id="emptyState" class="text-center py-12 hidden">
+        <div class="text-6xl mb-4">👥</div>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucun contact trouvé</h3>
+        <p class="text-gray-500 mb-6">Commencez par ajouter vos premiers contacts</p>
+        <button class="action-button bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
+          ➕ Ajouter un contact
+        </button>
+      </div>
+    </section>
+
+    <!-- Pagination -->
+    <nav aria-label="Navigation pagination" class="mt-8">
+      <div id="paginationContainer" class="flex justify-between items-center">
+        <div class="text-sm text-gray-700">
+          Affichage de <span id="itemsRange">0-0</span> sur <span id="totalItems">0</span> contacts
+        </div>
+        <div class="flex gap-2" id="paginationButtons">
+          <!-- Pagination buttons will be generated here -->
+        </div>
+      </div>
+    </nav>
+  </main>
+
+  <!-- Add/Edit Contact Modal -->
+  <div id="contactModal" class="modal-overlay" role="dialog" aria-labelledby="contactModalTitle" aria-hidden="true">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-6">
+        <h2 id="contactModalTitle" class="text-xl font-semibold">Ajouter un contact</h2>
+        <button class="text-gray-500 hover:text-gray-700 text-2xl" aria-label="Fermer la modal">×</button>
+      </div>
+      
+      <form id="contactForm">
+        <div class="space-y-4">
+          <div>
+            <label for="contactEmail" class="block text-sm font-medium text-gray-700 mb-1">
+              Email *
+            </label>
+            <input type="email" id="contactEmail" name="email" required
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="contactFirstName" class="block text-sm font-medium text-gray-700 mb-1">
+                Prénom
+              </label>
+              <input type="text" id="contactFirstName" name="firstName"
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div>
+              <label for="contactLastName" class="block text-sm font-medium text-gray-700 mb-1">
+                Nom
+              </label>
+              <input type="text" id="contactLastName" name="lastName"
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+          
+          <div>
+            <label for="contactTags" class="block text-sm font-medium text-gray-700 mb-1">
+              Tags (séparés par des virgules)
+            </label>
+            <input type="text" id="contactTags" name="tags" placeholder="famille, travail, ami..."
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label for="contactNotes" class="block text-sm font-medium text-gray-700 mb-1">
+              Notes
+            </label>
+            <textarea id="contactNotes" name="notes" rows="3"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-3 mt-6">
+          <button type="button" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+            Annuler
+          </button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bulk Tag Modal -->
+  <div id="bulkTagModal" class="modal-overlay" role="dialog" aria-labelledby="bulkTagModalTitle" aria-hidden="true">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-6">
+        <h2 id="bulkTagModalTitle" class="text-xl font-semibold">Ajouter des tags</h2>
+        <button class="text-gray-500 hover:text-gray-700 text-2xl" aria-label="Fermer la modal">×</button>
+      </div>
+      
+      <form id="bulkTagForm">
+        <div class="mb-4">
+          <label for="bulkTags" class="block text-sm font-medium text-gray-700 mb-1">
+            Tags à ajouter (séparés par des virgules)
+          </label>
+          <input type="text" id="bulkTags" name="tags" placeholder="nouveau-tag, important..."
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div class="flex justify-end gap-3">
+          <button type="button" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+            Annuler
+          </button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Appliquer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  <div id="contextMenu" class="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 hidden" role="menu">
+    <button class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm" data-action="edit" role="menuitem">
+      ✏️ Modifier
+    </button>
+    <button class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm" data-action="handshake" role="menuitem">
+      🤝 Envoyer handshake
+    </button>
+    <button class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm" data-action="timeline" role="menuitem">
+      📅 Voir la timeline
+    </button>
+    <button class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm" data-action="view-stats" role="menuitem">
+      📊 Voir les statistiques
+    </button>
+    <hr class="my-1">
+    <button class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600" data-action="delete" role="menuitem">
+      🗑️ Supprimer
+    </button>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg">
+      <div class="flex items-center space-x-3">
+        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        <span>Traitement en cours...</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

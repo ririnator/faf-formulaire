@@ -1,6 +1,5 @@
 // Final Production-Ready Test Suite
 const request = require('supertest');
-const mongoose = require('mongoose');
 const User = require('../models/User');
 const Response = require('../models/Response');
 const TokenGenerator = require('../utils/tokenGenerator');
@@ -10,8 +9,18 @@ const express = require('express');
 const session = require('express-session');
 const { setupGlobalDatabase, getMongoUri } = require('./setup-global');
 
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
 describe('✅ PRODUCTION READY - Authentication System Tests', () => {
-  let app;
   let testUser;
   let adminUser;
 

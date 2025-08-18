@@ -213,6 +213,64 @@ const authLimitersRaw = {
       includeLanguage: true,
       includeSecHeaders: false // Don't be too strict for forms
     }
+  }),
+
+  // Bulk import: Limit large CSV uploads
+  bulkImport: createAuthRateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // Limited bulk operations per hour
+    enableFingerprinting: true,
+    suspiciousBehaviorMultiplier: 0.4, // Strict for bulk operations
+    trustScoreThreshold: 5,
+    fingerprintingOptions: {
+      includeUserAgent: true,
+      includeLanguage: false,
+      includeSecHeaders: true,
+      includeTiming: true // Prevent rapid bulk abuse
+    }
+  }),
+
+  // Create invitation: Limit invitation creation
+  createInvitation: createAuthRateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 100, // Reasonable limit for sending invitations
+    enableFingerprinting: true,
+    suspiciousBehaviorMultiplier: 0.5,
+    trustScoreThreshold: 4,
+    fingerprintingOptions: {
+      includeUserAgent: true,
+      includeLanguage: false,
+      includeSecHeaders: true
+    }
+  }),
+
+  // Bulk invitations: Limit bulk invitation sending
+  bulkInvitations: createAuthRateLimit({
+    windowMs: 24 * 60 * 60 * 1000, // 24 hours
+    max: 10, // Limited bulk invitation operations per day
+    enableFingerprinting: true,
+    suspiciousBehaviorMultiplier: 0.3, // Very strict for bulk operations
+    trustScoreThreshold: 6,
+    fingerprintingOptions: {
+      includeUserAgent: true,
+      includeLanguage: false,
+      includeSecHeaders: true,
+      includeTiming: true
+    }
+  }),
+
+  // Submit form: Limit form submissions
+  submitForm: createAuthRateLimit({
+    windowMs: 30 * 60 * 1000, // 30 minutes
+    max: 5, // Limit form submissions per 30 minutes
+    enableFingerprinting: true,
+    suspiciousBehaviorMultiplier: 0.5,
+    trustScoreThreshold: 4,
+    fingerprintingOptions: {
+      includeUserAgent: true,
+      includeLanguage: true,
+      includeSecHeaders: false
+    }
   })
 };
 
@@ -223,7 +281,11 @@ const authLimiters = {
   passwordReset: bypassInTests(authLimitersRaw.passwordReset),
   profileUpdate: bypassInTests(authLimitersRaw.profileUpdate),
   api: bypassInTests(authLimitersRaw.api),
-  formSubmission: bypassInTests(authLimitersRaw.formSubmission)
+  formSubmission: bypassInTests(authLimitersRaw.formSubmission),
+  bulkImport: bypassInTests(authLimitersRaw.bulkImport),
+  createInvitation: bypassInTests(authLimitersRaw.createInvitation),
+  bulkInvitations: bypassInTests(authLimitersRaw.bulkInvitations),
+  submitForm: bypassInTests(authLimitersRaw.submitForm)
 };
 
 // Utility functions for enhanced rate limiting

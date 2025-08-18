@@ -209,10 +209,12 @@ class PerformanceAlerting extends EventEmitter {
 
     SecureLogger.logInfo('Starting performance alerting system');
 
-    // Listen to real-time metrics events
-    this.realTimeMetrics.on('metrics-updated', this.checkAlertConditions.bind(this));
-    this.realTimeMetrics.on('alert-triggered', this.handleMetricsAlert.bind(this));
-    this.realTimeMetrics.on('alert-resolved', this.handleMetricsAlertResolved.bind(this));
+    // Listen to real-time metrics events if available
+    if (this.realTimeMetrics && typeof this.realTimeMetrics.on === 'function') {
+      this.realTimeMetrics.on('metrics-updated', this.checkAlertConditions.bind(this));
+      this.realTimeMetrics.on('alert-triggered', this.handleMetricsAlert.bind(this));
+      this.realTimeMetrics.on('alert-resolved', this.handleMetricsAlertResolved.bind(this));
+    }
 
     this.isActive = true;
     this.emit('alerting-started');
@@ -228,10 +230,12 @@ class PerformanceAlerting extends EventEmitter {
 
     SecureLogger.logInfo('Stopping performance alerting system');
 
-    // Remove event listeners
-    this.realTimeMetrics.removeAllListeners('metrics-updated');
-    this.realTimeMetrics.removeAllListeners('alert-triggered');
-    this.realTimeMetrics.removeAllListeners('alert-resolved');
+    // Remove event listeners if available
+    if (this.realTimeMetrics && typeof this.realTimeMetrics.removeAllListeners === 'function') {
+      this.realTimeMetrics.removeAllListeners('metrics-updated');
+      this.realTimeMetrics.removeAllListeners('alert-triggered');
+      this.realTimeMetrics.removeAllListeners('alert-resolved');
+    }
 
     // Clear all escalation timers
     for (const [ruleId] of this.escalationTimers.entries()) {
@@ -290,6 +294,10 @@ class PerformanceAlerting extends EventEmitter {
    * Get historical metrics for trend analysis
    */
   getHistoricalMetrics(count = 10) {
+    if (!this.realTimeMetrics || typeof this.realTimeMetrics.getRecentWindows !== 'function') {
+      return [];
+    }
+    
     const recentWindows = this.realTimeMetrics.getRecentWindows(30 * 60 * 1000); // 30 minutes
     
     return recentWindows.slice(-count).map(window => ({

@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Comparaison de réponses – Form-a-Friend</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/admin/mobile-responsive.css">
+  <script type="module" src="/admin/faf-admin.js"></script>
+  <script src="/admin/js/notificationCenter.js"></script>
+
+  <style>
+    /* Comparison specific styles */
+    .comparison-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      min-height: 400px;
+    }
+    
+    .comparison-panel {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      position: relative;
+    }
+    
+    .comparison-panel.yours {
+      border-left: 4px solid #3B82F6;
+    }
+    
+    .comparison-panel.theirs {
+      border-left: 4px solid #10B981;
+    }
+    
+    .comparison-panel h2 {
+      margin: 0 0 1rem 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .panel-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+    }
+    
+    .panel-icon.yours {
+      background-color: #3B82F6;
+    }
+    
+    .panel-icon.theirs {
+      background-color: #10B981;
+    }
+    
+    .response-item {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: #F8FAFC;
+      border-radius: 6px;
+      border: 1px solid #E2E8F0;
+    }
+    
+    .response-question {
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+    
+    .response-answer {
+      color: #6B7280;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+    
+    .response-photo {
+      margin-top: 0.5rem;
+    }
+    
+    .photo-thumbnail {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 2px solid #E5E7EB;
+      transition: border-color 0.2s;
+    }
+    
+    .photo-thumbnail:hover {
+      border-color: #3B82F6;
+    }
+    
+    .photo-caption {
+      font-size: 0.85rem;
+      color: #6B7280;
+      margin-top: 0.25rem;
+      font-style: italic;
+    }
+    
+    /* Lightbox styles */
+    .lightbox-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .lightbox-overlay img {
+      max-width: 90%;
+      max-height: 90%;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      border-radius: 4px;
+    }
+    
+    .lightbox-caption {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 1rem;
+      pointer-events: none;
+      max-width: 80%;
+      text-align: center;
+    }
+    
+    .lightbox-close {
+      position: absolute;
+      top: 1rem; right: 1rem;
+      color: white;
+      font-size: 2rem;
+      cursor: pointer;
+      user-select: none;
+      background: rgba(0,0,0,0.5);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+    }
+    
+    .lightbox-close:hover {
+      background: rgba(0,0,0,0.7);
+    }
+    
+    /* Month navigation */
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .month-nav button {
+      background: #F3F4F6;
+      border: 1px solid #D1D5DB;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+    }
+    
+    .month-nav button:hover:not(:disabled) {
+      background: #E5E7EB;
+      border-color: #9CA3AF;
+    }
+    
+    .month-nav button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .month-nav select {
+      background: white;
+      border: 1px solid #D1D5DB;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      cursor: pointer;
+      min-width: 200px;
+    }
+    
+    .month-nav select:focus {
+      outline: none;
+      border-color: #3B82F6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Loading and error states */
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+      color: #6B7280;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #E5E7EB;
+      border-top: 3px solid #3B82F6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .error-state {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 8px;
+      padding: 1.5rem;
+      color: #B91C1C;
+      text-align: center;
+      margin: 1rem 0;
+    }
+    
+    .empty-state {
+      background: #F9FAFB;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 3rem;
+      text-align: center;
+      color: #6B7280;
+    }
+    
+    .completion-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-left: 0.5rem;
+    }
+    
+    .completion-high {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+    
+    .completion-medium {
+      background: #FEF3C7;
+      color: #92400E;
+    }
+    
+    .completion-low {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .comparison-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .comparison-panel {
+        padding: 1rem;
+      }
+      
+      .month-nav {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      
+      .month-nav select {
+        min-width: 100%;
+      }
+      
+      .photo-thumbnail {
+        width: 100px;
+        height: 100px;
+      }
+    }
+    
+    /* Dashboard navigation styles */
+    .dashboard-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .dashboard-nav .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #6B7280;
+      font-size: 0.9rem;
+    }
+    
+    .breadcrumb a {
+      color: #3B82F6;
+      text-decoration: none;
+    }
+    
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+    
+    .breadcrumb .separator {
+      color: #9CA3AF;
+    }
+    
+    @media (max-width: 768px) {
+      .dashboard-nav {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+      }
+      
+      .dashboard-nav .nav-links {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 p-4">
+  <!-- Skip link for keyboard navigation -->
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  
+  <!-- Navigation -->
+  <nav class="dashboard-nav" role="navigation" aria-label="Navigation comparaison">
+    <div class="breadcrumb">
+      <a href="/admin" aria-label="Retour au tableau de bord">🏠 Tableau de bord</a>
+      <span class="separator">›</span>
+      <a href="/admin/contacts.html" aria-label="Retour aux contacts">📞 Contacts</a>
+      <span class="separator">›</span>
+      <span>Comparaison</span>
+    </div>
+    <div class="nav-links">
+      <!-- Notification Center will be inserted here -->
+      <a href="/admin/contacts.html" class="text-blue-600 hover:underline">
+        ← Retour aux contacts
+      </a>
+      <a href="/logout" class="text-red-600 hover:underline">Déconnexion</a>
+    </div>
+  </nav>
+
+  <main id="main-content" class="container mx-auto max-w-6xl" role="main">
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        Comparaison de réponses
+      </h1>
+      <p id="comparisonDescription" class="text-gray-600">
+        Chargement des informations de comparaison...
+      </p>
+    </div>
+    
+    <!-- Error/Alert messages -->
+    <div id="alertMessage" class="hidden mb-4 p-4 rounded-lg" 
+         role="alert" aria-live="assertive"></div>
+    
+    <!-- Month Navigation -->
+    <div class="month-nav">
+      <button type="button" id="prevMonthBtn" aria-label="Mois précédent">
+        ←
+      </button>
+      
+      <div class="flex flex-col items-center">
+        <label for="monthSelector" class="sr-only">Sélectionner un mois</label>
+        <select id="monthSelector" aria-describedby="month-help">
+          <option value="" disabled selected>Chargement des mois...</option>
+        </select>
+        <div id="month-help" class="text-xs text-gray-500 mt-1">
+          Sélectionnez un mois pour comparer vos réponses
+        </div>
+      </div>
+      
+      <button type="button" id="nextMonthBtn" aria-label="Mois suivant">
+        →
+      </button>
+    </div>
+    
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Chargement de la comparaison...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div id="errorState" class="error-state hidden">
+      <h3 class="font-semibold mb-2">Erreur lors du chargement</h3>
+      <p id="errorMessage">Une erreur inattendue s'est produite.</p>
+      <button type="button" id="retryBtn" class="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+        Réessayer
+      </button>
+    </div>
+    
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state hidden">
+      <h3 class="font-semibold mb-2">Aucune donnée à comparer</h3>
+      <p>Aucune réponse trouvée pour ce mois ou ce contact.</p>
+      <div class="mt-4">
+        <a href="/admin/contacts.html" class="text-blue-600 hover:underline">
+          ← Retour aux contacts
+        </a>
+      </div>
+    </div>
+    
+    <!-- Comparison Container -->
+    <div id="comparisonContainer" class="comparison-container hidden">
+      <!-- Your responses panel -->
+      <div class="comparison-panel yours">
+        <h2>
+          <span class="panel-icon yours"></span>
+          Vos réponses
+          <span id="yourCompletion" class="completion-badge"></span>
+        </h2>
+        <div id="yourResponses" class="responses-list">
+          <!-- Will be populated by JavaScript -->
+        </div>
+        <div id="yourFreeText" class="free-text-section hidden">
+          <h4 class="font-semibold text-gray-700 mb-2">Commentaire libre</h4>
+          <div class="response-answer" id="yourFreeTextContent"></div>
+        </div>
+      </div>
+      
+      <!-- Contact's responses panel -->
+      <div class="comparison-panel theirs">
+        <h2>
+          <span class="panel-icon theirs"></span>
+          <span id="contactName">Contact</span>
+          <span id="contactCompletion" class="completion-badge"></span>
+        </h2>
+        <div id="contactResponses" class="responses-list">
+          <!-- Will be populated by JavaScript -->
+        </div>
+        <div id="contactFreeText" class="free-text-section hidden">
+          <h4 class="font-semibold text-gray-700 mb-2">Commentaire libre</h4>
+          <div class="response-answer" id="contactFreeTextContent"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Compatibility Analysis (Optional section) -->
+    <div id="compatibilitySection" class="hidden mt-6 bg-white p-6 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-4 text-center">Analyse de compatibilité</h3>
+      <div id="compatibilityContent">
+        <!-- Will be populated by JavaScript if available -->
+      </div>
+    </div>
+  </main>
+  
+  <!-- Lightbox for photo viewing -->
+  <div id="lightbox" class="lightbox-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="lightbox-caption">
+    <div class="lightbox-close" aria-label="Fermer l'image agrandie" role="button" tabindex="0">×</div>
+    <img id="lightboxImage" src="" alt="" />
+    <div id="lightboxCaption" class="lightbox-caption"></div>
+  </div>
+  
+  <script type="module">
+    import { AdminAPI, Utils, UI } from '/admin/faf-admin.js';
+    
+    // Global state
+    let currentContactId = null;
+    let currentMonth = null;
+    let availableMonths = [];
+    let comparisonData = null;
+    let userProfile = null;
+    
+    // DOM elements
+    const elements = {
+      monthSelector: document.getElementById('monthSelector'),
+      prevMonthBtn: document.getElementById('prevMonthBtn'),
+      nextMonthBtn: document.getElementById('nextMonthBtn'),
+      loadingState: document.getElementById('loadingState'),
+      errorState: document.getElementById('errorState'),
+      emptyState: document.getElementById('emptyState'),
+      comparisonContainer: document.getElementById('comparisonContainer'),
+      retryBtn: document.getElementById('retryBtn'),
+      comparisonDescription: document.getElementById('comparisonDescription'),
+      lightbox: document.getElementById('lightbox'),
+      lightboxImage: document.getElementById('lightboxImage'),
+      lightboxCaption: document.getElementById('lightboxCaption')
+    };
+    
+    // Initialize comparison interface
+    async function init() {
+      try {
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        currentContactId = urlParams.get('contactId');
+        currentMonth = urlParams.get('month');
+        
+        if (!currentContactId) {
+          showError('ID de contact manquant dans l\'URL');
+          return;
+        }
+        
+        // Initialize API
+        await AdminAPI.init();
+        
+        // Load user profile
+        userProfile = await AdminAPI.request('/api/dashboard/profile');
+        
+        // Initialize notification center
+        await initializeNotificationCenter();
+        
+        // Load available months for this contact
+        await loadAvailableMonths();
+        
+        // Load initial comparison
+        if (currentMonth) {
+          elements.monthSelector.value = currentMonth;
+          await loadComparison();
+        } else if (availableMonths.length > 0) {
+          currentMonth = availableMonths[0].key;
+          elements.monthSelector.value = currentMonth;
+          await loadComparison();
+        }
+        
+      } catch (error) {
+        console.error('Failed to initialize comparison:', error);
+        showError('Erreur lors de l\'initialisation de la comparaison');
+      }
+    }
+    
+    // Initialize notification center
+    async function initializeNotificationCenter() {
+      try {
+        const notificationCenter = new NotificationCenter({
+          enableSSE: true,
+          enableBrowserNotifications: true,
+          apiBaseUrl: '/api/notifications'
+        });
+        
+        await notificationCenter.init();
+        console.log('✅ Notification center initialized');
+        
+      } catch (error) {
+        console.error('❌ Failed to initialize notification center:', error);
+        // Don't fail the comparison if notifications fail
+      }
+    }
+    
+    // Load available months for comparison
+    async function loadAvailableMonths() {
+      try {
+        // Get months where both user and contact have submissions
+        const timeline = await AdminAPI.request(
+          `/api/submissions/timeline/${currentContactId}?limit=100`,
+          {},
+          'Erreur lors du chargement de la timeline'
+        );
+        
+        if (timeline && timeline.timeline) {
+          availableMonths = timeline.timeline.map(entry => ({
+            key: entry.month,
+            label: entry.monthLabel
+          }));
+          
+          // Update contact name in description
+          if (timeline.contact) {
+            elements.comparisonDescription.textContent = 
+              `Comparer vos réponses avec celles de ${timeline.contact.username}`;
+            document.getElementById('contactName').textContent = timeline.contact.username;
+          }
+          
+          // Populate month selector
+          elements.monthSelector.innerHTML = '';
+          if (availableMonths.length === 0) {
+            elements.monthSelector.innerHTML = '<option value="" disabled>Aucun mois disponible</option>';
+          } else {
+            availableMonths.forEach(month => {
+              const option = document.createElement('option');
+              option.value = month.key;
+              option.textContent = month.label;
+              elements.monthSelector.appendChild(option);
+            });
+          }
+          
+          updateNavigationButtons();
+        }
+        
+      } catch (error) {
+        console.error('Failed to load available months:', error);
+        showError('Erreur lors du chargement des mois disponibles');
+      }
+    }
+    
+    // Load comparison data for selected month
+    async function loadComparison() {
+      if (!currentMonth || !currentContactId) return;
+      
+      showLoading();
+      
+      try {
+        comparisonData = await AdminAPI.request(
+          `/api/submissions/comparison/${currentContactId}/${currentMonth}`,
+          {},
+          'Erreur lors du chargement de la comparaison'
+        );
+        
+        if (comparisonData && comparisonData.comparison) {
+          displayComparison(comparisonData.comparison);
+          showComparison();
+        } else {
+          showEmpty();
+        }
+        
+      } catch (error) {
+        console.error('Failed to load comparison:', error);
+        showError('Erreur lors du chargement de la comparaison');
+      }
+    }
+    
+    // Display comparison data
+    function displayComparison(comparison) {
+      // Update completion badges
+      updateCompletionBadge('yourCompletion', comparison.yourSubmission.completionRate);
+      updateCompletionBadge('contactCompletion', comparison.contactSubmission.completionRate);
+      
+      // Display responses
+      displayResponses('yourResponses', comparison.yourSubmission.responses);
+      displayResponses('contactResponses', comparison.contactSubmission.responses);
+      
+      // Display free text
+      displayFreeText('yourFreeText', 'yourFreeTextContent', comparison.yourSubmission.freeText);
+      displayFreeText('contactFreeText', 'contactFreeTextContent', comparison.contactSubmission.freeText);
+      
+      // Display compatibility analysis if available
+      if (comparison.compatibility) {
+        displayCompatibilityAnalysis(comparison.compatibility);
+      }
+    }
+    
+    // Update completion badge
+    function updateCompletionBadge(elementId, completionRate) {
+      const badge = document.getElementById(elementId);
+      const rate = completionRate || 0;
+      
+      badge.textContent = `${rate}%`;
+      badge.className = 'completion-badge ';
+      
+      if (rate >= 80) {
+        badge.className += 'completion-high';
+      } else if (rate >= 50) {
+        badge.className += 'completion-medium';
+      } else {
+        badge.className += 'completion-low';
+      }
+    }
+    
+    // Display responses in a panel
+    function displayResponses(containerId, responses) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      
+      if (!responses || responses.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 italic">Aucune réponse pour ce mois</p>';
+        return;
+      }
+      
+      responses.forEach(response => {
+        const responseEl = createResponseElement(response);
+        container.appendChild(responseEl);
+      });
+    }
+    
+    // Create response element
+    function createResponseElement(response) {
+      const responseEl = document.createElement('div');
+      responseEl.className = 'response-item';
+      
+      // Question
+      const questionEl = document.createElement('div');
+      questionEl.className = 'response-question';
+      questionEl.textContent = Utils.unescapeHTML(response.questionId);
+      responseEl.appendChild(questionEl);
+      
+      // Answer (text)
+      if (response.answer) {
+        const answerEl = document.createElement('div');
+        answerEl.className = 'response-answer';
+        answerEl.textContent = Utils.unescapeHTML(response.answer);
+        responseEl.appendChild(answerEl);
+      }
+      
+      // Photo
+      if (response.photoUrl) {
+        const photoEl = document.createElement('div');
+        photoEl.className = 'response-photo';
+        
+        const img = document.createElement('img');
+        img.src = response.photoUrl;
+        img.alt = response.photoCaption || 'Photo de réponse';
+        img.className = 'photo-thumbnail';
+        img.loading = 'lazy';
+        
+        // Add click handler for lightbox
+        img.addEventListener('click', () => {
+          openLightbox(response.photoUrl, response.photoCaption || '');
+        });
+        
+        // Add keyboard support
+        img.tabIndex = 0;
+        img.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openLightbox(response.photoUrl, response.photoCaption || '');
+          }
+        });
+        
+        photoEl.appendChild(img);
+        
+        // Photo caption
+        if (response.photoCaption) {
+          const captionEl = document.createElement('div');
+          captionEl.className = 'photo-caption';
+          captionEl.textContent = Utils.unescapeHTML(response.photoCaption);
+          photoEl.appendChild(captionEl);
+        }
+        
+        responseEl.appendChild(photoEl);
+      }
+      
+      return responseEl;
+    }
+    
+    // Display free text section
+    function displayFreeText(sectionId, contentId, freeText) {
+      const section = document.getElementById(sectionId);
+      const content = document.getElementById(contentId);
+      
+      if (freeText && freeText.trim()) {
+        content.textContent = Utils.unescapeHTML(freeText);
+        section.classList.remove('hidden');
+      } else {
+        section.classList.add('hidden');
+      }
+    }
+    
+    // Display compatibility analysis
+    function displayCompatibilityAnalysis(compatibility) {
+      const section = document.getElementById('compatibilitySection');
+      const content = document.getElementById('compatibilityContent');
+      
+      if (!compatibility.overallScore) {
+        section.classList.add('hidden');
+        return;
+      }
+      
+      const score = compatibility.overallScore;
+      const scoreColor = score >= 75 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-red-600';
+      
+      content.innerHTML = `
+        <div class="text-center mb-4">
+          <div class="text-3xl font-bold ${scoreColor}">${score}%</div>
+          <div class="text-gray-600">Score de compatibilité</div>
+        </div>
+        
+        ${compatibility.matches && compatibility.matches.length > 0 ? `
+          <div class="mb-4">
+            <h4 class="font-semibold text-green-700 mb-2">Points communs</h4>
+            <ul class="list-disc list-inside text-sm text-gray-700">
+              ${compatibility.matches.map(match => `<li>${match}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+        
+        ${compatibility.differences && compatibility.differences.length > 0 ? `
+          <div class="mb-4">
+            <h4 class="font-semibold text-red-700 mb-2">Différences</h4>
+            <ul class="list-disc list-inside text-sm text-gray-700">
+              ${compatibility.differences.map(diff => `<li>${diff}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+      `;
+      
+      section.classList.remove('hidden');
+    }
+    
+    // Open photo lightbox
+    function openLightbox(photoUrl, caption) {
+      elements.lightboxImage.src = photoUrl;
+      elements.lightboxImage.alt = caption || 'Photo agrandie';
+      elements.lightboxCaption.textContent = caption || '';
+      elements.lightbox.classList.remove('hidden');
+      
+      // Focus management for accessibility
+      elements.lightbox.focus();
+      
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+    }
+    
+    // Close photo lightbox
+    function closeLightbox() {
+      elements.lightbox.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+    
+    // Update navigation buttons state
+    function updateNavigationButtons() {
+      if (availableMonths.length === 0) {
+        elements.prevMonthBtn.disabled = true;
+        elements.nextMonthBtn.disabled = true;
+        return;
+      }
+      
+      const currentIndex = availableMonths.findIndex(m => m.key === currentMonth);
+      
+      elements.prevMonthBtn.disabled = currentIndex <= 0;
+      elements.nextMonthBtn.disabled = currentIndex >= availableMonths.length - 1;
+    }
+    
+    // Navigate to previous month
+    function navigateToPreviousMonth() {
+      const currentIndex = availableMonths.findIndex(m => m.key === currentMonth);
+      if (currentIndex > 0) {
+        currentMonth = availableMonths[currentIndex - 1].key;
+        elements.monthSelector.value = currentMonth;
+        updateNavigationButtons();
+        loadComparison();
+      }
+    }
+    
+    // Navigate to next month
+    function navigateToNextMonth() {
+      const currentIndex = availableMonths.findIndex(m => m.key === currentMonth);
+      if (currentIndex < availableMonths.length - 1) {
+        currentMonth = availableMonths[currentIndex + 1].key;
+        elements.monthSelector.value = currentMonth;
+        updateNavigationButtons();
+        loadComparison();
+      }
+    }
+    
+    // UI State Management
+    function showLoading() {
+      elements.loadingState.classList.remove('hidden');
+      elements.errorState.classList.add('hidden');
+      elements.emptyState.classList.add('hidden');
+      elements.comparisonContainer.classList.add('hidden');
+    }
+    
+    function showError(message) {
+      elements.loadingState.classList.add('hidden');
+      elements.errorState.classList.remove('hidden');
+      elements.emptyState.classList.add('hidden');
+      elements.comparisonContainer.classList.add('hidden');
+      
+      document.getElementById('errorMessage').textContent = message;
+    }
+    
+    function showEmpty() {
+      elements.loadingState.classList.add('hidden');
+      elements.errorState.classList.add('hidden');
+      elements.emptyState.classList.remove('hidden');
+      elements.comparisonContainer.classList.add('hidden');
+    }
+    
+    function showComparison() {
+      elements.loadingState.classList.add('hidden');
+      elements.errorState.classList.add('hidden');
+      elements.emptyState.classList.add('hidden');
+      elements.comparisonContainer.classList.remove('hidden');
+    }
+    
+    // Event Listeners
+    elements.monthSelector.addEventListener('change', (e) => {
+      currentMonth = e.target.value;
+      updateNavigationButtons();
+      loadComparison();
+    });
+    
+    elements.prevMonthBtn.addEventListener('click', navigateToPreviousMonth);
+    elements.nextMonthBtn.addEventListener('click', navigateToNextMonth);
+    
+    elements.retryBtn.addEventListener('click', () => {
+      loadComparison();
+    });
+    
+    // Lightbox event listeners
+    elements.lightbox.addEventListener('click', (e) => {
+      if (e.target === elements.lightbox) {
+        closeLightbox();
+      }
+    });
+    
+    document.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (!elements.lightbox.classList.contains('hidden')) {
+        if (e.key === 'Escape') {
+          closeLightbox();
+        }
+      }
+      
+      // Month navigation with arrow keys
+      if (e.key === 'ArrowLeft' && !elements.prevMonthBtn.disabled) {
+        navigateToPreviousMonth();
+      } else if (e.key === 'ArrowRight' && !elements.nextMonthBtn.disabled) {
+        navigateToNextMonth();
+      }
+    });
+    
+    // Initialize when DOM is ready
+    init();
+  </script>
+</body>
+</html>

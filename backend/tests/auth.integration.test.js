@@ -3,27 +3,31 @@ const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
 const MongoStore = require('connect-mongo');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-
 const adminRoutes = require('../routes/adminRoutes');
 const Response = require('../models/Response');
 
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
 describe('Admin Authentication Integration Tests', () => {
-  let app;
-  let mongoServer;
   let mongoUri;
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
+    
     mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-  });
+    });
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+    });
 
   beforeEach(async () => {
     await Response.deleteMany({});

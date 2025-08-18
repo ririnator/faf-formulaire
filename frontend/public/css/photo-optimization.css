@@ -1,0 +1,508 @@
+/**
+ * Photo Optimization Styles for Form-a-Friend
+ * Mobile-first responsive design with touch-optimized interactions
+ */
+
+/* =============================================================================
+   PHOTO UPLOAD CONTAINER
+   ============================================================================= */
+
+.photo-upload-container {
+  margin: 15px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.photo-upload-container.drag-over {
+  border-color: #007bff;
+  background: #e3f2fd;
+  transform: scale(1.02);
+}
+
+.upload-zone {
+  padding: 30px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.upload-zone:hover {
+  background: #e9ecef;
+}
+
+.upload-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  opacity: 0.7;
+}
+
+.upload-text {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  color: #495057;
+}
+
+.upload-text strong {
+  color: #007bff;
+}
+
+.upload-hint {
+  font-size: 0.9rem;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+/* =============================================================================
+   PHOTO PREVIEWS
+   ============================================================================= */
+
+.photo-previews {
+  padding: 15px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  background: white;
+}
+
+.photo-preview {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideIn 0.4s ease forwards;
+}
+
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.photo-preview.loaded {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.photo-preview.compressed {
+  border: 2px solid #28a745;
+}
+
+.photo-preview.error {
+  border: 2px solid #dc3545;
+}
+
+.preview-container {
+  position: relative;
+  background: #f8f9fa;
+}
+
+.preview-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.photo-preview:hover .preview-image {
+  transform: scale(1.05);
+}
+
+.preview-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  color: white;
+  padding: 15px;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.photo-preview:hover .preview-overlay,
+.photo-preview.compressed .preview-overlay {
+  transform: translateY(0);
+}
+
+.preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.file-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-size {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.compression-savings {
+  font-size: 0.8rem;
+  color: #28a745;
+  font-weight: 600;
+}
+
+.preview-error {
+  text-align: center;
+  color: #dc3545;
+  font-size: 0.9rem;
+}
+
+/* =============================================================================
+   PREVIEW ACTIONS
+   ============================================================================= */
+
+.preview-actions {
+  padding: 12px;
+  background: white;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.preview-actions button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px; /* Touch-friendly minimum */
+}
+
+.btn-compress {
+  background: #007bff;
+  color: white;
+}
+
+.btn-compress:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.btn-remove {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-remove:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.preview-actions button:active {
+  transform: translateY(1px);
+}
+
+/* =============================================================================
+   COMPRESSION PROGRESS
+   ============================================================================= */
+
+.compression-progress {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.9);
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+  min-width: 200px;
+  text-align: center;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #007bff;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+/* =============================================================================
+   NOTIFICATIONS
+   ============================================================================= */
+
+.photo-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  z-index: 1000;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+.photo-notification.success {
+  background: #28a745;
+}
+
+.photo-notification.error {
+  background: #dc3545;
+}
+
+.photo-notification[style*="block"] {
+  transform: translateX(0);
+}
+
+/* =============================================================================
+   MOBILE OPTIMIZATIONS
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .photo-upload-container {
+    margin: 10px -15px; /* Extend to screen edges */
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .upload-zone {
+    padding: 25px 15px;
+    min-height: 100px;
+  }
+  
+  .upload-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+  }
+  
+  .upload-text {
+    font-size: 1rem;
+  }
+  
+  .upload-hint {
+    font-size: 0.85rem;
+  }
+  
+  .photo-previews {
+    grid-template-columns: 1fr;
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .preview-image {
+    height: 180px;
+  }
+  
+  .preview-overlay {
+    transform: translateY(0); /* Always show on mobile */
+    background: rgba(0, 0, 0, 0.7);
+  }
+  
+  .preview-actions {
+    padding: 10px;
+    gap: 6px;
+  }
+  
+  .preview-actions button {
+    padding: 10px 8px;
+    font-size: 0.8rem;
+    min-height: 48px; /* Larger touch targets on mobile */
+  }
+  
+  .compression-progress {
+    padding: 15px;
+    min-width: 180px;
+  }
+  
+  .photo-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
+
+/* =============================================================================
+   TOUCH OPTIMIZATIONS
+   ============================================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+  /* Touch device optimizations */
+  
+  .upload-zone {
+    min-height: 130px;
+    padding: 30px 15px;
+  }
+  
+  .photo-preview:hover .preview-image {
+    transform: none; /* Disable hover effects on touch */
+  }
+  
+  .preview-overlay {
+    transform: translateY(0); /* Always visible on touch devices */
+  }
+  
+  .preview-actions button {
+    min-height: 50px;
+    font-size: 0.9rem;
+  }
+  
+  /* Enhance tap feedback */
+  .upload-zone:active,
+  .preview-actions button:active {
+    background: #e9ecef;
+    transform: scale(0.98);
+  }
+}
+
+/* =============================================================================
+   HIGH DPI DISPLAYS
+   ============================================================================= */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .preview-image {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* =============================================================================
+   REDUCED MOTION
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-preview,
+  .preview-image,
+  .preview-overlay,
+  .progress-fill,
+  .photo-notification {
+    transition: none;
+    animation: none;
+  }
+  
+  .photo-preview {
+    opacity: 1;
+    transform: none;
+  }
+  
+  .photo-upload-container.drag-over {
+    transform: none;
+  }
+}
+
+/* =============================================================================
+   DARK MODE SUPPORT
+   ============================================================================= */
+
+@media (prefers-color-scheme: dark) {
+  .photo-upload-container {
+    background: #2d3748;
+    border-color: #4a5568;
+  }
+  
+  .photo-upload-container.drag-over {
+    background: #2a4a6b;
+    border-color: #3182ce;
+  }
+  
+  .upload-zone {
+    color: #e2e8f0;
+  }
+  
+  .upload-zone:hover {
+    background: #374151;
+  }
+  
+  .upload-text {
+    color: #e2e8f0;
+  }
+  
+  .upload-hint {
+    color: #a0aec0;
+  }
+  
+  .photo-previews {
+    background: #1a202c;
+  }
+  
+  .preview-container {
+    background: #2d3748;
+  }
+  
+  .preview-actions {
+    background: #2d3748;
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ============================================================================= */
+
+/* Focus indicators */
+.upload-zone:focus,
+.preview-actions button:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* Screen reader support */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .photo-upload-container {
+    border-width: 3px;
+  }
+  
+  .preview-actions button {
+    border: 2px solid;
+  }
+  
+  .btn-compress {
+    border-color: #0056b3;
+  }
+  
+  .btn-remove {
+    border-color: #c82333;
+  }
+}

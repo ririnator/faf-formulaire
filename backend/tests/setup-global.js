@@ -6,9 +6,13 @@ let mongoServer;
 
 const setupGlobalDatabase = async () => {
   try {
-    // Close existing connections
+    // Set test environment variables
+    process.env.NODE_ENV = 'test';
+    process.env.DISABLE_RATE_LIMITING = 'true';
+
+    // Close existing connections properly
     if (mongoose.connection.readyState !== 0) {
-      await mongoose.connection.close();
+      await mongoose.disconnect();
     }
 
     // Create new in-memory MongoDB instance
@@ -29,6 +33,10 @@ const setupGlobalDatabase = async () => {
 
     console.log('✅ Global MongoDB test instance ready');
     
+    // Initialize session store now that MongoDB is ready
+    const SessionConfig = require('../config/session');
+    SessionConfig.initializeTestSessionStore();
+    
   } catch (error) {
     console.error('❌ Failed to setup global test database:', error);
     throw error;
@@ -37,9 +45,13 @@ const setupGlobalDatabase = async () => {
 
 const cleanupGlobalDatabase = async () => {
   try {
+    // Reset session store cache before cleanup
+    const SessionConfig = require('../config/session');
+    SessionConfig.resetSessionStoreCache();
+    
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.dropDatabase();
-      await mongoose.connection.close();
+      await mongoose.disconnect();
     }
     
     if (mongoServer) {
@@ -59,6 +71,10 @@ const cleanupBetweenTests = async () => {
       collection.deleteMany({}).catch(() => {}) // Ignore errors
     );
     await Promise.allSettled(promises);
+    
+    // Reset session store cache to ensure fresh state
+    const SessionConfig = require('../config/session');
+    SessionConfig.resetSessionStoreCache();
   }
 };
 

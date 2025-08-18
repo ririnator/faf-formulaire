@@ -4,9 +4,18 @@
  */
 
 const request = require('supertest');
-const app = require('../app');
-const mongoose = require('mongoose');
 const Response = require('../models/Response');
+
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
 
 describe('🔧 Edge Cases Fixes Security Tests', () => {
   let adminSession = null;
@@ -38,8 +47,7 @@ describe('🔧 Edge Cases Fixes Security Tests', () => {
 
   afterAll(async () => {
     await Response.deleteMany({});
-    await mongoose.connection.close();
-  });
+    });
 
   describe('🌐 IP Address Handling Fix', () => {
     test('should handle modern Node.js socket.remoteAddress', async () => {

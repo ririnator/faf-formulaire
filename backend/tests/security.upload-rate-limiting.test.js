@@ -4,10 +4,18 @@
  */
 
 const request = require('supertest');
-const app = require('../app');
 const path = require('path');
 const fs = require('fs');
-const mongoose = require('mongoose');
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
 
 describe('📁 Upload Rate Limiting and Security Tests', () => {
   let adminSession = null;
@@ -55,8 +63,7 @@ describe('📁 Upload Rate Limiting and Security Tests', () => {
       }
     });
 
-    await mongoose.connection.close();
-  });
+    });
 
   describe('📏 File Size Quota Enforcement', () => {
     test('should enforce maximum file size limits', async () => {

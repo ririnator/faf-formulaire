@@ -122,6 +122,52 @@ class SecureLogger {
       console.log(`[${timestamp}] AUDIT: Action=${action} User=${anonymousId}`, sanitizedMetadata);
     }
   }
+
+  // Security event logging for email domain validation and other security events
+  static logSecurityEvent(eventType, data = {}) {
+    const timestamp = new Date().toISOString();
+    
+    // Sanitize sensitive information before logging
+    const sanitizedData = this.sanitizeForLogging(data);
+    
+    // Special handling for email domain blocking events
+    if (eventType === 'email_domain_blocked') {
+      // Partially mask email for privacy while keeping domain visible for analysis
+      if (sanitizedData.email) {
+        const emailParts = sanitizedData.email.split('@');
+        if (emailParts.length === 2) {
+          const localPart = emailParts[0];
+          const maskedLocal = localPart.length > 3 
+            ? localPart.substring(0, 2) + '***' + localPart.slice(-1)
+            : '***';
+          sanitizedData.maskedEmail = maskedLocal + '@' + emailParts[1];
+          delete sanitizedData.email; // Remove original email
+        }
+      }
+    }
+    
+    console.warn(`[${timestamp}] SECURITY: ${eventType}`, sanitizedData);
+  }
+
+  // Rate limit event logging
+  static logRateLimitEvent(eventType, data = {}) {
+    const timestamp = new Date().toISOString();
+    const sanitizedData = this.sanitizeForLogging(data);
+    
+    console.warn(`[${timestamp}] RATE_LIMIT: ${eventType}`, sanitizedData);
+  }
+
+  // Failed authentication attempt logging
+  static logAuthFailure(attemptType, data = {}) {
+    const timestamp = new Date().toISOString();
+    const sanitizedData = this.sanitizeForLogging(data);
+    
+    // Never log actual passwords or sensitive auth data
+    if (sanitizedData.password) delete sanitizedData.password;
+    if (sanitizedData.token) delete sanitizedData.token;
+    
+    console.warn(`[${timestamp}] AUTH_FAILURE: ${attemptType}`, sanitizedData);
+  }
 }
 
 module.exports = SecureLogger;

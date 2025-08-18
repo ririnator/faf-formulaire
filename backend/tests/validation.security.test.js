@@ -43,7 +43,7 @@ describe('Validation Middleware Security Tests', () => {
         .send(maliciousData)
         .expect(200);
 
-      expect(response.body.sanitized.name).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;&#x2F;script&gt;John');
+      expect(response.body.sanitized.name).toBe('&lt;script&gt;alert&#x28;&quot;xss&quot;&#x29;&lt;&#x2F;script&gt;John');
       expect(response.body.sanitized.name).not.toContain('<script>');
     });
 
@@ -107,8 +107,8 @@ describe('Validation Middleware Security Tests', () => {
       // Verify all dangerous characters are escaped
       expect(response.body.sanitized.responses[0].question).not.toContain('<svg');
       expect(response.body.sanitized.responses[0].question).toContain('&lt;svg');
-      // Single quotes should be escaped as &#39; (par smartEscape)
-      expect(response.body.sanitized.responses[0].answer).toContain('&#39;');
+      // Single quotes should be escaped as hex format (by smartEscape)
+      expect(response.body.sanitized.responses[0].answer).toContain('&#x27;');
     });
 
     test('should preserve legitimate content while escaping malicious parts', async () => {

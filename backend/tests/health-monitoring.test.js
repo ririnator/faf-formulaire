@@ -1,8 +1,18 @@
 // Health Monitoring System Tests
-const mongoose = require('mongoose');
 const MigrationHealthMonitor = require('../utils/migrationHealthMonitor');
 const Response = require('../models/Response');
 const User = require('../models/User');
+
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
 
 describe('🏥 Migration Health Monitoring System', () => {
   let healthMonitor;

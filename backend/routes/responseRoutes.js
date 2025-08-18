@@ -6,15 +6,17 @@ const router = express.Router();
 
 const Response = require('../models/Response');
 const User = require('../models/User');
-const ResponseService = require('../services/responseService');
+const ServiceFactory = require('../services/serviceFactory');
 const { validateResponseStrict, validateResponseConditional, handleValidationErrors, sanitizeResponse } = require('../middleware/validation');
 const { createFormBodyParser } = require('../middleware/bodyParser');
 const { detectAuthMethod, requireAuth } = require('../middleware/hybridAuth');
+const { createQuerySanitizationMiddleware, sanitizeMongoInput, sanitizeObjectId } = require('../middleware/querySanitization');
 
 // POST /api/response with form-specific body parser (2MB limit for text data)
 router.post(
   '/',
   createFormBodyParser(),
+  createQuerySanitizationMiddleware(),
   detectAuthMethod,
   validateResponseConditional,
   handleValidationErrors,
@@ -31,7 +33,15 @@ router.post(
 
     if (req.authMethod === 'user') {
       // NOUVEAU système - utilisateur connecté
-      const currentUser = await User.findById(req.session.userId);
+      const sanitizedUserId = sanitizeObjectId(req.session.userId);
+      if (!sanitizedUserId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Session utilisateur invalide'
+        });
+      }
+      
+      const currentUser = await User.findById(sanitizedUserId);
       if (!currentUser) {
         return res.status(401).json({
           success: false,
@@ -71,7 +81,7 @@ router.post(
         );
 
         // Vérifier conflit (réponse admin par un autre utilisateur)
-        if (saved.userId && saved.userId.toString() !== currentUser._id.toString()) {
+        if (saved.userId && !saved.userId.equals(currentUser._id)) {
           return res.status(409).json({
             success: false,
             error: 'Une réponse admin existe déjà pour ce mois'
@@ -80,8 +90,8 @@ router.post(
       } else {
         // Vérifier que l'utilisateur normal n'a pas déjà répondu ce mois
         const existing = await Response.findOne({
-          userId: currentUser._id,
-          month
+          userId: sanitizeObjectId(currentUser._id),
+          month: sanitizeMongoInput(month)
         });
 
         if (existing) {
@@ -117,6 +127,8 @@ router.post(
       }
 
       const isAdmin = name.trim().toLowerCase() === process.env.FORM_ADMIN_NAME?.toLowerCase();
+      const factory = ServiceFactory.create();
+      const ResponseService = factory.getResponseService();
       const token = isAdmin ? null : ResponseService.generateToken();
 
       responseData = {
@@ -129,27 +141,19 @@ router.post(
       };
 
       if (isAdmin) {
-        // Pour les admin legacy, utiliser opération atomique
-        saved = await Response.findOneAndUpdate(
-          { month, isAdmin: true },
-          {
-            $setOnInsert: responseData
-          },
-          { 
-            upsert: true, 
-            new: true,
-            runValidators: true,
-            setDefaultsOnInsert: true
-          }
-        );
-
-        // Vérifier conflit
-        if (saved.name !== name.trim()) {
+        // Vérifier d'abord si une réponse admin existe déjà pour ce mois
+        const existingAdmin = await Response.findOne({ month, isAdmin: true });
+        if (existingAdmin) {
           return res.status(409).json({
             success: false,
-            error: 'Une réponse admin existe déjà pour ce mois'
+            error: 'Une réponse admin existe déjà pour ce mois',
+            message: 'Une réponse admin existe déjà pour ce mois.'
           });
         }
+
+        // Créer nouvelle réponse admin
+        saved = new Response(responseData);
+        await saved.save();
       } else {
         // Utilisateur normal legacy
         saved = new Response(responseData);

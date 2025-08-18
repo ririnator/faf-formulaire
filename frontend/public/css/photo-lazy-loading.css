@@ -1,0 +1,337 @@
+/**
+ * Photo Lazy Loading Styles for Form-a-Friend
+ * Progressive loading animations and mobile-optimized placeholders
+ */
+
+/* =============================================================================
+   LAZY LOADING STATES
+   ============================================================================= */
+
+img[data-lazy-src] {
+  background-color: #f0f0f0;
+  background-size: 50px 50px;
+  background-repeat: no-repeat;
+  background-position: center;
+  min-height: 200px;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+img.lazy-loading {
+  opacity: 0.7;
+  filter: blur(1px);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='%23999'%3E%3Ccircle cx='30' cy='50' r='4'%3E%3Canimate attributeName='opacity' dur='1s' values='0;1;0' repeatCount='indefinite' begin='0s'/%3E%3C/circle%3E%3Ccircle cx='50' cy='50' r='4'%3E%3Canimate attributeName='opacity' dur='1s' values='0;1;0' repeatCount='indefinite' begin='0.2s'/%3E%3C/circle%3E%3Ccircle cx='70' cy='50' r='4'%3E%3Canimate attributeName='opacity' dur='1s' values='0;1;0' repeatCount='indefinite' begin='0.4s'/%3E%3C/circle%3E%3C/g%3E%3C/svg%3E");
+  background-size: 60px;
+}
+
+img.lazy-loaded {
+  opacity: 1;
+  filter: none;
+  background-image: none;
+  background-color: transparent;
+}
+
+img.lazy-error {
+  opacity: 0.6;
+  background-color: #ffebee;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23f44336'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E");
+  background-size: 40px;
+}
+
+/* =============================================================================
+   PROGRESSIVE LOADING PLACEHOLDERS
+   ============================================================================= */
+
+.progressive-placeholder {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.progressive-placeholder::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") center/contain no-repeat;
+  opacity: 0.5;
+}
+
+/* =============================================================================
+   SKELETON LOADING ANIMATION
+   ============================================================================= */
+
+.skeleton-image {
+  background: linear-gradient(90deg, #f0f0f0 25%, rgba(240, 240, 240, 0.5) 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* =============================================================================
+   RESPONSIVE LOADING INDICATORS
+   ============================================================================= */
+
+.loading-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.loading-spinner-small {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top: 3px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-spinner-medium {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =============================================================================
+   QUALITY TRANSITION EFFECTS
+   ============================================================================= */
+
+.quality-transition {
+  position: relative;
+}
+
+.quality-transition img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.4s ease;
+}
+
+.quality-transition .low-quality {
+  opacity: 1;
+  filter: blur(2px);
+  z-index: 1;
+}
+
+.quality-transition .high-quality {
+  opacity: 0;
+  z-index: 2;
+}
+
+.quality-transition.loaded .low-quality {
+  opacity: 0;
+}
+
+.quality-transition.loaded .high-quality {
+  opacity: 1;
+  filter: none;
+}
+
+/* =============================================================================
+   NETWORK-AWARE LOADING
+   ============================================================================= */
+
+.slow-connection img[data-lazy-src] {
+  min-height: 150px; /* Smaller placeholders for slow connections */
+}
+
+.slow-connection .progressive-placeholder {
+  animation-duration: 2s; /* Slower animation for slow connections */
+}
+
+.fast-connection img[data-lazy-src] {
+  min-height: 250px; /* Larger placeholders for fast connections */
+}
+
+/* =============================================================================
+   MOBILE OPTIMIZATIONS
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  img[data-lazy-src] {
+    min-height: 150px;
+    background-size: 40px 40px;
+  }
+  
+  .progressive-placeholder::after {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .loading-spinner-medium {
+    width: 36px;
+    height: 36px;
+    border-width: 3px;
+  }
+  
+  /* Reduce animation complexity on mobile for better performance */
+  .skeleton-image {
+    animation-duration: 2s;
+  }
+  
+  .progressive-placeholder {
+    animation-duration: 2s;
+  }
+}
+
+/* =============================================================================
+   TOUCH DEVICE OPTIMIZATIONS
+   ============================================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+  /* Simplify animations on touch devices */
+  .progressive-placeholder,
+  .skeleton-image {
+    animation: none;
+    background: #f0f0f0;
+  }
+  
+  img.lazy-loading {
+    filter: none; /* Disable blur on touch devices for better performance */
+  }
+}
+
+/* =============================================================================
+   HIGH DPI DISPLAYS
+   ============================================================================= */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .progressive-placeholder::after,
+  img.lazy-loading {
+    background-size: 64px; /* Larger icons for high DPI displays */
+  }
+}
+
+/* =============================================================================
+   REDUCED MOTION
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  img[data-lazy-src],
+  .progressive-placeholder,
+  .skeleton-image,
+  .quality-transition img {
+    transition: none;
+    animation: none;
+  }
+  
+  .loading-spinner-small,
+  .loading-spinner-medium {
+    animation: none;
+    border-top-color: transparent;
+    opacity: 0.7;
+  }
+}
+
+/* =============================================================================
+   DARK MODE SUPPORT
+   ============================================================================= */
+
+@media (prefers-color-scheme: dark) {
+  img[data-lazy-src] {
+    background-color: #2d3748;
+  }
+  
+  .progressive-placeholder {
+    background: linear-gradient(90deg, #2d3748 25%, #4a5568 50%, #2d3748 75%);
+  }
+  
+  .skeleton-image {
+    background: linear-gradient(90deg, #2d3748 25%, rgba(74, 85, 104, 0.5) 50%, #2d3748 75%);
+  }
+  
+  img.lazy-error {
+    background-color: #2d1b1b;
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ============================================================================= */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus indicators for lazy-loaded images */
+img[data-lazy-src]:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  img[data-lazy-src] {
+    border: 1px solid;
+  }
+  
+  img.lazy-error {
+    border-color: #f44336;
+  }
+  
+  img.lazy-loaded {
+    border-color: #4caf50;
+  }
+}
+
+/* =============================================================================
+   PRINT STYLES
+   ============================================================================= */
+
+@media print {
+  .progressive-placeholder,
+  .skeleton-image,
+  .loading-indicator {
+    display: none;
+  }
+  
+  img[data-lazy-src] {
+    background: none;
+    opacity: 1;
+    filter: none;
+  }
+}

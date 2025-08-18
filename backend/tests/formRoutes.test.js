@@ -1,29 +1,30 @@
 const request = require('supertest');
 const express = require('express');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-
 const formRoutes = require('../routes/formRoutes');
 const Response = require('../models/Response');
 
-describe('Form Routes Tests', () => {
-  let app;
-  let mongoServer;
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
 
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
+describe('Form Routes Tests', () => {
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
     
     // Only connect if not already connected
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri);
-    }
+      }
   });
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+    });
 
   beforeEach(async () => {
     await Response.deleteMany({});

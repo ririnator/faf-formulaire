@@ -1,7 +1,5 @@
 // Critical Edge Cases for Production Readiness
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const User = require('../models/User');
 const Response = require('../models/Response');
 const TokenGenerator = require('../utils/tokenGenerator');
@@ -11,15 +9,20 @@ const express = require('express');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
 describe('Critical Edge Cases for Production', () => {
-  let mongoServer;
-  let app;
-
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-
+    
     // Setup test app with real middleware
     app = express();
     app.use(express.json());
@@ -40,8 +43,7 @@ describe('Critical Edge Cases for Production', () => {
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+    });
 
   beforeEach(async () => {
     await User.deleteMany({});

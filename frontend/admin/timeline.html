@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Timeline Contact – Form-a-Friend</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/admin/mobile-responsive.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script type="module" src="/admin/faf-admin.js"></script>
+  <script src="/admin/js/notificationCenter.js"></script>
+
+  <style>
+    /* Timeline specific styles */
+    .timeline-container {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      position: relative;
+    }
+    
+    .timeline-header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      margin: 1rem;
+      padding: 1.5rem;
+    }
+    
+    .timeline-content {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 1.5rem;
+      margin: 1rem;
+    }
+    
+    /* Sidebar with contact info and stats */
+    .timeline-sidebar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 1.5rem;
+      height: fit-content;
+      position: sticky;
+      top: 1rem;
+    }
+    
+    .contact-avatar-large {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.5rem;
+      margin: 0 auto 1rem;
+    }
+    
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .stat-item:last-child {
+      border-bottom: none;
+    }
+    
+    .stat-value {
+      font-weight: 600;
+      color: #3b82f6;
+    }
+    
+    /* Timeline visualization */
+    .timeline-main {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    
+    .timeline-track {
+      position: relative;
+      padding: 2rem 0;
+    }
+    
+    .timeline-line {
+      position: absolute;
+      left: 2rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, #3b82f6, #10b981);
+      border-radius: 1px;
+    }
+    
+    .timeline-item {
+      position: relative;
+      margin-left: 4rem;
+      margin-bottom: 2rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .timeline-item:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+    }
+    
+    .timeline-marker {
+      position: absolute;
+      left: -3rem;
+      top: 1rem;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    .marker-excellent { background: #10b981; }
+    .marker-high { background: #3b82f6; }
+    .marker-medium { background: #f59e0b; }
+    .marker-low { background: #ef4444; }
+    .marker-minimal { background: #6b7280; }
+    
+    .timeline-header-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .timeline-month {
+      font-weight: 600;
+      color: #1f2937;
+      font-size: 1.1rem;
+    }
+    
+    .timeline-date {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+    
+    .timeline-badges {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    
+    .completion-badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    
+    .badge-excellent { background: #d1fae5; color: #065f46; }
+    .badge-high { background: #dbeafe; color: #1e40af; }
+    .badge-medium { background: #fef3c7; color: #92400e; }
+    .badge-low { background: #fee2e2; color: #991b1b; }
+    .badge-minimal { background: #f3f4f6; color: #374151; }
+    
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: 0.5rem;
+    }
+    
+    .status-complete { background: #10b981; }
+    .status-partial { background: #f59e0b; }
+    
+    .timeline-content-item {
+      padding: 1rem;
+    }
+    
+    .response-preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    
+    .response-preview-item {
+      background: #f8fafc;
+      border-radius: 6px;
+      padding: 0.75rem;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .response-type-icon {
+      font-size: 0.875rem;
+      margin-right: 0.5rem;
+    }
+    
+    .response-preview-text {
+      font-size: 0.8rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+    
+    /* Engagement visualization */
+    .engagement-chart {
+      background: white;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .trend-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+    }
+    
+    .trend-improving { background: #d1fae5; color: #065f46; }
+    .trend-declining { background: #fee2e2; color: #991b1b; }
+    .trend-stable { background: #f3f4f6; color: #374151; }
+    
+    /* Loading and empty states */
+    .loading-timeline {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e5e7eb;
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .empty-timeline {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .timeline-content {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .timeline-sidebar {
+        position: static;
+        order: 2;
+      }
+      
+      .timeline-main {
+        order: 1;
+      }
+      
+      .timeline-item {
+        margin-left: 2rem;
+      }
+      
+      .timeline-marker {
+        left: -1.5rem;
+      }
+      
+      .timeline-line {
+        left: 1rem;
+      }
+      
+      .response-preview {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Action buttons */
+    .timeline-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .action-btn:hover {
+      transform: translateY(-1px);
+    }
+    
+    .btn-compare {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .btn-compare:hover {
+      background: #2563eb;
+    }
+    
+    .btn-view {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+    
+    .btn-view:hover {
+      background: #e5e7eb;
+    }
+    
+    /* Skip link for accessibility */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: #000;
+      color: #fff;
+      padding: 8px;
+      text-decoration: none;
+      z-index: 100;
+    }
+    
+    .skip-link:focus {
+      top: 6px;
+    }
+    
+    /* Filters */
+    .timeline-filters {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .filter-select {
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: white;
+      font-size: 0.9rem;
+    }
+    
+    .filter-select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- Skip link for keyboard navigation -->
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  
+  <div class="timeline-container">
+    <!-- Header with navigation -->
+    <div class="timeline-header">
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-4">
+          <a href="/admin/contacts.html" class="text-blue-600 hover:underline flex items-center gap-2">
+            ← Retour aux contacts
+          </a>
+          <div class="text-gray-400">|</div>
+          <h1 class="text-2xl font-bold text-gray-900">Timeline de contact</h1>
+        </div>
+        <div class="flex items-center gap-4">
+          <!-- Notification Center will be inserted here -->
+          <a href="/admin" class="text-blue-600 hover:underline">Tableau de bord</a>
+          <a href="/logout" class="text-red-600 hover:underline">Déconnexion</a>
+        </div>
+      </div>
+      
+      <!-- Alert Message -->
+      <div id="alertMessage" class="hidden mb-4 p-4 rounded-lg" 
+           role="alert" aria-live="assertive"></div>
+    </div>
+    
+    <main id="main-content" class="timeline-content" role="main">
+      <!-- Sidebar with contact info and stats -->
+      <aside class="timeline-sidebar" aria-label="Informations du contact">
+        <div id="contactInfo" class="hidden">
+          <div class="contact-avatar-large" id="contactAvatar">
+            <span id="contactInitials">?</span>
+          </div>
+          
+          <div class="text-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-900" id="contactName">Chargement...</h2>
+            <p class="text-gray-600" id="contactEmail"></p>
+          </div>
+          
+          <!-- Quick Stats -->
+          <div class="space-y-3" id="quickStats">
+            <div class="stat-item">
+              <span class="text-gray-700">Total soumissions</span>
+              <span class="stat-value" id="statTotalSubmissions">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="text-gray-700">Taux moyen</span>
+              <span class="stat-value" id="statAverageCompletion">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="text-gray-700">Consistance</span>
+              <span class="stat-value" id="statConsistency">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="text-gray-700">Activité récente</span>
+              <span class="stat-value" id="statRecentActivity">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="text-gray-700">Tendance</span>
+              <span class="stat-value" id="statTrend">-</span>
+            </div>
+          </div>
+          
+          <!-- Engagement Chart -->
+          <div class="engagement-chart">
+            <h3 class="text-lg font-semibold mb-3 text-center">Évolution de l'engagement</h3>
+            <canvas id="engagementChart" width="300" height="200"></canvas>
+          </div>
+          
+          <!-- Activity Chart -->
+          <div class="engagement-chart">
+            <h3 class="text-lg font-semibold mb-3 text-center">Activité mensuelle</h3>
+            <canvas id="activityChart" width="300" height="200"></canvas>
+          </div>
+        </div>
+        
+        <!-- Loading state for sidebar -->
+        <div id="sidebarLoading" class="loading-timeline">
+          <div class="loading-spinner"></div>
+          <p>Chargement des informations...</p>
+        </div>
+      </aside>
+      
+      <!-- Main timeline -->
+      <section class="timeline-main" aria-label="Timeline des soumissions">
+        <!-- Filters -->
+        <div class="timeline-filters">
+          <label for="timeRangeFilter" class="text-sm font-medium text-gray-700">Période:</label>
+          <select id="timeRangeFilter" class="filter-select" aria-label="Filtrer par période">
+            <option value="all">Toutes les périodes</option>
+            <option value="recent">3 derniers mois</option>
+            <option value="6months">6 derniers mois</option>
+            <option value="year">Cette année</option>
+          </select>
+          
+          <label for="completionFilter" class="text-sm font-medium text-gray-700">Completion:</label>
+          <select id="completionFilter" class="filter-select" aria-label="Filtrer par taux de completion">
+            <option value="all">Tous les taux</option>
+            <option value="complete">Complètes (≥80%)</option>
+            <option value="partial">Partielles (50-79%)</option>
+            <option value="low">Faibles (&lt;50%)</option>
+          </select>
+          
+          <button id="clearFilters" class="action-btn btn-view">
+            🔄 Réinitialiser
+          </button>
+        </div>
+        
+        <!-- Timeline content -->
+        <div id="timelineContainer">
+          <!-- Loading state -->
+          <div id="timelineLoading" class="loading-timeline">
+            <div class="loading-spinner"></div>
+            <p>Chargement de la timeline...</p>
+          </div>
+          
+          <!-- Empty state -->
+          <div id="timelineEmpty" class="empty-timeline hidden">
+            <div class="text-6xl mb-4">📅</div>
+            <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucune soumission trouvée</h3>
+            <p class="text-gray-500">Ce contact n'a pas encore soumis de réponses ou elles ne correspondent pas aux filtres sélectionnés.</p>
+          </div>
+          
+          <!-- Timeline track -->
+          <div id="timelineTrack" class="timeline-track hidden">
+            <div class="timeline-line"></div>
+            <!-- Timeline items will be dynamically inserted here -->
+          </div>
+        </div>
+        
+        <!-- Pagination -->
+        <div id="timelinePagination" class="hidden mt-6 flex justify-between items-center">
+          <div class="text-sm text-gray-700">
+            Affichage de <span id="timelineRange">0-0</span> sur <span id="timelineTotal">0</span> soumissions
+          </div>
+          <div class="flex gap-2" id="paginationButtons">
+            <!-- Pagination buttons will be generated here -->
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg">
+      <div class="flex items-center space-x-3">
+        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        <span>Chargement...</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { AdminAPI, Utils, UI, Charts } from '/admin/faf-admin.js';
+    
+    // Global state
+    let contactId = null;
+    let timelineData = [];
+    let filteredTimelineData = [];
+    let engagementStats = null;
+    let currentPage = 1;
+    let totalPages = 1;
+    const itemsPerPage = 12;
+    
+    // Chart instances
+    let engagementChart = null;
+    let activityChart = null;
+    
+    // DOM elements
+    const elements = {
+      // Contact info
+      contactInfo: document.getElementById('contactInfo'),
+      contactAvatar: document.getElementById('contactAvatar'),
+      contactInitials: document.getElementById('contactInitials'),
+      contactName: document.getElementById('contactName'),
+      contactEmail: document.getElementById('contactEmail'),
+      sidebarLoading: document.getElementById('sidebarLoading'),
+      
+      // Stats
+      statTotalSubmissions: document.getElementById('statTotalSubmissions'),
+      statAverageCompletion: document.getElementById('statAverageCompletion'),
+      statConsistency: document.getElementById('statConsistency'),
+      statRecentActivity: document.getElementById('statRecentActivity'),
+      statTrend: document.getElementById('statTrend'),
+      
+      // Timeline
+      timelineContainer: document.getElementById('timelineContainer'),
+      timelineLoading: document.getElementById('timelineLoading'),
+      timelineEmpty: document.getElementById('timelineEmpty'),
+      timelineTrack: document.getElementById('timelineTrack'),
+      
+      // Filters
+      timeRangeFilter: document.getElementById('timeRangeFilter'),
+      completionFilter: document.getElementById('completionFilter'),
+      clearFilters: document.getElementById('clearFilters'),
+      
+      // Pagination
+      timelinePagination: document.getElementById('timelinePagination'),
+      timelineRange: document.getElementById('timelineRange'),
+      timelineTotal: document.getElementById('timelineTotal'),
+      paginationButtons: document.getElementById('paginationButtons'),
+      
+      // Charts
+      engagementChart: document.getElementById('engagementChart'),
+      activityChart: document.getElementById('activityChart'),
+      
+      // General
+      alertMessage: document.getElementById('alertMessage'),
+      loadingOverlay: document.getElementById('loadingOverlay')
+    };
+    
+    // Initialize timeline
+    async function init() {
+      try {
+        // Get contact ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        contactId = urlParams.get('contactId');
+        
+        if (!contactId) {
+          UI.showAlert('ID de contact manquant dans l\'URL', 'error');
+          return;
+        }
+        
+        // Initialize API
+        await AdminAPI.init();
+        
+        // Initialize notification center
+        await initializeNotificationCenter();
+        
+        // Load timeline data
+        await loadTimelineData();
+        
+      } catch (error) {
+        console.error('Failed to initialize timeline:', error);
+        UI.showAlert('Erreur lors de l\'initialisation de la timeline', 'error');
+      }
+    }
+    
+    // Initialize notification center
+    async function initializeNotificationCenter() {
+      try {
+        const notificationCenter = new NotificationCenter({
+          enableSSE: true,
+          enableBrowserNotifications: true,
+          apiBaseUrl: '/api/notifications'
+        });
+        
+        await notificationCenter.init();
+        console.log('✅ Notification center initialized');
+        
+      } catch (error) {
+        console.error('❌ Failed to initialize notification center:', error);
+        // Don't fail the timeline if notifications fail
+      }
+    }
+    
+    // Load timeline data
+    async function loadTimelineData() {
+      try {
+        showLoading();
+        
+        const response = await AdminAPI.request(
+          `/api/submissions/timeline/${contactId}?includeStats=true&limit=100`,
+          {},
+          'Erreur lors du chargement de la timeline'
+        );
+        
+        if (response && response.timeline) {
+          timelineData = response.timeline;
+          engagementStats = response.engagementStats;
+          
+          // Display contact information
+          displayContactInfo(response.contact);
+          
+          // Display engagement stats
+          if (engagementStats) {
+            displayEngagementStats(engagementStats);
+            createCharts(engagementStats);
+          }
+          
+          // Apply initial filters and display timeline
+          applyFilters();
+          
+          hideLoading();
+        } else {
+          showEmpty();
+        }
+        
+      } catch (error) {
+        console.error('Failed to load timeline data:', error);
+        UI.showAlert('Erreur lors du chargement de la timeline', 'error');
+        hideLoading();
+      }
+    }
+    
+    // Display contact information
+    function displayContactInfo(contact) {
+      if (!contact) return;
+      
+      const displayName = contact.firstName && contact.lastName 
+        ? `${contact.firstName} ${contact.lastName}`
+        : contact.username || 'Contact';
+      
+      elements.contactName.textContent = displayName;
+      elements.contactEmail.textContent = contact.email || '';
+      
+      // Generate initials for avatar
+      const initials = getInitials(displayName);
+      elements.contactInitials.textContent = initials;
+      
+      elements.contactInfo.classList.remove('hidden');
+      elements.sidebarLoading.classList.add('hidden');
+    }
+    
+    // Display engagement statistics
+    function displayEngagementStats(stats) {
+      if (!stats) return;
+      
+      elements.statTotalSubmissions.textContent = stats.totalSubmissions || '0';
+      elements.statAverageCompletion.textContent = `${stats.averageCompletionRate || 0}%`;
+      elements.statConsistency.textContent = `${stats.consistencyRate || 0}%`;
+      elements.statRecentActivity.textContent = `${stats.recentActivityRate || 0}/3 mois`;
+      
+      // Display trend with indicator
+      const trendElement = elements.statTrend;
+      const trendClass = `trend-${stats.engagementTrend}`;
+      trendElement.className = `stat-value trend-indicator ${trendClass}`;
+      
+      const trendText = {
+        improving: '📈 En hausse',
+        declining: '📉 En baisse', 
+        stable: '➡️ Stable'
+      };
+      
+      trendElement.textContent = trendText[stats.engagementTrend] || '➡️ Stable';
+    }
+    
+    // Create charts
+    function createCharts(stats) {
+      if (!stats) return;
+      
+      // Engagement trend chart
+      if (stats.completionTrends && stats.completionTrends.length > 0) {
+        createEngagementChart(stats.completionTrends);
+      }
+      
+      // Monthly activity chart
+      if (stats.monthlyActivity && stats.monthlyActivity.length > 0) {
+        createActivityChart(stats.monthlyActivity);
+      }
+    }
+    
+    // Create engagement trend chart
+    function createEngagementChart(trendData) {
+      const ctx = elements.engagementChart.getContext('2d');
+      
+      if (engagementChart) {
+        engagementChart.destroy();
+      }
+      
+      engagementChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: trendData.map(d => d.label),
+          datasets: [{
+            label: 'Taux de completion',
+            data: trendData.map(d => d.completionRate),
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              }
+            },
+            x: {
+              ticks: {
+                maxRotation: 45
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Create activity chart
+    function createActivityChart(activityData) {
+      const ctx = elements.activityChart.getContext('2d');
+      
+      if (activityChart) {
+        activityChart.destroy();
+      }
+      
+      activityChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: activityData.map(d => d.label),
+          datasets: [{
+            label: 'Soumissions',
+            data: activityData.map(d => d.submissions),
+            backgroundColor: '#10b981',
+            borderColor: '#059669',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            },
+            x: {
+              ticks: {
+                maxRotation: 45
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Apply filters to timeline data
+    function applyFilters() {
+      const timeRange = elements.timeRangeFilter.value;
+      const completion = elements.completionFilter.value;
+      
+      filteredTimelineData = timelineData.filter(item => {
+        // Time range filter
+        if (timeRange !== 'all') {
+          const itemDate = new Date(item.submittedAt);
+          const now = new Date();
+          let cutoffDate = new Date();
+          
+          switch (timeRange) {
+            case 'recent':
+              cutoffDate.setMonth(now.getMonth() - 3);
+              break;
+            case '6months':
+              cutoffDate.setMonth(now.getMonth() - 6);
+              break;
+            case 'year':
+              cutoffDate.setFullYear(now.getFullYear(), 0, 1);
+              break;
+          }
+          
+          if (itemDate < cutoffDate) return false;
+        }
+        
+        // Completion filter
+        if (completion !== 'all') {
+          switch (completion) {
+            case 'complete':
+              if (item.completionRate < 80) return false;
+              break;
+            case 'partial':
+              if (item.completionRate < 50 || item.completionRate >= 80) return false;
+              break;
+            case 'low':
+              if (item.completionRate >= 50) return false;
+              break;
+          }
+        }
+        
+        return true;
+      });
+      
+      currentPage = 1;
+      totalPages = Math.ceil(filteredTimelineData.length / itemsPerPage);
+      
+      displayTimeline();
+      updatePagination();
+    }
+    
+    // Display timeline items
+    function displayTimeline() {
+      if (filteredTimelineData.length === 0) {
+        showEmpty();
+        return;
+      }
+      
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const pageItems = filteredTimelineData.slice(startIndex, endIndex);
+      
+      elements.timelineTrack.innerHTML = '<div class="timeline-line"></div>';
+      
+      pageItems.forEach(item => {
+        const timelineItem = createTimelineItem(item);
+        elements.timelineTrack.appendChild(timelineItem);
+      });
+      
+      showTimeline();
+    }
+    
+    // Create timeline item element
+    function createTimelineItem(item) {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'timeline-item';
+      itemEl.setAttribute('data-month', item.month);
+      
+      // Timeline marker
+      const marker = document.createElement('div');
+      marker.className = `timeline-marker marker-${item.engagementLevel}`;
+      itemEl.appendChild(marker);
+      
+      // Header
+      const header = document.createElement('div');
+      header.className = 'timeline-header-item';
+      
+      const headerLeft = document.createElement('div');
+      headerLeft.innerHTML = `
+        <div class="timeline-month">${item.monthLabel}</div>
+        <div class="timeline-date">${formatDate(item.submittedAt)}</div>
+      `;
+      
+      const headerRight = document.createElement('div');
+      headerRight.className = 'timeline-badges';
+      headerRight.innerHTML = `
+        <span class="completion-badge badge-${item.engagementLevel}">
+          ${item.completionRate}%
+        </span>
+        <span class="status-indicator status-${item.status}"></span>
+      `;
+      
+      header.appendChild(headerLeft);
+      header.appendChild(headerRight);
+      itemEl.appendChild(header);
+      
+      // Content
+      const content = document.createElement('div');
+      content.className = 'timeline-content-item';
+      
+      const contentText = document.createElement('div');
+      contentText.className = 'text-sm text-gray-600 mb-2';
+      contentText.innerHTML = `
+        <strong>${item.responseCount}</strong> réponses
+        ${item.hasFreeText ? ' • <span class="text-blue-600">Commentaire libre</span>' : ''}
+        ${item.timeFromPrevious ? ` • ${item.timeFromPrevious.description} depuis la précédente` : ''}
+      `;
+      content.appendChild(contentText);
+      
+      // Response preview
+      if (item.responsePreview && item.responsePreview.length > 0) {
+        const preview = document.createElement('div');
+        preview.className = 'response-preview';
+        
+        item.responsePreview.forEach(response => {
+          const previewItem = document.createElement('div');
+          previewItem.className = 'response-preview-item';
+          
+          const typeIcon = {
+            text: '📝',
+            photo: '📷',
+            radio: '🔘'
+          };
+          
+          previewItem.innerHTML = `
+            <div class="response-type-icon">${typeIcon[response.type] || '❓'}</div>
+            <div class="response-preview-text">
+              ${response.question.substring(0, 50)}${response.question.length > 50 ? '...' : ''}
+            </div>
+            <div class="text-xs ${response.hasAnswer || response.hasPhoto ? 'text-green-600' : 'text-gray-400'} mt-1">
+              ${response.hasAnswer || response.hasPhoto ? '✓ Répondu' : '○ Non répondu'}
+            </div>
+          `;
+          
+          preview.appendChild(previewItem);
+        });
+        
+        content.appendChild(preview);
+      }
+      
+      // Actions
+      const actions = document.createElement('div');
+      actions.className = 'timeline-actions';
+      actions.innerHTML = `
+        <a href="/admin/compare.html?contactId=${contactId}&month=${item.month}" 
+           class="action-btn btn-compare">
+          🔍 Comparer
+        </a>
+        <button class="action-btn btn-view" onclick="viewSubmissionDetails('${item.id}')">
+          👁️ Détails
+        </button>
+      `;
+      content.appendChild(actions);
+      
+      itemEl.appendChild(content);
+      
+      return itemEl;
+    }
+    
+    // Update pagination
+    function updatePagination() {
+      const startIndex = (currentPage - 1) * itemsPerPage + 1;
+      const endIndex = Math.min(currentPage * itemsPerPage, filteredTimelineData.length);
+      
+      elements.timelineRange.textContent = `${startIndex}-${endIndex}`;
+      elements.timelineTotal.textContent = filteredTimelineData.length;
+      
+      // Generate pagination buttons
+      elements.paginationButtons.innerHTML = '';
+      
+      if (totalPages <= 1) {
+        elements.timelinePagination.classList.add('hidden');
+        return;
+      }
+      
+      elements.timelinePagination.classList.remove('hidden');
+      
+      // Previous button
+      const prevBtn = document.createElement('button');
+      prevBtn.textContent = '← Précédent';
+      prevBtn.className = 'px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50';
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          displayTimeline();
+          updatePagination();
+        }
+      });
+      elements.paginationButtons.appendChild(prevBtn);
+      
+      // Page numbers
+      const maxVisible = 5;
+      let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+      let end = Math.min(totalPages, start + maxVisible - 1);
+      
+      if (end - start + 1 < maxVisible) {
+        start = Math.max(1, end - maxVisible + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        pageBtn.className = `px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 ${
+          i === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-white'
+        }`;
+        pageBtn.addEventListener('click', () => {
+          currentPage = i;
+          displayTimeline();
+          updatePagination();
+        });
+        elements.paginationButtons.appendChild(pageBtn);
+      }
+      
+      // Next button
+      const nextBtn = document.createElement('button');
+      nextBtn.textContent = 'Suivant →';
+      nextBtn.className = 'px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50';
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          displayTimeline();
+          updatePagination();
+        }
+      });
+      elements.paginationButtons.appendChild(nextBtn);
+    }
+    
+    // Utility functions
+    function getInitials(name) {
+      return name
+        .split(' ')
+        .map(part => part.charAt(0).toUpperCase())
+        .join('')
+        .substring(0, 2);
+    }
+    
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+    
+    // UI state management
+    function showLoading() {
+      elements.timelineLoading.classList.remove('hidden');
+      elements.timelineEmpty.classList.add('hidden');
+      elements.timelineTrack.classList.add('hidden');
+      elements.timelinePagination.classList.add('hidden');
+    }
+    
+    function showEmpty() {
+      elements.timelineLoading.classList.add('hidden');
+      elements.timelineEmpty.classList.remove('hidden');
+      elements.timelineTrack.classList.add('hidden');
+      elements.timelinePagination.classList.add('hidden');
+    }
+    
+    function showTimeline() {
+      elements.timelineLoading.classList.add('hidden');
+      elements.timelineEmpty.classList.add('hidden');
+      elements.timelineTrack.classList.remove('hidden');
+    }
+    
+    function hideLoading() {
+      elements.timelineLoading.classList.add('hidden');
+    }
+    
+    // Event listeners
+    elements.timeRangeFilter.addEventListener('change', applyFilters);
+    elements.completionFilter.addEventListener('change', applyFilters);
+    
+    elements.clearFilters.addEventListener('click', () => {
+      elements.timeRangeFilter.value = 'all';
+      elements.completionFilter.value = 'all';
+      applyFilters();
+    });
+    
+    // Global function for submission details (placeholder)
+    window.viewSubmissionDetails = function(submissionId) {
+      UI.showAlert('Fonctionnalité de détails de soumission à implémenter', 'info');
+    };
+    
+    // Initialize when DOM is ready
+    init();
+  </script>
+</body>
+</html>

@@ -34,6 +34,13 @@ class SessionMonitoringMiddleware {
         req.session.clientIP = this.monitoringService.getClientIP(req);
         req.session.createdAt = Date.now();
         req.session.suspicious = isSuspicious;
+        req.session.userAgent = req.get('User-Agent');
+        req.session.lastActivity = Date.now();
+        
+        // Track API endpoint access patterns
+        if (req.path.startsWith('/api/')) {
+          this.trackAPIAccess(req, userId);
+        }
 
       } catch (error) {
         console.error('Session tracking error:', error);
@@ -42,8 +49,8 @@ class SessionMonitoringMiddleware {
         if (this.isMonitoringCritical(error)) {
           this.sendCriticalAlert('SESSION_MONITORING_FAILURE', {
             error: error.message,
-            ip: clientIP,
-            userAgent,
+            ip: this.monitoringService.getClientIP(req),
+            userAgent: req.get('User-Agent'),
             timestamp: Date.now()
           });
         }
@@ -87,6 +94,11 @@ class SessionMonitoringMiddleware {
    */
   blockSuspiciousSessions() {
     return (req, res, next) => {
+      // Bypass in test environment
+      if (process.env.NODE_ENV === 'test' || process.env.DISABLE_RATE_LIMITING === 'true') {
+        return next();
+      }
+
       try {
         const clientIP = this.monitoringService.getClientIP(req);
         const userId = req.session?.userId || req.session?.user?.id || null;
@@ -214,6 +226,106 @@ class SessionMonitoringMiddleware {
   }
 
   /**
+   * Track API endpoint access patterns for new routes
+   */
+  trackAPIAccess(req, userId) {
+    const endpoint = this.normalizeEndpoint(req.path);
+    const method = req.method;
+    
+    // Track access patterns for sensitive endpoints
+    const sensitiveEndpoints = [
+      '/api/contacts',
+      '/api/handshakes', 
+      '/api/invitations',
+      '/api/submissions'
+    ];
+    
+    if (sensitiveEndpoints.some(pattern => endpoint.startsWith(pattern))) {
+      const accessKey = `${userId || 'anonymous'}:${endpoint}:${method}`;
+      
+      if (!this.apiAccessTracking) {
+        this.apiAccessTracking = new Map();
+      }
+      
+      const current = this.apiAccessTracking.get(accessKey) || { count: 0, firstAccess: Date.now() };
+      current.count++;
+      current.lastAccess = Date.now();
+      
+      this.apiAccessTracking.set(accessKey, current);
+      
+      // Alert on suspicious API access patterns
+      if (current.count > 100) { // 100 requests to same endpoint
+        console.warn('Suspicious API access pattern detected', {
+          userId: userId ? userId.toString().substring(0, 8) + '...' : 'anonymous',
+          endpoint,
+          method,
+          count: current.count,
+          timeSpan: Date.now() - current.firstAccess
+        });
+      }
+    }
+  }
+  
+  /**
+   * Normalize endpoint paths for tracking
+   */
+  normalizeEndpoint(path) {
+    // Replace IDs with placeholder for pattern matching
+    return path.replace(/\/[a-f0-9]{24}/g, '/:id')
+               .replace(/\/[a-f0-9]{64}/g, '/:token')
+               .replace(/\/\d{4}-\d{2}/g, '/:month');
+  }
+  
+  /**
+   * Enhanced session validation for new API routes
+   */
+  validateAPISession() {
+    return (req, res, next) => {
+      // Enhanced validation for API routes
+      if (req.path.startsWith('/api/') && req.session) {
+        // Check for session hijacking indicators
+        const suspiciousIndicators = [];
+        
+        // User agent consistency check
+        if (req.session.userAgent && req.session.userAgent !== req.get('User-Agent')) {
+          suspiciousIndicators.push('user_agent_mismatch');
+        }
+        
+        // Rapid endpoint switching detection
+        if (req.session.lastEndpoint) {
+          const timeSinceLastRequest = Date.now() - (req.session.lastRequestTime || 0);
+          if (timeSinceLastRequest < 100 && req.session.lastEndpoint !== req.path) {
+            suspiciousIndicators.push('rapid_endpoint_switching');
+          }
+        }
+        
+        req.session.lastEndpoint = req.path;
+        req.session.lastRequestTime = Date.now();
+        
+        if (suspiciousIndicators.length > 0) {
+          console.warn('API session validation concerns', {
+            sessionId: req.sessionID.substring(0, 8) + '...',
+            indicators: suspiciousIndicators,
+            endpoint: req.path,
+            method: req.method
+          });
+          
+          // Track but don't block unless multiple indicators
+          if (suspiciousIndicators.length > 1) {
+            req.session.destroy();
+            return res.status(401).json({
+              error: 'Session security violation detected',
+              code: 'SESSION_HIJACKING_SUSPECTED'
+            });
+          }
+        }
+      }
+      
+      next();
+    };
+  }
+  
+  /**
    * Get the monitoring service instance
    */
   getMonitoringService() {
@@ -328,10 +440,29 @@ class SessionMonitoringMiddleware {
   }
 
   /**
+   * Clean up API access tracking
+   */
+  cleanupAPITracking() {
+    if (this.apiAccessTracking) {
+      const now = Date.now();
+      const maxAge = 60 * 60 * 1000; // 1 hour
+      
+      for (const [key, data] of this.apiAccessTracking.entries()) {
+        if (now - data.lastAccess > maxAge) {
+          this.apiAccessTracking.delete(key);
+        }
+      }
+    }
+  }
+  
+  /**
    * Shutdown the monitoring service
    */
   shutdown() {
     this.monitoringService.shutdown();
+    if (this.apiAccessTracking) {
+      this.apiAccessTracking.clear();
+    }
   }
 }
 

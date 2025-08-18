@@ -1,23 +1,23 @@
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-
 const Response = require('../models/Response');
 
-describe('Full Request/Response Cycle Integration Tests', () => {
-  let app;
-  let mongoServer;
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
 
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
+describe('Full Request/Response Cycle Integration Tests', () => {
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
     
     // Import app after MongoDB connection is established
     delete require.cache[require.resolve('../app')]; // Clear require cache
     process.env.MONGODB_URI = mongoUri;
-    process.env.NODE_ENV = 'test';
-    
     // Mock console.log to avoid test output pollution
     const originalConsoleLog = console.log;
     console.log = jest.fn();
@@ -97,8 +97,7 @@ describe('Full Request/Response Cycle Integration Tests', () => {
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+    });
 
   beforeEach(async () => {
     await Response.deleteMany({});
@@ -304,8 +303,6 @@ describe('Full Request/Response Cycle Integration Tests', () => {
 
     test('should handle database errors gracefully', async () => {
       // Temporarily close database connection to simulate error
-      await mongoose.connection.close();
-
       const formData = {
         name: 'Test User',
         responses: [{ question: 'Test', answer: 'Test' }]

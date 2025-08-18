@@ -1,24 +1,28 @@
 // Unit tests for authentication components
-const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const User = require('../models/User');
 const { authLimiters, createAuthRateLimit } = require('../middleware/authRateLimit');
 const { APP_CONSTANTS } = require('../constants');
 
-describe('User Model Unit Tests', () => {
-  let mongoServer;
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
 
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
+describe('User Model Unit Tests', () => {
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-  });
+    
+    });
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+    });
 
   beforeEach(async () => {
     await User.deleteMany({});

@@ -1,35 +1,21 @@
 // tests/admin.question-order.test.js - Dynamic Question Order Tests
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const Response = require('../models/Response');
+const { getTestApp, setupTestEnvironment, createAuthenticatedAdmin } = require('./test-utils');
 
-// Import app without starting it
-process.env.NODE_ENV = 'test';
-process.env.FORM_ADMIN_NAME = 'testadmin';
-process.env.SESSION_SECRET = 'test-secret-key-for-sessions';
-process.env.APP_BASE_URL = 'http://localhost:3000';
-process.env.LOGIN_ADMIN_USER = 'admin';
-process.env.LOGIN_ADMIN_PASS = '$2b$10$hashedpassword'; // bcrypt hash
+// Setup test environment
+setupTestEnvironment();
 
-let mongoServer;
 let app;
+let authenticatedAgent;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  
-  await mongoose.connect(mongoUri);
-  app = require('../app');
-}, 30000);
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongoServer.stop();
+  app = getTestApp();
+  authenticatedAgent = await createAuthenticatedAdmin(app);
 }, 30000);
 
 beforeEach(async () => {
+  // Clean up between tests using global connection
   await Response.deleteMany({});
 });
 
@@ -70,7 +56,7 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
       });
       await secondResponse.save();
 
-      const response = await request(app)
+      const response = await authenticatedAgent
         .get(`/api/admin/summary?month=${testMonth}`)
         .expect(200);
 
@@ -83,7 +69,7 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
     });
 
     test('should handle empty dataset gracefully', async () => {
-      const response = await request(app)
+      const response = await authenticatedAgent
         .get(`/api/admin/summary?month=${testMonth}`)
         .expect(200);
 
@@ -120,7 +106,7 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
       });
       await validResponse.save();
 
-      const response = await request(app)
+      const response = await authenticatedAgent
         .get(`/api/admin/summary?month=${testMonth}`)
         .expect(200);
 
@@ -144,7 +130,7 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
       });
       await testResponse.save();
 
-      const response = await request(app)
+      const response = await authenticatedAgent
         .get(`/api/admin/summary?month=${testMonth}`)
         .expect(200);
 
@@ -168,7 +154,7 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
       });
       await testResponse.save();
 
-      const response = await request(app)
+      const response = await authenticatedAgent
         .get(`/api/admin/summary?month=${testMonth}`)
         .expect(200);
 
@@ -194,9 +180,9 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
 
       // Make multiple concurrent requests
       const responses = await Promise.all([
-        request(app).get(`/api/admin/summary?month=${testMonth}`),
-        request(app).get(`/api/admin/summary?month=${testMonth}`),
-        request(app).get(`/api/admin/summary?month=${testMonth}`)
+        authenticatedAgent.get(`/api/admin/summary?month=${testMonth}`),
+        authenticatedAgent.get(`/api/admin/summary?month=${testMonth}`),
+        authenticatedAgent.get(`/api/admin/summary?month=${testMonth}`)
       ]);
 
       // All should have same order
@@ -225,7 +211,7 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
       });
       await mixedValidityResponse.save();
 
-      const response = await request(app)
+      const response = await authenticatedAgent
         .get(`/api/admin/summary?month=${testMonth}`)
         .expect(200);
 
@@ -249,7 +235,7 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
       });
       await testResponse.save();
 
-      const response = await request(app)
+      const response = await authenticatedAgent
         .get(`/api/admin/summary?month=${testMonth}`)
         .expect(200);
 
@@ -286,7 +272,7 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
         createdAt: new Date('2025-01-04T10:00:00Z')
       }).save();
 
-      const response = await request(app)
+      const response = await authenticatedAgent
         .get(`/api/admin/summary?month=${testMonth}`)
         .expect(200);
 
@@ -314,7 +300,7 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
       }).save();
 
       const startTime = Date.now();
-      const response = await request(app)
+      const response = await authenticatedAgent
         .get(`/api/admin/summary?month=${testMonth}`)
         .expect(200);
       const endTime = Date.now();
@@ -340,7 +326,7 @@ describe('📋 Dynamic Admin Question Order Tests', () => {
       }
 
       const startTime = Date.now();
-      const response = await request(app)
+      const response = await authenticatedAgent
         .get(`/api/admin/summary?month=${testMonth}`)
         .expect(200);
       const endTime = Date.now();

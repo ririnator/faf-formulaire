@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const SecureLogger = require('../utils/secureLogger');
+const SessionConfig = require('../config/session');
 
 // Middleware pour détecter la méthode d'authentification
 function detectAuthMethod(req, res, next) {
@@ -45,11 +46,22 @@ function requireAuth(req, res, next) {
 // Middleware pour les utilisateurs connectés uniquement (nouveau système)
 function requireUserAuth(req, res, next) {
   if (req.authMethod !== 'user' || !req.currentUser) {
+    // For API endpoints (start with /api/), always return JSON
+    if (req.path.startsWith('/api/')) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required - user account needed',
+        message: 'Cette fonctionnalité nécessite un compte utilisateur'
+      });
+    }
+    
+    // For non-API requests, check Accept header
     if (req.accepts('html')) {
       return res.redirect('/login');
     } else {
       return res.status(401).json({
-        error: 'Compte utilisateur requis',
+        success: false,
+        error: 'Authentication required - user account needed',
         message: 'Cette fonctionnalité nécessite un compte utilisateur'
       });
     }
@@ -96,6 +108,9 @@ async function enrichUserData(req, res, next) {
         // Mettre à jour les données en session si nécessaire
         req.currentUser = user.toPublicJSON();
         req.session.user = req.currentUser;
+        
+        // Update last activity for session renewal
+        req.session.lastActivity = Date.now();
       }
     } catch (error) {
       SecureLogger.logError('Error enriching user data', error);
@@ -138,12 +153,125 @@ function logAuthMethod(req, res, next) {
   next();
 }
 
+// Session fixation protection middleware
+function protectAgainstSessionFixation(req, res, next) {
+  // Regenerate session ID on privilege escalation
+  if (req.session && (req.session.isAdmin || req.session.userId)) {
+    const wasAuthenticated = req.session.authenticated;
+    
+    if (!wasAuthenticated && req.session.userId) {
+      // User just authenticated, regenerate session ID
+      return SessionConfig.regenerateSession()(req, res, () => {
+        req.session.authenticated = true;
+        SecureLogger.logInfo('Session regenerated after authentication', {
+          userId: req.session.userId.toString().substring(0, 8) + '...',
+          newSessionId: req.sessionID.substring(0, 8) + '...'
+        });
+        next();
+      });
+    }
+  }
+  next();
+}
+
+// Enhanced session validation for sensitive operations
+function requireSecureSession(req, res, next) {
+  if (!req.session || !req.sessionID) {
+    return res.status(401).json({
+      error: 'Session required for this operation',
+      code: 'NO_SESSION'
+    });
+  }
+  
+  // Check session age for sensitive operations
+  const sessionAge = Date.now() - (req.session.createdAt || 0);
+  const maxSessionAge = 2 * 60 * 60 * 1000; // 2 hours for sensitive operations
+  
+  if (sessionAge > maxSessionAge) {
+    SecureLogger.logWarning('Session too old for sensitive operation', {
+      sessionId: req.sessionID.substring(0, 8) + '...',
+      ageHours: Math.floor(sessionAge / (60 * 60 * 1000))
+    });
+    
+    req.session.destroy();
+    return res.status(401).json({
+      error: 'Session expired. Please log in again.',
+      code: 'SESSION_TOO_OLD'
+    });
+  }
+  
+  next();
+}
+
+// Middleware for universal dashboard access (both users and admins)
+function requireDashboardAccess(req, res, next) {
+  // Check for authenticated user (new system)
+  if (req.authMethod === 'user' && req.currentUser) {
+    return next();
+  }
+  
+  // Check for legacy admin session
+  if (req.session?.isAdmin) {
+    req.authMethod = 'legacy-admin';
+    return next();
+  }
+  
+  // No valid authentication found
+  if (req.accepts('html')) {
+    return res.redirect('/login');
+  } else {
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required for dashboard access',
+      message: 'Veuillez vous connecter pour accéder au tableau de bord'
+    });
+  }
+}
+
+// Enhanced privilege validation
+function validatePrivilegeEscalation(req, res, next) {
+  // Check for suspicious privilege changes
+  if (req.session) {
+    const currentPrivileges = {
+      isAdmin: req.session.isAdmin || false,
+      userId: req.session.userId || null,
+      role: req.currentUser?.role || 'guest'
+    };
+    
+    const previousPrivileges = req.session.previousPrivileges || {};
+    
+    // Detect privilege escalation
+    if (!previousPrivileges.isAdmin && currentPrivileges.isAdmin) {
+      SecureLogger.logWarning('Admin privilege escalation detected', {
+        sessionId: req.sessionID.substring(0, 8) + '...',
+        userId: currentPrivileges.userId ? currentPrivileges.userId.toString().substring(0, 8) + '...' : 'anonymous',
+        ip: req.ip
+      });
+      
+      // Force session regeneration on privilege escalation
+      return SessionConfig.regenerateSession()(req, res, () => {
+        req.session.previousPrivileges = currentPrivileges;
+        next();
+      });
+    }
+    
+    // Store current privileges for next request
+    req.session.previousPrivileges = currentPrivileges;
+  }
+  
+  next();
+}
+
 module.exports = {
   detectAuthMethod,
   requireAuth,
   requireUserAuth,
   requireAdminAccess,
+  requireDashboardAccess,
   enrichUserData,
   getResponseAccess,
-  logAuthMethod
+  logAuthMethod,
+  protectAgainstSessionFixation,
+  requireSecureSession,
+  validatePrivilegeEscalation
 };

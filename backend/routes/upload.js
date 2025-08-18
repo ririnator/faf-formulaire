@@ -3,6 +3,7 @@ const express               = require('express');
 const multer                = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary            = require('../config/cloudinary');
+const { csrfProtectionStrict } = require('../middleware/csrf');
 const router                = express.Router();
 
 // Rate limiting spécifique pour les uploads
@@ -118,8 +119,8 @@ function recordSuccessfulUpload(req, fileSize) {
   });
 }
 
-// ← Route POST /api/upload avec rate limiting
-router.post('/', uploadRateLimit, (req, res) => {
+// ← Route POST /api/upload avec rate limiting et protection CSRF
+router.post('/', uploadRateLimit, csrfProtectionStrict(), (req, res) => {
     parser.single('image')(req, res, err => {
       if (err) {
         console.error('⛔️ Erreur pendant l’upload :', err);
@@ -150,8 +151,10 @@ router.post('/', uploadRateLimit, (req, res) => {
     });
   });
 
-// Cleanup périodique optimisé avec LRU cache
-setInterval(() => {
+// Cleanup périodique optimisé avec LRU cache - Test environment aware
+let uploadCleanupInterval;
+if (process.env.NODE_ENV !== 'test') {
+  uploadCleanupInterval = setInterval(() => {
   const now = Date.now();
   let cleanedCount = 0;
   
@@ -170,10 +173,11 @@ setInterval(() => {
     }
   }
   
-  if (cleanedCount > 0) {
-    console.log(`🧹 Upload rate limit cleanup: removed ${cleanedCount} expired entries (LRU optimized)`);
-  }
-}, 5 * 60 * 1000); // Cleanup toutes les 5 minutes
+    if (cleanedCount > 0) {
+      console.log(`🧹 Upload rate limit cleanup: removed ${cleanedCount} expired entries (LRU optimized)`);
+    }
+  }, 5 * 60 * 1000); // Cleanup toutes les 5 minutes
+}
 
 // LRU Cache implementation with optimization
 class OptimizedLRUUploadCache {
@@ -292,8 +296,10 @@ function performEmergencyMemoryCleanup() {
   console.warn(`🚨 Emergency cleanup completed: ${optimizedUploadAttempts.size()} entries remaining`);
 }
 
-// Monitoring mémoire périodique optimisé
-setInterval(() => {
+// Monitoring mémoire périodique optimisé - Test environment aware
+let memoryMonitoringInterval;
+if (process.env.NODE_ENV !== 'test') {
+  memoryMonitoringInterval = setInterval(() => {
   const mapSize = optimizedUploadAttempts.size();
   const heapUsed = process.memoryUsage().heapUsed;
   const heapUsedMB = Math.round(heapUsed / 1024 / 1024);
@@ -313,11 +319,12 @@ setInterval(() => {
     console.warn(`🔔 Memory warning: ${mapSize}/${MEMORY_THRESHOLDS.maxMapSize} IPs tracked (${heapUsedMB}MB heap)`);
   }
   
-  // Log périodique pour monitoring avec métriques LRU
-  if (mapSize > 50) {
-    console.log(`📊 Upload tracking: ${mapSize} IPs, ${heapUsedMB}MB heap (LRU optimized)`);
-  }
-}, MEMORY_THRESHOLDS.memoryCheckInterval);
+    // Log périodique pour monitoring avec métriques LRU
+    if (mapSize > 50) {
+      console.log(`📊 Upload tracking: ${mapSize} IPs, ${heapUsedMB}MB heap (LRU optimized)`);
+    }
+  }, MEMORY_THRESHOLDS.memoryCheckInterval);
+}
 
 // Export pour monitoring avec métriques LRU optimisées
 router.getUploadStats = () => ({
@@ -334,5 +341,29 @@ router.getUploadStats = () => ({
     ) / (optimizedUploadAttempts.accessOrder.size || 1)
   }
 });
+
+// Cleanup function for tests
+const cleanup = () => {
+  if (uploadCleanupInterval) {
+    clearInterval(uploadCleanupInterval);
+    uploadCleanupInterval = null;
+  }
+  if (memoryMonitoringInterval) {
+    clearInterval(memoryMonitoringInterval);
+    memoryMonitoringInterval = null;
+  }
+  if (optimizedUploadAttempts && typeof optimizedUploadAttempts.clear === 'function') {
+    optimizedUploadAttempts.clear();
+  } else {
+    // If it's a Map or custom structure, try alternative clearing methods
+    try {
+      optimizedUploadAttempts.cache?.clear();
+    } catch (e) {
+      // Ignore cleanup errors in tests
+    }
+  }
+};
+
+router.cleanup = cleanup;
 
 module.exports = router;

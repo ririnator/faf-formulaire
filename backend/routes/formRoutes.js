@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Response = require('../models/Response');
-const ResponseService = require('../services/responseService');
+const ServiceFactory = require('../services/serviceFactory');
 
 router.post('/response', async (req, res) => {
   try {
@@ -15,6 +15,8 @@ router.post('/response', async (req, res) => {
     const isAdmin = name && name.trim().toLowerCase() === process.env.FORM_ADMIN_NAME?.toLowerCase();
     
     // Generate token for non-admin users
+    const factory = ServiceFactory.create();
+    const ResponseService = factory.getResponseService();
     const token = isAdmin ? null : ResponseService.generateToken();
 
     // Création du document avec le nouveau format
