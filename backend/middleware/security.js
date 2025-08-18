@@ -143,10 +143,10 @@ function createSecurityMiddleware() {
         contentSecurityPolicy: {
           directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "cdn.tailwindcss.com"], // Removed unsafe-inline for security
+            styleSrc: ["'self'", "cdn.tailwindcss.com", "cdnjs.cloudflare.com"], // Allow static CSS files + external CDNs
             scriptSrc: ["'self'", "cdn.tailwindcss.com", "cdn.jsdelivr.net"],
             imgSrc: ["'self'", "res.cloudinary.com", "*.cloudinary.com", "data:", "blob:"],
-            fontSrc: ["'self'", "fonts.googleapis.com", "fonts.gstatic.com"],
+            fontSrc: ["'self'", "fonts.googleapis.com", "fonts.gstatic.com", "cdnjs.cloudflare.com"],
             connectSrc: ["'self'"],
             frameSrc: ["'none'"],
             frameAncestors: ["'none'"],
@@ -172,10 +172,10 @@ function createSecurityMiddleware() {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          styleSrc: ["'self'", `'nonce-${nonce}'`, "cdn.tailwindcss.com"],
-          scriptSrc: ["'self'", `'nonce-${nonce}'`, "cdn.tailwindcss.com", "cdn.jsdelivr.net"],
+          styleSrc: ["'self'", "cdn.tailwindcss.com", "cdnjs.cloudflare.com"], // CSS doesn't need nonces - static files work with 'self'
+          scriptSrc: ["'self'", `'nonce-${nonce}'`, "cdn.tailwindcss.com", "cdn.jsdelivr.net"], // Scripts still use nonces for security
           imgSrc: ["'self'", "res.cloudinary.com", "*.cloudinary.com", "data:", "blob:"],
-          fontSrc: ["'self'", "fonts.googleapis.com", "fonts.gstatic.com"],
+          fontSrc: ["'self'", "fonts.googleapis.com", "fonts.gstatic.com", "cdnjs.cloudflare.com"],
           connectSrc: ["'self'"],
           frameSrc: ["'none'"],
           frameAncestors: ["'none'"],
