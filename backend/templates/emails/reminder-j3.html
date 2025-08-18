@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <title>Rappel J+3 {{fromName}} - {{month}}</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:AllowPNG/>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            min-width: 100%;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        
+        table {
+            border-collapse: collapse;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        
+        img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+        }
+        
+        /* Container */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: #ffffff;
+            padding: 32px 24px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+            margin: 0;
+        }
+        
+        .reminder-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Content */
+        .content {
+            padding: 32px 24px;
+        }
+        
+        .greeting {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 16px;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 24px;
+            line-height: 1.7;
+        }
+        
+        .urgency-box {
+            background: linear-gradient(135deg, #fed7e2 0%, #fbb6ce 100%);
+            border: 2px solid #f687b3;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        
+        .countdown {
+            font-size: 32px;
+            font-weight: 800;
+            color: #c53030;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(197, 48, 48, 0.2);
+        }
+        
+        .countdown-text {
+            font-size: 18px;
+            color: #744210;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .month-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: #ffffff;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .expires-info {
+            font-size: 14px;
+            color: #c53030;
+            margin-top: 12px;
+            font-weight: 600;
+        }
+        
+        /* Call to Action Button */
+        .cta-container {
+            text-align: center;
+            margin: 32px 0;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 18px 36px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(240, 147, 251, 0.4);
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .cta-button:hover {
+            background: linear-gradient(135deg, #e879f9 0%, #ec4899 100%);
+            box-shadow: 0 8px 25px rgba(240, 147, 251, 0.6);
+            transform: translateY(-3px);
+        }
+        
+        .cta-text {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 16px;
+            line-height: 1.5;
+        }
+        
+        /* Motivation section */
+        .motivation {
+            background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+            border: 2px solid #9ae6b4;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+        
+        .motivation h3 {
+            color: #22543d;
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .motivation p {
+            color: #2f855a;
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.6;
+        }
+        
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 24px 0;
+            text-align: center;
+        }
+        
+        .stat-item {
+            flex: 1;
+            padding: 16px 8px;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: 800;
+            color: #f093fb;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        
+        /* Footer */
+        .footer {
+            background-color: #f7fafc;
+            padding: 24px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .footer p {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 8px;
+        }
+        
+        .footer a {
+            color: #f093fb;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .unsubscribe {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-top: 16px;
+        }
+        
+        .unsubscribe a {
+            color: #a0aec0;
+        }
+        
+        /* Mobile responsive */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            
+            .header {
+                padding: 24px 16px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 24px 16px;
+            }
+            
+            .urgency-box, .motivation {
+                padding: 16px;
+                margin: 16px 0;
+            }
+            
+            .countdown {
+                font-size: 28px;
+            }
+            
+            .cta-button {
+                width: 100%;
+                padding: 16px 24px;
+                font-size: 16px;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .footer {
+                padding: 16px;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .email-container {
+                background-color: #1a202c !important;
+            }
+            
+            .content {
+                background-color: #1a202c !important;
+            }
+            
+            .greeting {
+                color: #f7fafc !important;
+            }
+            
+            .message {
+                color: #e2e8f0 !important;
+            }
+            
+            .urgency-box {
+                background: linear-gradient(135deg, #44337a 0%, #553c9a 100%) !important;
+                border-color: #805ad5 !important;
+            }
+            
+            .motivation {
+                background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
+                border-color: #68d391 !important;
+            }
+            
+            .footer {
+                background-color: #2d3748 !important;
+                border-top-color: #4a5568 !important;
+            }
+        }
+        
+        /* Outlook specific */
+        <!--[if mso]>
+        .email-container {
+            width: 600px !important;
+        }
+        
+        .cta-button {
+            padding: 18px 36px !important;
+        }
+        <![endif]-->
+    </style>
+</head>
+<body>
+    <div style="background-color: #f8f9fa; padding: 20px 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td>
+                    <div class="email-container">
+                        <!-- Header -->
+                        <div class="header">
+                            <h1>{{fromName}}</h1>
+                            <p>Premier rappel amical (J+3)</p>
+                            <div class="reminder-badge">Rappel</div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="content">
+                            <div class="greeting">
+                                Salut {{userName}} ! ⏰
+                            </div>
+                            
+                            <div class="message">
+                                Nous espérons que vous allez bien ! Nous avons remarqué que vous n'avez pas encore rempli votre formulaire pour ce mois-ci.
+                            </div>
+                            
+                            <div class="urgency-box">
+                                <div class="countdown">{{daysRemaining}}</div>
+                                <div class="countdown-text">jours restants</div>
+                                <div class="month-badge">{{month}}</div>
+                                <div class="expires-info">
+                                    ⚠️ Expire le {{expiresAt}}
+                                </div>
+                            </div>
+                            
+                            <div class="message">
+                                <strong>Pas de panique !</strong> Il vous reste encore quelques jours pour partager vos réponses. Cela ne prend que quelques minutes et vos amis attendent de découvrir vos réponses.
+                            </div>
+                            
+                            <div class="cta-container">
+                                <a href="{{invitationUrl}}" class="cta-button">
+                                    🎯 Remplir maintenant
+                                </a>
+                                <div class="cta-text">
+                                    Ne manquez pas cette occasion de vous connecter !<br>
+                                    Votre lien personnel vous attend.
+                                </div>
+                            </div>
+                            
+                            <div class="motivation">
+                                <h3>💡 Pourquoi c'est important ?</h3>
+                                <p>
+                                    Vos réponses permettent à vos amis de mieux vous connaître et créent des conversations authentiques. 
+                                    Plus vous participez, plus l'expérience devient enrichissante pour tout le groupe !
+                                </p>
+                            </div>
+                            
+                            <div class="stats">
+                                <div class="stat-item">
+                                    <span class="stat-number">2-3</span>
+                                    <span class="stat-label">Minutes</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">100%</span>
+                                    <span class="stat-label">Privé</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">∞</span>
+                                    <span class="stat-label">Connexions</span>
+                                </div>
+                            </div>
+                            
+                            <div class="message">
+                                <strong>Questions ou problèmes ?</strong> Répondez simplement à cet email, nous sommes là pour vous aider !
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="footer">
+                            <p>
+                                <strong>{{fromName}}</strong><br>
+                                Connectez-vous avec vos amis d'une nouvelle façon
+                            </p>
+                            
+                            <p>
+                                <a href="{{appBaseUrl}}">Visitez notre site</a>
+                            </p>
+                            
+                            <div class="unsubscribe">
+                                <a href="{{unsubscribeUrl}}">Se désabonner</a> |
+                                <a href="{{appBaseUrl}}/privacy">Politique de confidentialité</a>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

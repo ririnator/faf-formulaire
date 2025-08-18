@@ -1,0 +1,54 @@
+{
+  "name": "faf-integrity-validator",
+  "version": "2.0.0",
+  "description": "Système complet de validation d'intégrité post-migration FAF v1 → Form-a-Friend v2",
+  "main": "index.js",
+  "bin": {
+    "faf-integrity-validator": "./index.js",
+    "faf-validate": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "validate": "node index.js",
+    "validate-counts": "node index.js --counts-only",
+    "validate-relations": "node index.js --relations-only",
+    "validate-tokens": "node index.js --tokens-only",
+    "validate-functionality": "node index.js --functionality-only",
+    "validate-data": "node index.js --data-only",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "faf",
+    "migration",
+    "validation",
+    "integrity",
+    "mongodb",
+    "data-validation"
+  ],
+  "author": "FAF Migration Team",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "chalk": "^4.1.2",
+    "mongodb": "^6.3.0",
+    "dotenv": "^16.3.1",
+    "bcrypt": "^5.1.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@types/node": "^20.10.6"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FAF/integrity-validator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/FAF/integrity-validator/issues"
+  },
+  "homepage": "https://github.com/FAF/integrity-validator#readme"
+}

@@ -1,8 +1,5 @@
 const request = require('supertest');
 const express = require('express');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-
 const Response = require('../models/Response');
 const responseRoutes = require('../routes/responseRoutes');
 const adminRoutes = require('../routes/adminRoutes');
@@ -17,25 +14,32 @@ jest.mock('../config/cloudinary', () => ({
 
 const cloudinary = require('../config/cloudinary');
 
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
 describe('Error Handling and Database Failure Tests', () => {
-  let app;
-  let mongoServer;
   let mongoUri;
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
+    
     mongoUri = mongoServer.getUri();
     
     // Only connect if not already connected
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri);
-    }
+      }
   });
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+    });
 
   beforeEach(async () => {
     await Response.deleteMany({});
@@ -330,8 +334,6 @@ describe('Error Handling and Database Failure Tests', () => {
   describe('Recovery and Resilience', () => {
     test('should recover from temporary database disconnection', async () => {
       // Simulate temporary disconnection
-      await mongoose.connection.close();
-
       const formData = {
         name: 'Recovery Test',
         responses: [{ question: 'Test', answer: 'Test' }]
@@ -345,8 +347,6 @@ describe('Error Handling and Database Failure Tests', () => {
       expect(failedResponse.status).toBe(500);
 
       // Reconnect
-      await mongoose.connect(mongoUri);
-
       // This should succeed
       const successResponse = await request(app)
         .post('/api/responses')

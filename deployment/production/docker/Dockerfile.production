@@ -1,0 +1,81 @@
+# FAF Production Dockerfile
+# Multi-stage build optimized for production deployment
+
+# Build stage
+FROM node:18-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+
+# Install dependencies with production optimizations
+RUN npm ci --only=production --no-audit --no-fund && \
+    cd backend && npm ci --only=production --no-audit --no-fund
+
+# Copy application source
+COPY . .
+
+# Remove development files and directories
+RUN rm -rf \
+    .git \
+    .gitignore \
+    README.md \
+    *.md \
+    backend/tests \
+    backend/coverage \
+    backend/.env* \
+    frontend/tests \
+    logs \
+    node_modules/.cache \
+    backend/node_modules/.cache
+
+# Production stage
+FROM node:18-alpine AS production
+
+# Install system dependencies
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    mongodb-tools \
+    && rm -rf /var/cache/apk/*
+
+# Create app user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S fafapp -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy built application from builder stage
+COPY --from=builder --chown=fafapp:nodejs /app .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p \
+    /var/log/faf \
+    /app/uploads \
+    /app/temp \
+    && chown -R fafapp:nodejs /var/log/faf /app/uploads /app/temp
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV LOG_LEVEL=info
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Switch to non-root user
+USER fafapp
+
+# Expose port
+EXPOSE 3000
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["node", "backend/app.js"]

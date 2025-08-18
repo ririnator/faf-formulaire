@@ -4,9 +4,18 @@
  */
 
 const request = require('supertest');
-const app = require('../app');
-const mongoose = require('mongoose');
 const Response = require('../models/Response');
+
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
 
 describe('MongoDB Injection Security Tests', () => {
   let adminSession = null;
@@ -42,8 +51,7 @@ describe('MongoDB Injection Security Tests', () => {
 
   afterAll(async () => {
     await Response.deleteMany({});
-    await mongoose.connection.close();
-  });
+    });
 
   describe('Malicious Regex Pattern Tests', () => {
     const maliciousPatterns = [

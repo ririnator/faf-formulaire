@@ -1,29 +1,31 @@
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const app = require('../app');
 const Response = require('../models/Response');
 
-describe('Middleware Integration Tests', () => {
-  let mongoServer;
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
 
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
+describe('Middleware Integration Tests', () => {
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
     
     // Close existing connection if any
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }
     
-    await mongoose.connect(mongoUri);
     process.env.FORM_ADMIN_NAME = 'testadmin';
   });
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+    });
 
   beforeEach(async () => {
     await Response.deleteMany({});

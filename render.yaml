@@ -1,0 +1,114 @@
+# Configuration Render.com pour FAF (Form-a-Friend)
+# Ce fichier configure automatiquement le déploiement sur Render
+
+services:
+  # Service web principal
+  - type: web
+    name: faf-production
+    runtime: node
+    plan: starter # Upgrade to 'standard' for production
+    region: frankfurt # Europe - changez selon votre région
+    branch: main
+    rootDir: backend
+    buildCommand: npm ci --only=production
+    startCommand: npm start
+    healthCheckPath: /health
+    
+    # Configuration auto-scaling
+    autoDeploy: true
+    
+    # Variables d'environnement (à configurer dans le dashboard)
+    envVars:
+      # Configuration de base
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HTTPS
+        value: "true"
+      
+      # Base de données - À CONFIGURER
+      - key: MONGODB_URI
+        sync: false # Secret - configurer manuellement
+      
+      # Sécurité - À CONFIGURER  
+      - key: SESSION_SECRET
+        sync: false # Secret - configurer manuellement
+      - key: LOGIN_ADMIN_USER
+        sync: false # Secret - configurer manuellement
+      - key: LOGIN_ADMIN_PASS
+        sync: false # Secret - configurer manuellement
+      - key: FORM_ADMIN_NAME
+        value: riri
+      
+      # URLs - À AJUSTER
+      - key: APP_BASE_URL
+        value: https://faf-production.onrender.com
+      - key: FRONTEND_URL
+        value: https://faf-production.onrender.com
+      
+      # Cloudinary - À CONFIGURER
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false # Secret - configurer manuellement
+      - key: CLOUDINARY_API_KEY
+        sync: false # Secret - configurer manuellement
+      - key: CLOUDINARY_API_SECRET
+        sync: false # Secret - configurer manuellement
+      
+      # Configuration production
+      - key: DISABLE_RATE_LIMITING
+        value: "false"
+      - key: DEBUG_VERBOSE
+        value: "false"
+      
+      # Email service (optionnel)
+      - key: ENABLE_EMAIL_MONITORING
+        value: "true"
+      - key: EMAIL_FROM_ADDRESS
+        value: noreply@form-a-friend.com
+      - key: EMAIL_FROM_NAME
+        value: Form-a-Friend
+      
+      # Configuration scheduler
+      - key: SCHEDULER_TIMEZONE
+        value: Europe/Paris
+      - key: SCHEDULER_MONTHLY_JOB_DAY
+        value: "5"
+      - key: SCHEDULER_MONTHLY_JOB_HOUR
+        value: "18"
+      
+      # Limites de service
+      - key: CONTACT_MAX_CSV_SIZE
+        value: "5242880" # 5MB
+      - key: CONTACT_MAX_BATCH_SIZE
+        value: "100"
+      - key: INVITATION_EXPIRATION_DAYS
+        value: "60"
+      - key: HANDSHAKE_EXPIRATION_DAYS
+        value: "30"
+      - key: SUBMISSION_MAX_TEXT_RESPONSES
+        value: "8"
+      - key: SUBMISSION_MAX_PHOTO_RESPONSES
+        value: "5"
+      
+      # Configuration monitoring
+      - key: EMAIL_BOUNCE_RATE_THRESHOLD
+        value: "0.05"
+      - key: EMAIL_COMPLAINT_RATE_THRESHOLD
+        value: "0.01"
+      - key: SCHEDULER_ERROR_RATE_THRESHOLD
+        value: "0.05"
+      - key: SCHEDULER_MEMORY_ALERT_THRESHOLD
+        value: "0.8"
+
+# Configuration optionnelle pour base de données MongoDB
+# (Render ne supporte pas MongoDB natif, utiliser MongoDB Atlas)
+
+# Configuration optionnelle pour Redis
+# (Render supporte Redis, mais FAF utilise MongoDB pour les sessions)
+
+# Notes de configuration :
+# 1. Configurez manuellement les secrets dans le dashboard Render
+# 2. Mettez à jour APP_BASE_URL avec votre vraie URL Render
+# 3. Configurez MongoDB Atlas séparément
+# 4. Configurez Cloudinary pour les uploads d'images

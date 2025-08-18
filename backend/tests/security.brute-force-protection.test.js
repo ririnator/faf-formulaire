@@ -4,9 +4,18 @@
  */
 
 const request = require('supertest');
-const app = require('../app');
-const mongoose = require('mongoose');
 const Response = require('../models/Response');
+
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
 
 describe('🛡️ Advanced Brute Force Protection', () => {
   let testResponses = [];
@@ -26,8 +35,7 @@ describe('🛡️ Advanced Brute Force Protection', () => {
 
   afterAll(async () => {
     await Response.deleteMany({});
-    await mongoose.connection.close();
-  });
+    });
 
   describe('🔐 Authentication Brute Force Protection', () => {
     test('should block rapid successive failed login attempts', async () => {

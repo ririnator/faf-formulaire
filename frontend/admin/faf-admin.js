@@ -393,9 +393,22 @@ export const UI = {
   },
 
   /**
-   * Crée et affiche une lightbox pour une image
+   * Crée et affiche une lightbox pour une image en utilisant le nouveau système PhotoLightbox
    */
   createLightbox(imageSrc, imageAlt = '', caption = '', config = {}) {
+    // Utiliser le nouveau PhotoLightbox si disponible
+    if (window.PhotoLightbox) {
+      const photos = [{
+        url: imageSrc,
+        title: imageAlt || caption || 'Image',
+        description: caption || ''
+      }];
+      
+      window.PhotoLightbox.open(photos, 0, config);
+      return;
+    }
+    
+    // Fallback vers l'ancienne méthode si PhotoLightbox n'est pas disponible
     const overlay = document.createElement('div');
     overlay.className = 'lightbox-overlay';
 
@@ -484,6 +497,16 @@ export const UI = {
     document.addEventListener('keydown', escapeHandler);
 
     document.body.appendChild(overlay);
+  },
+
+  /**
+   * Initialise la lightbox pour toutes les images Cloudinary sur la page
+   */
+  initializeLightboxForImages() {
+    if (window.PhotoLightbox && window.PhotoLightbox.createFromImages) {
+      // Utiliser le nouveau système pour toutes les images Cloudinary
+      window.PhotoLightbox.createFromImages('img[src*="res.cloudinary.com"]');
+    }
   }
 };
 

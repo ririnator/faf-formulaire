@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <title>Rappel J+7 {{fromName}} - {{month}} - DERNIÈRE CHANCE</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:AllowPNG/>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            min-width: 100%;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        
+        table {
+            border-collapse: collapse;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        
+        img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+        }
+        
+        /* Container */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 3px solid #e53e3e;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: #ffffff;
+            padding: 32px 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 255, 255, 0.1) 10px,
+                rgba(255, 255, 255, 0.1) 20px
+            );
+            animation: slide 2s linear infinite;
+        }
+        
+        @keyframes slide {
+            0% { transform: translateX(-20px); }
+            100% { transform: translateX(20px); }
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+            margin: 0;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .urgency-badge {
+            display: inline-block;
+            background: #fff;
+            color: #e53e3e;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 800;
+            margin-top: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        /* Content */
+        .content {
+            padding: 32px 24px;
+        }
+        
+        .greeting {
+            font-size: 22px;
+            font-weight: 700;
+            color: #e53e3e;
+            margin-bottom: 16px;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 24px;
+            line-height: 1.7;
+        }
+        
+        .critical-box {
+            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+            border: 3px solid #e53e3e;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .critical-box::before {
+            content: "⚠️";
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            font-size: 60px;
+            opacity: 0.1;
+            transform: rotate(-15deg);
+        }
+        
+        .critical-box::after {
+            content: "⚠️";
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            font-size: 60px;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+        
+        .final-countdown {
+            font-size: 48px;
+            font-weight: 900;
+            color: #e53e3e;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(229, 62, 62, 0.3);
+            animation: shake 1s infinite;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+        
+        .final-countdown-text {
+            font-size: 20px;
+            color: #c53030;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .month-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: #ffffff;
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
+        }
+        
+        .expires-info {
+            font-size: 16px;
+            color: #e53e3e;
+            margin-top: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Call to Action Button */
+        .cta-container {
+            text-align: center;
+            margin: 32px 0;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: 800;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(229, 62, 62, 0.5);
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: throb 2s infinite;
+        }
+        
+        @keyframes throb {
+            0%, 100% { box-shadow: 0 8px 25px rgba(229, 62, 62, 0.5); }
+            50% { box-shadow: 0 12px 35px rgba(229, 62, 62, 0.7); }
+        }
+        
+        .cta-button:hover {
+            background: linear-gradient(135deg, #c53030 0%, #9b2c2c 100%);
+            transform: translateY(-3px);
+        }
+        
+        .cta-text {
+            font-size: 16px;
+            color: #e53e3e;
+            margin-top: 16px;
+            line-height: 1.5;
+            font-weight: 600;
+        }
+        
+        /* Last chance section */
+        .last-chance {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border: 3px solid #f59e0b;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+        
+        .last-chance h3 {
+            color: #92400e;
+            font-size: 20px;
+            margin-bottom: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .last-chance p {
+            color: #b45309;
+            font-size: 16px;
+            margin: 0;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+        
+        /* Miss out section */
+        .miss-out {
+            background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+            border: 2px solid #a0a0a0;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        
+        .miss-out h3 {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .miss-out p {
+            color: #888;
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.6;
+        }
+        
+        /* Footer */
+        .footer {
+            background-color: #f7fafc;
+            padding: 24px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .footer p {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 8px;
+        }
+        
+        .footer a {
+            color: #e53e3e;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .unsubscribe {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-top: 16px;
+        }
+        
+        .unsubscribe a {
+            color: #a0aec0;
+        }
+        
+        /* Mobile responsive */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            
+            .header {
+                padding: 24px 16px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 24px 16px;
+            }
+            
+            .critical-box, .last-chance, .miss-out {
+                padding: 16px;
+                margin: 16px 0;
+            }
+            
+            .final-countdown {
+                font-size: 36px;
+            }
+            
+            .cta-button {
+                width: 100%;
+                padding: 18px 24px;
+                font-size: 18px;
+            }
+            
+            .footer {
+                padding: 16px;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .email-container {
+                background-color: #1a202c !important;
+                border-color: #e53e3e !important;
+            }
+            
+            .content {
+                background-color: #1a202c !important;
+            }
+            
+            .greeting {
+                color: #fc8181 !important;
+            }
+            
+            .message {
+                color: #e2e8f0 !important;
+            }
+            
+            .critical-box {
+                background: linear-gradient(135deg, #742a2a 0%, #9b2c2c 100%) !important;
+                border-color: #e53e3e !important;
+            }
+            
+            .last-chance {
+                background: linear-gradient(135deg, #744210 0%, #92400e 100%) !important;
+                border-color: #f59e0b !important;
+            }
+            
+            .footer {
+                background-color: #2d3748 !important;
+                border-top-color: #4a5568 !important;
+            }
+        }
+        
+        /* Outlook specific */
+        <!--[if mso]>
+        .email-container {
+            width: 600px !important;
+        }
+        
+        .cta-button {
+            padding: 20px 40px !important;
+        }
+        <![endif]-->
+    </style>
+</head>
+<body>
+    <div style="background-color: #f8f9fa; padding: 20px 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td>
+                    <div class="email-container">
+                        <!-- Header -->
+                        <div class="header">
+                            <h1>{{fromName}}</h1>
+                            <p>Rappel final (J+7) - Dernière chance</p>
+                            <div class="urgency-badge">DERNIÈRE CHANCE</div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="content">
+                            <div class="greeting">
+                                {{userName}}, c'est maintenant ou jamais ! 🚨
+                            </div>
+                            
+                            <div class="message">
+                                <strong>Votre invitation expire très bientôt</strong> et nous ne voulons pas que vous manquiez cette opportunité de vous connecter avec vos amis ce mois-ci.
+                            </div>
+                            
+                            <div class="critical-box">
+                                <div class="final-countdown">{{daysRemaining}}</div>
+                                <div class="final-countdown-text">jours restants seulement</div>
+                                <div class="month-badge">{{month}}</div>
+                                <div class="expires-info">
+                                    ⏰ EXPIRE LE {{expiresAt}}
+                                </div>
+                            </div>
+                            
+                            <div class="cta-container">
+                                <a href="{{invitationUrl}}" class="cta-button">
+                                    🚀 REMPLIR MAINTENANT
+                                </a>
+                                <div class="cta-text">
+                                    <strong>ACTION IMMÉDIATE REQUISE</strong><br>
+                                    Ne laissez pas passer cette chance !
+                                </div>
+                            </div>
+                            
+                            <div class="last-chance">
+                                <h3>🎯 Dernière chance de participer</h3>
+                                <p>
+                                    Après l'expiration de votre invitation, vous devrez attendre le mois prochain pour participer. 
+                                    Vos amis comptent sur vous pour compléter le cercle ce mois-ci !
+                                </p>
+                            </div>
+                            
+                            <div class="message">
+                                <strong>Rappel :</strong> Il ne vous faut que 2-3 minutes pour remplir le formulaire. 
+                                C'est rapide, amusant, et vos amis découvriront un nouveau côté de vous !
+                            </div>
+                            
+                            <div class="miss-out">
+                                <h3>😔 Que se passe-t-il si vous manquez cette opportunité ?</h3>
+                                <p>
+                                    Vous ne pourrez pas voir les réponses de vos amis pour ce mois-ci, 
+                                    et ils ne découvriront pas vos réponses non plus. 
+                                    L'expérience sera incomplète pour tout le groupe.
+                                </p>
+                            </div>
+                            
+                            <div class="message">
+                                <strong>Questions urgentes ?</strong> Répondez immédiatement à cet email, nous vous aiderons en priorité !
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="footer">
+                            <p>
+                                <strong>{{fromName}}</strong><br>
+                                Dernière chance de vous connecter ce mois-ci
+                            </p>
+                            
+                            <p>
+                                <a href="{{appBaseUrl}}">Visitez notre site</a>
+                            </p>
+                            
+                            <div class="unsubscribe">
+                                <a href="{{unsubscribeUrl}}">Se désabonner</a> |
+                                <a href="{{appBaseUrl}}/privacy">Politique de confidentialité</a>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

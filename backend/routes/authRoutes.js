@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Response = require('../models/Response');
 const { HTTP_STATUS, APP_CONSTANTS } = require('../constants');
 const { authLimiters } = require('../middleware/authRateLimit');
+const { createEmailDomainMiddleware } = require('../middleware/emailDomainValidation');
 const SecureLogger = require('../utils/secureLogger');
 const router = express.Router();
 
@@ -44,8 +45,14 @@ const loginValidation = [
     .withMessage('Mot de passe requis')
 ];
 
+// Email domain validation middleware for registration
+const emailDomainValidation = createEmailDomainMiddleware({
+  emailField: 'email',
+  logBlocked: true
+});
+
 // POST /api/auth/register - Inscription avec rate limiting
-router.post('/register', authLimiters.register, registerValidation, async (req, res) => {
+router.post('/register', authLimiters.register, emailDomainValidation, registerValidation, async (req, res) => {
   try {
     // Vérifier les erreurs de validation
     const errors = validationResult(req);
@@ -241,7 +248,10 @@ router.post('/logout', (req, res) => {
 router.get('/me', async (req, res) => {
   try {
     if (!req.session?.userId) {
-      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ error: 'Non authentifié' });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ 
+        success: false,
+        error: 'Non authentifié' 
+      });
     }
 
     const user = await User.findById(req.session.userId)
@@ -249,16 +259,25 @@ router.get('/me', async (req, res) => {
 
     if (!user || !user.metadata.isActive) {
       req.session.destroy();
-      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ error: 'Utilisateur introuvable' });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ 
+        success: false,
+        error: 'Utilisateur introuvable' 
+      });
     }
 
     res.json({
-      user: user.toPublicJSON()
+      success: true,
+      data: {
+        user: user.toPublicJSON()
+      }
     });
 
   } catch (error) {
     SecureLogger.logError('Profile retrieval failed', error);
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Erreur serveur' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ 
+      success: false,
+      error: 'Erreur serveur' 
+    });
   }
 });
 

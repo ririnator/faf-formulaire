@@ -1,7 +1,16 @@
 const request = require('supertest');
-const mongoose = require('mongoose');
-const app = require('../app');
 const Response = require('../models/Response');
+
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
 
 describe('Dynamic Option Integration Tests', () => {
   
@@ -18,8 +27,7 @@ describe('Dynamic Option Integration Tests', () => {
 
   afterAll(async () => {
     if (mongoose.connection.readyState !== 0) {
-      await mongoose.connection.close();
-    }
+      }
   });
 
   /**

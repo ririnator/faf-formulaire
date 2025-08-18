@@ -4,14 +4,21 @@ const mongoose = require('mongoose');
 const router   = express.Router();
 const Response = require('../models/Response');
 const { createAdminBodyParser } = require('../middleware/bodyParser');
-const { csrfProtection, csrfTokenEndpoint } = require('../middleware/csrf');
+const { csrfProtectionStrict, csrfTokenEndpoint } = require('../middleware/csrf');
 const { normalizeQuestion } = require('../utils/questionNormalizer');
 const SessionConfig = require('../config/session');
 const DBPerformanceMonitor = require('../services/dbPerformanceMonitor');
 const RealTimeMetrics = require('../services/realTimeMetrics');
+const { trackAdminSummary, trackHeavyAnalytics, trackRealTimeMonitoring, trackPerformanceStats, trackSimpleStats } = require('../middleware/statisticsMonitoring');
+const { createQuerySanitizationMiddleware, sanitizeMongoInput, sanitizeObjectId } = require('../middleware/querySanitization');
 
 // Configuration constants
 const PIE_CHART_QUESTION = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
+
+// Timer variables for cleanup
+let cacheCleanupInterval;
+let preWarmTimeout;
+let preWarmInterval;
 
 // Monthly question order cache to avoid repeated DB queries
 const questionOrderCache = new Map(); // Key: "YYYY-MM", Value: { order: [...], timestamp: Date }
@@ -137,9 +144,9 @@ function cleanupCache() {
   }
 }
 
-// Periodic cache cleanup every 5 minutes (only in production)
+// Periodic cache cleanup every 5 minutes - Test environment aware
 if (process.env.NODE_ENV === 'production') {
-  setInterval(cleanupCache, 5 * 60 * 1000);
+  cacheCleanupInterval = setInterval(cleanupCache, 5 * 60 * 1000);
 }
 
 /**
@@ -172,14 +179,17 @@ if (process.env.NODE_ENV === 'production') {
   setTimeout(preWarmCurrentMonth, 10000);
 
   // Pre-warm monthly (on the 1st of each month at 1 AM)
-  const now = new Date();
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 1, 0, 0);
-  const timeToNextMonth = nextMonth.getTime() - now.getTime();
-  setTimeout(() => {
-    preWarmCurrentMonth();
-    // Then repeat monthly
-    setInterval(preWarmCurrentMonth, 30 * 24 * 60 * 60 * 1000); // 30 days
-  }, timeToNextMonth);
+  // Test environment aware pre-warming
+  if (process.env.NODE_ENV !== 'test') {
+    const now = new Date();
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 1, 0, 0);
+    const timeToNextMonth = nextMonth.getTime() - now.getTime();
+    preWarmTimeout = setTimeout(() => {
+      preWarmCurrentMonth();
+      // Then repeat monthly
+      preWarmInterval = setInterval(preWarmCurrentMonth, 30 * 24 * 60 * 60 * 1000); // 30 days
+    }, timeToNextMonth);
+  }
 }
 
 /**
@@ -330,8 +340,9 @@ async function getQuestionOrderForMonth(monthKey, match, PIE_Q) {
   }
 }
 
-// Apply admin-specific body parser (1MB limit) to all admin routes
+// Apply admin-specific body parser (1MB limit) and query sanitization to all admin routes
 router.use(createAdminBodyParser());
+router.use(createQuerySanitizationMiddleware());
 
 // Endpoint pour récupérer le token CSRF
 router.get('/csrf-token', csrfTokenEndpoint());
@@ -392,10 +403,15 @@ router.get('/debug/questions', (req, res, next) => {
   }
 });
 
-// Middleware : charge la réponse dans req.responseDoc
+// Middleware : charge la réponse dans req.responseDoc avec sanitisation sécurisée
 router.param('id', async (req, res, next, id) => {
   try {
-    const doc = await Response.findById(id);
+    const sanitizedId = sanitizeObjectId(id);
+    if (!sanitizedId) {
+      return res.status(400).json({ error: 'ID de réponse invalide', code: 'INVALID_ID' });
+    }
+    
+    const doc = await Response.findById(sanitizedId);
     if (!doc) return res.status(404).json({ error: 'Réponse non trouvée', code: 'NOT_FOUND' });
     req.responseDoc = doc;
     next();
@@ -414,11 +430,24 @@ router.get('/responses', async (req, res) => {
     const skip  = (page - 1) * limit;
     const search = req.query.search?.trim();
 
-    // Construction du filtre de recherche sécurisée avec text search
+    // Construction du filtre de recherche sécurisée avec text search avancé
     let filter = {};
     if (search) {
-      // Validation basique de la recherche
-      const sanitizedSearch = search.trim().replace(/["\\]/g, '').substring(0, 100);
+      // Sanitisation avanceée de la requête de recherche
+      const sanitizedSearchInput = sanitizeMongoInput(search);
+      
+      if (typeof sanitizedSearchInput !== 'string') {
+        return res.status(400).json({ 
+          error: 'Terme de recherche invalide', 
+          code: 'INVALID_SEARCH_TERM' 
+        });
+      }
+      
+      // Validation et nettoyage supplémentaire
+      const sanitizedSearch = sanitizedSearchInput.trim()
+        .replace(/["\\]/g, '')
+        .replace(/[{}[\]$]/g, '') // Bloquer les caractères MongoDB dangereux
+        .substring(0, 100);
       
       if (sanitizedSearch.length >= 2) {
         // Utiliser MongoDB text search avec détection linguistique mise en cache
@@ -429,13 +458,17 @@ router.get('/responses', async (req, res) => {
         
         // Détecter la langue avec mise en cache pour les performances
         const detectedLanguage = detectLanguageWithCache(sanitizedSearch);
-        textSearchOptions.$language = detectedLanguage;
+        if (detectedLanguage && detectedLanguage !== 'none') {
+          textSearchOptions.$language = detectedLanguage;
+        }
         
         filter.$text = textSearchOptions;
-      } else {
+      } else if (sanitizedSearch.length >= 1) {
         // Fallback pour recherches courtes avec une approche sécurisée
+        // Utiliser une regex strictement échappée
+        const escapedSearch = sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         filter.name = { 
-          $regex: `^${sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+          $regex: `^${escapedSearch}`,
           $options: 'i'
         };
       }
@@ -458,16 +491,26 @@ router.get('/responses', async (req, res) => {
       if (searchError.name === 'MongoServerError' && searchError.code === 17124) {
         console.warn('⚠️ Text search failed, falling back to regex:', searchError.message);
         
-        // Utiliser regex comme fallback
+        // Utiliser regex comme fallback avec sanitisation renforcée
         if (search && search.trim().length >= 2) {
-          const sanitizedSearch = search.trim().replace(/["\\]/g, '').substring(0, 100);
-          filter = {
-            $or: [
-              { name: { $regex: sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
-              { 'responses.question': { $regex: sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
-              { 'responses.answer': { $regex: sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
-            ]
-          };
+          const sanitizedSearchInput = sanitizeMongoInput(search);
+          if (typeof sanitizedSearchInput === 'string') {
+            const sanitizedSearch = sanitizedSearchInput.trim()
+              .replace(/["\\]/g, '')
+              .replace(/[{}[\]$]/g, '') // Bloquer MongoDB injection
+              .substring(0, 100);
+            
+            const escapedSearch = sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            filter = {
+              $or: [
+                { name: { $regex: escapedSearch, $options: 'i' } },
+                { 'responses.question': { $regex: escapedSearch, $options: 'i' } },
+                { 'responses.answer': { $regex: escapedSearch, $options: 'i' } }
+              ]
+            };
+          } else {
+            filter = {}; // Recherche vide si sanitisation échoue
+          }
         } else {
           filter = {}; // Recherche vide si fallback impossible
         }
@@ -502,7 +545,7 @@ router.route('/responses/:id')
   .get((req, res) => {
     res.json(req.responseDoc);
   })
-  .delete(csrfProtection(), async (req, res) => {
+  .delete(csrfProtectionStrict(), async (req, res) => {
     try {
       await req.responseDoc.deleteOne();
       res.json({ message: 'Réponse supprimée avec succès' });
@@ -543,8 +586,11 @@ router.route('/responses/:id')
  * - TTL: 10 minutes (balances performance vs data freshness)
  * - Fallback: expired cache used if DB error occurs
  * - Metadata: tracks source, query count, performance metrics
+ * 
+ * SECURITY: Uses statsAdminSummaryLimiter (20 requests per 30 minutes)
+ * due to complex aggregation pipelines and heavy database operations
  */
-router.get('/summary', async (req, res) => {
+router.get('/summary', require('../middleware/rateLimiting').statsAdminSummaryLimiter, trackAdminSummary, async (req, res) => {
   try {
     const match = {};
     if (req.query.month && req.query.month !== 'all') {
@@ -765,11 +811,88 @@ router.get('/months', async (req, res) => {
 });
 
 // ============================================
+// Statistics Monitoring Dashboard Endpoints
+// ============================================
+
+// Get statistics monitoring status and metrics
+router.get('/statistics-monitoring/status', require('../middleware/rateLimiting').statsSimpleLimiter, trackSimpleStats, async (req, res) => {
+  try {
+    const { statisticsMonitor } = require('../middleware/statisticsMonitoring');
+    const monitoringStats = statisticsMonitor.getMonitoringStats();
+    
+    res.json({
+      success: true,
+      monitoring: monitoringStats,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getting statistics monitoring status:', error);
+    res.status(500).json({ 
+      error: 'Failed to get statistics monitoring status', 
+      code: 'STATS_MONITORING_ERROR'
+    });
+  }
+});
+
+// Update statistics monitoring configuration
+router.put('/statistics-monitoring/config', createAdminBodyParser(), async (req, res) => {
+  try {
+    const { statisticsMonitor } = require('../middleware/statisticsMonitoring');
+    const { config } = req.body;
+    
+    if (!config || typeof config !== 'object') {
+      return res.status(400).json({
+        error: 'Invalid configuration provided',
+        code: 'INVALID_CONFIG'
+      });
+    }
+    
+    statisticsMonitor.updateConfig(config);
+    
+    res.json({
+      success: true,
+      message: 'Statistics monitoring configuration updated',
+      newConfig: statisticsMonitor.alertThresholds,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error updating statistics monitoring config:', error);
+    res.status(500).json({ 
+      error: 'Failed to update statistics monitoring configuration', 
+      code: 'STATS_CONFIG_UPDATE_ERROR'
+    });
+  }
+});
+
+// Reset statistics monitoring data
+router.post('/statistics-monitoring/reset', async (req, res) => {
+  try {
+    const { statisticsMonitor } = require('../middleware/statisticsMonitoring');
+    statisticsMonitor.reset();
+    
+    res.json({
+      success: true,
+      message: 'Statistics monitoring data reset successfully',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error resetting statistics monitoring:', error);
+    res.status(500).json({ 
+      error: 'Failed to reset statistics monitoring', 
+      code: 'STATS_RESET_ERROR'
+    });
+  }
+});
+
+// ============================================
 // Session Cleanup Management Endpoints
 // ============================================
 
 // Get cleanup service status and statistics
-router.get('/cleanup/status', async (req, res) => {
+router.get('/cleanup/status', require('../middleware/rateLimiting').statsSimpleLimiter, trackSimpleStats, async (req, res) => {
   try {
     const cleanupService = SessionConfig.getCleanupService();
     
@@ -983,7 +1106,7 @@ router.initializePerformanceMonitoring = (monitor, metrics) => {
 };
 
 // Get performance monitoring status
-router.get('/performance/status', async (req, res) => {
+router.get('/performance/status', require('../middleware/rateLimiting').statsPerformanceLimiter, trackPerformanceStats, async (req, res) => {
   try {
     if (!performanceMonitor || !realTimeMetrics) {
       return res.status(503).json({
@@ -1033,7 +1156,7 @@ router.get('/performance/status', async (req, res) => {
 });
 
 // Get current performance summary
-router.get('/performance/summary', async (req, res) => {
+router.get('/performance/summary', require('../middleware/rateLimiting').statsHeavyAnalyticsLimiter, trackHeavyAnalytics, async (req, res) => {
   try {
     if (!performanceMonitor || !realTimeMetrics) {
       return res.status(503).json({
@@ -1060,7 +1183,7 @@ router.get('/performance/summary', async (req, res) => {
 });
 
 // Get real-time metrics
-router.get('/performance/realtime', async (req, res) => {
+router.get('/performance/realtime', require('../middleware/rateLimiting').statsRealTimeMonitoringLimiter, trackRealTimeMonitoring, async (req, res) => {
   try {
     if (!realTimeMetrics) {
       return res.status(503).json({
@@ -1093,7 +1216,7 @@ router.get('/performance/realtime', async (req, res) => {
 });
 
 // Get slow queries analysis
-router.get('/performance/slow-queries', async (req, res) => {
+router.get('/performance/slow-queries', require('../middleware/rateLimiting').statsHeavyAnalyticsLimiter, trackHeavyAnalytics, async (req, res) => {
   try {
     if (!performanceMonitor) {
       return res.status(503).json({
@@ -1155,7 +1278,7 @@ router.get('/performance/slow-queries', async (req, res) => {
 });
 
 // Get hybrid index analysis
-router.get('/performance/hybrid-indexes', async (req, res) => {
+router.get('/performance/hybrid-indexes', require('../middleware/rateLimiting').statsHeavyAnalyticsLimiter, async (req, res) => {
   try {
     if (!performanceMonitor) {
       return res.status(503).json({
@@ -1221,7 +1344,7 @@ router.get('/performance/hybrid-indexes', async (req, res) => {
 });
 
 // Get active performance alerts
-router.get('/performance/alerts', async (req, res) => {
+router.get('/performance/alerts', require('../middleware/rateLimiting').statsRealTimeMonitoringLimiter, async (req, res) => {
   try {
     if (!realTimeMetrics) {
       return res.status(503).json({
@@ -1416,7 +1539,7 @@ router.put('/performance/config', createAdminBodyParser(), async (req, res) => {
 });
 
 // Export performance data
-router.get('/performance/export', async (req, res) => {
+router.get('/performance/export', require('../middleware/rateLimiting').searchExportLimiter, async (req, res) => {
   try {
     if (!performanceMonitor || !realTimeMetrics) {
       return res.status(503).json({
@@ -1466,5 +1589,25 @@ router.get('/performance/export', async (req, res) => {
     });
   }
 });
+
+// Cleanup function for tests
+const cleanup = () => {
+  if (cacheCleanupInterval) {
+    clearInterval(cacheCleanupInterval);
+    cacheCleanupInterval = null;
+  }
+  if (preWarmTimeout) {
+    clearTimeout(preWarmTimeout);
+    preWarmTimeout = null;
+  }
+  if (preWarmInterval) {
+    clearInterval(preWarmInterval);
+    preWarmInterval = null;
+  }
+  questionOrderCache.clear();
+  languageDetectionCache.clear();
+};
+
+router.cleanup = cleanup;
 
 module.exports = router;

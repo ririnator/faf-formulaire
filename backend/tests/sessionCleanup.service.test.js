@@ -1,7 +1,17 @@
-const mongoose = require('mongoose');
 const SessionCleanupService = require('../services/sessionCleanupService');
 const User = require('../models/User');
 const Response = require('../models/Response');
+
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
 
 describe('SessionCleanupService', () => {
   let cleanupService;
@@ -30,8 +40,7 @@ describe('SessionCleanupService', () => {
       cleanupService.shutdown();
     }
     if (mongoose.connection.readyState !== 0) {
-      await mongoose.connection.close();
-    }
+      }
   });
 
   describe('Service Initialization', () => {

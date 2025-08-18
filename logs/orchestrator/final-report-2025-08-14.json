@@ -1,0 +1,37 @@
+{
+  "migration": {
+    "status": "PARTIAL_SUCCESS",
+    "startTime": "2025-08-14T16:55:23.046Z",
+    "endTime": "2025-08-14T16:55:29.122Z",
+    "duration": {
+      "hours": 0,
+      "minutes": 0,
+      "total_ms": 6076
+    }
+  },
+  "phases": {
+    "total": 6,
+    "completed": 0,
+    "failed": 6
+  },
+  "commands": {
+    "total": 23,
+    "completed": 0,
+    "failed": 1,
+    "success_rate": 0
+  },
+  "quality": {
+    "tests_run": 0,
+    "tests_passed": 0,
+    "security_checks": 0,
+    "rollbacks_triggered": 1
+  },
+  "errors": [
+    {
+      "commandId": "1.1",
+      "agent": "faf-database-specialist",
+      "error": "Implementation needed: Use Task tool to create models",
+      "timestamp": "2025-08-14T16:55:29.060Z"
+    }
+  ]
+}

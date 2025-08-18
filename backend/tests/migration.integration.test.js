@@ -1,25 +1,28 @@
 // Migration scenarios integration tests
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const TokenGenerator = require('../utils/tokenGenerator');
-const app = require('../app');
 const User = require('../models/User');
 const Response = require('../models/Response');
 
-describe('Migration Integration Tests', () => {
-  let mongoServer;
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
 
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
+describe('Migration Integration Tests', () => {
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-  });
+    
+    });
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+    });
 
   beforeEach(async () => {
     await User.deleteMany({});

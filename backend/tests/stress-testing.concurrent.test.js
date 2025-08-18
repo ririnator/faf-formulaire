@@ -1,26 +1,21 @@
 // Stress Testing for High-Concurrency Migration Scenarios
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const app = require('../app');
 const User = require('../models/User');
 const Response = require('../models/Response');
 const TokenGenerator = require('../utils/tokenGenerator');
 
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
 describe('🚀 High-Concurrency Migration Stress Tests', () => {
-  let mongoServer;
-
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-  }, 30000);
-
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-  }, 30000);
-
   beforeEach(async () => {
     await User.deleteMany({});
     await Response.deleteMany({});

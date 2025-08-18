@@ -1,0 +1,720 @@
+{
+  "timestamp": "2025-08-17T19:01:32.410Z",
+  "testSuite": "Staging Migration Tests",
+  "environment": {
+    "timestamp": "2025-08-17T19:01:32.418Z",
+    "environment": {
+      "nodeEnv": "staging",
+      "stagingMode": "true",
+      "migrationTestMode": "true"
+    },
+    "database": {
+      "name": "faf_staging_1755457275977",
+      "uri": "mongodb://127.0.0.1:61845/",
+      "connected": true
+    },
+    "collections": {
+      "responses": 0,
+      "users": 0
+    },
+    "healthCheck": {
+      "mongoConnection": true,
+      "environmentVariables": true,
+      "testDatabase": true
+    }
+  },
+  "summary": {
+    "totalTests": 4,
+    "performanceMetrics": 2,
+    "errorLogs": 1,
+    "securityEvents": 1
+  },
+  "results": {
+    "testResults": [
+      {
+        "testName": "Migration Report",
+        "result": {
+          "timestamp": "2025-08-17T19:01:20.453Z",
+          "duration": 3503,
+          "summary": {
+            "totalLegacyResponses": 100,
+            "usersCreated": 50,
+            "submissionsMigrated": 0,
+            "tokensPreserved": 0,
+            "errorsEncountered": 0
+          },
+          "performance": {
+            "averageProcessingTime": null,
+            "memoryUsed": {
+              "rss": 406011904,
+              "heapTotal": 796803072,
+              "heapUsed": 575609248,
+              "external": 1015035820,
+              "arrayBuffers": 1011360921
+            },
+            "databaseConnections": 1
+          },
+          "validation": {
+            "dataIntegrityChecks": {
+              "passed": true,
+              "checks": [
+                "dataIntegrity",
+                "relationshipIntegrity",
+                "tokenPreservation"
+              ]
+            },
+            "relationshipIntegrity": {
+              "valid": true,
+              "submissionsWithUsers": 0,
+              "totalSubmissions": 0
+            },
+            "tokenAccessibility": {
+              "totalTokens": 0,
+              "accessibleTokens": 0,
+              "accessibilityRate": 1
+            }
+          },
+          "errors": [],
+          "warnings": []
+        },
+        "timestamp": "2025-08-17T19:01:20.458Z"
+      },
+      {
+        "testName": "Compatibility Report",
+        "result": {
+          "timestamp": "2025-08-17T19:01:20.479Z",
+          "totalEndpoints": 6,
+          "legacyEndpoints": 3,
+          "newEndpoints": 3,
+          "results": [
+            {
+              "endpoint": "/view/:token",
+              "method": "GET",
+              "legacy": true,
+              "status": "passed",
+              "responseTime": 149.56585352469247,
+              "statusCode": 200
+            },
+            {
+              "endpoint": "/upload",
+              "method": "POST",
+              "legacy": true,
+              "status": "passed",
+              "responseTime": 81.86841845754944,
+              "statusCode": 200
+            },
+            {
+              "endpoint": "/submit-response",
+              "method": "POST",
+              "legacy": true,
+              "status": "passed",
+              "responseTime": 96.27696094366144,
+              "statusCode": 200
+            },
+            {
+              "endpoint": "/api/auth/login",
+              "method": "POST",
+              "legacy": false,
+              "status": "passed",
+              "responseTime": 113.01686199147994,
+              "statusCode": 200
+            },
+            {
+              "endpoint": "/api/submissions",
+              "method": "POST",
+              "legacy": false,
+              "status": "passed",
+              "responseTime": 68.68374315059991,
+              "statusCode": 200
+            },
+            {
+              "endpoint": "/api/admin/dashboard",
+              "method": "GET",
+              "legacy": false,
+              "status": "passed",
+              "responseTime": 101.25609700068998,
+              "statusCode": 200
+            }
+          ],
+          "summary": {
+            "totalPassed": 6,
+            "totalFailed": 0,
+            "compatibilityScore": 100
+          }
+        },
+        "timestamp": "2025-08-17T19:01:20.479Z"
+      },
+      {
+        "testName": "Real-time Dashboard",
+        "report": {
+          "timestamp": "2025-08-17T19:01:32.277Z",
+          "sessionDuration": 1026,
+          "snapshots": [
+            {
+              "timestamp": "2025-08-17T19:01:31.251Z",
+              "uptime": 158.786318042,
+              "metrics": {
+                "system": {
+                  "uptime": 159.604770875,
+                  "memory": {
+                    "rss": 371425280,
+                    "heapTotal": 797589504,
+                    "heapUsed": 587350448,
+                    "external": 1015033686,
+                    "arrayBuffers": 1011358787
+                  },
+                  "cpu": {
+                    "user": 103812394,
+                    "system": 6568455
+                  },
+                  "pid": 93173
+                },
+                "database": {
+                  "connectionState": 1,
+                  "collections": [
+                    "users",
+                    "responses",
+                    "submissions"
+                  ],
+                  "host": "127.0.0.1",
+                  "name": "test"
+                },
+                "application": {
+                  "environment": "staging",
+                  "stagingMode": "true",
+                  "migrationMode": "true"
+                },
+                "tests": {
+                  "totalResults": 2,
+                  "performanceMetrics": 2,
+                  "errorLogs": 1,
+                  "securityEvents": 1
+                }
+              },
+              "health": {
+                "overall": "warning",
+                "checks": {
+                  "memory": "healthy",
+                  "database": "healthy",
+                  "tests": "warning"
+                }
+              }
+            },
+            {
+              "timestamp": "2025-08-17T19:01:31.453Z",
+              "uptime": 158.988597417,
+              "metrics": {
+                "system": {
+                  "uptime": 159.604770875,
+                  "memory": {
+                    "rss": 371425280,
+                    "heapTotal": 797589504,
+                    "heapUsed": 587350448,
+                    "external": 1015033686,
+                    "arrayBuffers": 1011358787
+                  },
+                  "cpu": {
+                    "user": 103812394,
+                    "system": 6568455
+                  },
+                  "pid": 93173
+                },
+                "database": {
+                  "connectionState": 1,
+                  "collections": [
+                    "users",
+                    "responses",
+                    "submissions"
+                  ],
+                  "host": "127.0.0.1",
+                  "name": "test"
+                },
+                "application": {
+                  "environment": "staging",
+                  "stagingMode": "true",
+                  "migrationMode": "true"
+                },
+                "tests": {
+                  "totalResults": 2,
+                  "performanceMetrics": 2,
+                  "errorLogs": 1,
+                  "securityEvents": 1
+                }
+              },
+              "health": {
+                "overall": "warning",
+                "checks": {
+                  "memory": "healthy",
+                  "database": "healthy",
+                  "tests": "warning"
+                }
+              }
+            },
+            {
+              "timestamp": "2025-08-17T19:01:31.657Z",
+              "uptime": 159.192669917,
+              "metrics": {
+                "system": {
+                  "uptime": 159.604770875,
+                  "memory": {
+                    "rss": 371425280,
+                    "heapTotal": 797589504,
+                    "heapUsed": 587350448,
+                    "external": 1015033686,
+                    "arrayBuffers": 1011358787
+                  },
+                  "cpu": {
+                    "user": 103812394,
+                    "system": 6568455
+                  },
+                  "pid": 93173
+                },
+                "database": {
+                  "connectionState": 1,
+                  "collections": [
+                    "users",
+                    "responses",
+                    "submissions"
+                  ],
+                  "host": "127.0.0.1",
+                  "name": "test"
+                },
+                "application": {
+                  "environment": "staging",
+                  "stagingMode": "true",
+                  "migrationMode": "true"
+                },
+                "tests": {
+                  "totalResults": 2,
+                  "performanceMetrics": 2,
+                  "errorLogs": 1,
+                  "securityEvents": 1
+                }
+              },
+              "health": {
+                "overall": "warning",
+                "checks": {
+                  "memory": "healthy",
+                  "database": "healthy",
+                  "tests": "warning"
+                }
+              }
+            },
+            {
+              "timestamp": "2025-08-17T19:01:31.861Z",
+              "uptime": 159.396397209,
+              "metrics": {
+                "system": {
+                  "uptime": 159.604770875,
+                  "memory": {
+                    "rss": 371425280,
+                    "heapTotal": 797589504,
+                    "heapUsed": 587350448,
+                    "external": 1015033686,
+                    "arrayBuffers": 1011358787
+                  },
+                  "cpu": {
+                    "user": 103812394,
+                    "system": 6568455
+                  },
+                  "pid": 93173
+                },
+                "database": {
+                  "connectionState": 1,
+                  "collections": [
+                    "users",
+                    "responses",
+                    "submissions"
+                  ],
+                  "host": "127.0.0.1",
+                  "name": "test"
+                },
+                "application": {
+                  "environment": "staging",
+                  "stagingMode": "true",
+                  "migrationMode": "true"
+                },
+                "tests": {
+                  "totalResults": 2,
+                  "performanceMetrics": 2,
+                  "errorLogs": 1,
+                  "securityEvents": 1
+                }
+              },
+              "health": {
+                "overall": "warning",
+                "checks": {
+                  "memory": "healthy",
+                  "database": "healthy",
+                  "tests": "warning"
+                }
+              }
+            },
+            {
+              "timestamp": "2025-08-17T19:01:32.069Z",
+              "uptime": 159.604770875,
+              "metrics": {
+                "system": {
+                  "uptime": 159.604770875,
+                  "memory": {
+                    "rss": 371425280,
+                    "heapTotal": 797589504,
+                    "heapUsed": 587350448,
+                    "external": 1015033686,
+                    "arrayBuffers": 1011358787
+                  },
+                  "cpu": {
+                    "user": 103812394,
+                    "system": 6568455
+                  },
+                  "pid": 93173
+                },
+                "database": {
+                  "connectionState": 1,
+                  "collections": [
+                    "users",
+                    "responses",
+                    "submissions"
+                  ],
+                  "host": "127.0.0.1",
+                  "name": "test"
+                },
+                "application": {
+                  "environment": "staging",
+                  "stagingMode": "true",
+                  "migrationMode": "true"
+                },
+                "tests": {
+                  "totalResults": 2,
+                  "performanceMetrics": 2,
+                  "errorLogs": 1,
+                  "securityEvents": 1
+                }
+              },
+              "health": {
+                "overall": "warning",
+                "checks": {
+                  "memory": "healthy",
+                  "database": "healthy",
+                  "tests": "warning"
+                }
+              }
+            }
+          ],
+          "summary": {
+            "totalSnapshots": 5,
+            "healthySnapshots": 0,
+            "warningSnapshots": 5,
+            "unhealthySnapshots": 0,
+            "averageMemoryUsage": 587350448,
+            "databaseConnected": true
+          }
+        },
+        "timestamp": "2025-08-17T19:01:32.278Z"
+      },
+      {
+        "testName": "Automatic Alerts",
+        "report": {
+          "timestamp": "2025-08-17T19:01:32.400Z",
+          "totalAlerts": 0,
+          "alertsBySeverity": {
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0
+          },
+          "alerts": []
+        },
+        "timestamp": "2025-08-17T19:01:32.400Z"
+      }
+    ],
+    "performanceMetrics": [
+      {
+        "testName": "Real-time Performance Monitoring",
+        "report": {
+          "collectionPeriod": 3600,
+          "totalSamples": 36,
+          "memory": {
+            "min": 569803184,
+            "max": 623598888,
+            "avg": 597414824.2222222
+          },
+          "trends": {
+            "memoryTrend": -26445840,
+            "cpuTrend": 1736036
+          }
+        },
+        "timestamp": "2025-08-17T19:01:24.213Z"
+      },
+      {
+        "testName": "Database Performance",
+        "report": {
+          "timestamp": "2025-08-17T19:01:31.006Z",
+          "totalTests": 5,
+          "results": [
+            {
+              "testName": "User Find by Email",
+              "iterations": 5,
+              "times": [
+                3.986583,
+                1.327917,
+                1.1545,
+                1.118708,
+                1.1095
+              ],
+              "average": 1.7394416,
+              "min": 1.1095,
+              "max": 3.986583,
+              "standardDeviation": 1.126347216890884
+            },
+            {
+              "testName": "Submissions by User",
+              "iterations": 5,
+              "times": [
+                1.162292,
+                1.018375,
+                1.148417,
+                1.263333,
+                0.99325
+              ],
+              "average": 1.1171334,
+              "min": 0.99325,
+              "max": 1.263333,
+              "standardDeviation": 0.09949131036346845
+            },
+            {
+              "testName": "Submissions with User Population",
+              "iterations": 5,
+              "times": [
+                1.088042,
+                1.183625,
+                1.247583,
+                1.027041,
+                1.04
+              ],
+              "average": 1.1172582,
+              "min": 1.027041,
+              "max": 1.247583,
+              "standardDeviation": 0.08526507447108693
+            },
+            {
+              "testName": "Monthly Submissions Aggregation",
+              "iterations": 5,
+              "times": [
+                2.162042,
+                0.838292,
+                0.811417,
+                0.851542,
+                1.01775
+              ],
+              "average": 1.1362086000000002,
+              "min": 0.811417,
+              "max": 2.162042,
+              "standardDeviation": 0.5180049346504721
+            },
+            {
+              "testName": "Legacy Token Search",
+              "iterations": 5,
+              "times": [
+                1.068208,
+                0.998,
+                1.075042,
+                1.101417,
+                1.003708
+              ],
+              "average": 1.0492750000000002,
+              "min": 0.998,
+              "max": 1.101417,
+              "standardDeviation": 0.041101489160369875
+            }
+          ],
+          "summary": {
+            "averageQueryTime": 1.2318633599999997,
+            "slowestQuery": {
+              "testName": "User Find by Email",
+              "iterations": 5,
+              "times": [
+                3.986583,
+                1.327917,
+                1.1545,
+                1.118708,
+                1.1095
+              ],
+              "average": 1.7394416,
+              "min": 1.1095,
+              "max": 3.986583,
+              "standardDeviation": 1.126347216890884
+            },
+            "fastestQuery": {
+              "testName": "Legacy Token Search",
+              "iterations": 5,
+              "times": [
+                1.068208,
+                0.998,
+                1.075042,
+                1.101417,
+                1.003708
+              ],
+              "average": 1.0492750000000002,
+              "min": 0.998,
+              "max": 1.101417,
+              "standardDeviation": 0.041101489160369875
+            }
+          }
+        },
+        "timestamp": "2025-08-17T19:01:31.006Z"
+      }
+    ],
+    "errorLogs": [
+      {
+        "testName": "Structured Logging",
+        "report": {
+          "timestamp": "2025-08-17T19:01:31.244Z",
+          "totalLogs": 4,
+          "logsByLevel": {
+            "info": 3,
+            "warn": 0,
+            "error": 1,
+            "debug": 0
+          },
+          "logs": [
+            {
+              "timestamp": "2025-08-17T19:01:31.020Z",
+              "level": "info",
+              "message": "Début des tests de migration",
+              "context": {
+                "testSuite": "monitoring",
+                "testEnvironment": "staging",
+                "nodeEnv": "staging",
+                "migrationMode": "true"
+              }
+            },
+            {
+              "timestamp": "2025-08-17T19:01:31.238Z",
+              "level": "info",
+              "message": "Données de test générées",
+              "context": {
+                "responses": 3,
+                "users": 3,
+                "testEnvironment": "staging",
+                "nodeEnv": "staging",
+                "migrationMode": "true"
+              }
+            },
+            {
+              "timestamp": "2025-08-17T19:01:31.240Z",
+              "level": "error",
+              "message": "Erreur lors de la création utilisateur",
+              "context": {
+                "error": "User validation failed: password: Path `password` is required., username: Path `username` is required.",
+                "operation": "user_creation",
+                "data": {
+                  "username": "",
+                  "email": "invalid@test.com"
+                },
+                "testEnvironment": "staging",
+                "nodeEnv": "staging",
+                "migrationMode": "true"
+              }
+            },
+            {
+              "timestamp": "2025-08-17T19:01:31.244Z",
+              "level": "info",
+              "message": "Tests terminés avec succès",
+              "context": {
+                "totalLogs": 3,
+                "errors": 1,
+                "warnings": 0,
+                "testEnvironment": "staging",
+                "nodeEnv": "staging",
+                "migrationMode": "true"
+              }
+            }
+          ],
+          "context": {
+            "environment": "staging",
+            "testSuite": "monitoring",
+            "migrationMode": true
+          }
+        },
+        "timestamp": "2025-08-17T19:01:31.244Z"
+      }
+    ],
+    "securityEvents": [
+      {
+        "eventType": "Security Audit",
+        "result": {
+          "timestamp": "2025-08-17T19:01:20.485Z",
+          "totalTests": 8,
+          "results": [
+            {
+              "testName": "XSS Protection",
+              "status": "passed",
+              "vulnerabilities": [],
+              "timestamp": "2025-08-17T19:01:20.485Z"
+            },
+            {
+              "testName": "CSRF Protection",
+              "status": "passed",
+              "vulnerabilities": [],
+              "timestamp": "2025-08-17T19:01:20.485Z"
+            },
+            {
+              "testName": "Authentication Security",
+              "status": "passed",
+              "vulnerabilities": [],
+              "timestamp": "2025-08-17T19:01:20.485Z"
+            },
+            {
+              "testName": "Authorization Security",
+              "status": "passed",
+              "vulnerabilities": [],
+              "timestamp": "2025-08-17T19:01:20.485Z"
+            },
+            {
+              "testName": "Input Validation",
+              "status": "passed",
+              "vulnerabilities": [],
+              "timestamp": "2025-08-17T19:01:20.485Z"
+            },
+            {
+              "testName": "Rate Limiting",
+              "status": "passed",
+              "vulnerabilities": [],
+              "timestamp": "2025-08-17T19:01:20.485Z"
+            },
+            {
+              "testName": "Session Security",
+              "status": "passed",
+              "vulnerabilities": [],
+              "timestamp": "2025-08-17T19:01:20.485Z"
+            },
+            {
+              "testName": "Headers Security",
+              "status": "passed",
+              "vulnerabilities": [],
+              "timestamp": "2025-08-17T19:01:20.485Z"
+            }
+          ],
+          "summary": {
+            "passed": 8,
+            "failed": 0,
+            "vulnerabilities": [],
+            "securityScore": 100
+          },
+          "recommendations": [
+            "Maintenir les headers de sécurité à jour",
+            "Surveiller les tentatives d'attaque"
+          ]
+        },
+        "timestamp": "2025-08-17T19:01:20.485Z"
+      }
+    ]
+  },
+  "recommendations": [
+    "Surveiller les performances en production",
+    "Mettre en place un monitoring continu",
+    "Effectuer des audits de sécurité réguliers",
+    "Maintenir les logs pour le debugging"
+  ]
+}

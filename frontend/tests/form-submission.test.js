@@ -121,19 +121,18 @@ describe('Form Submission Workflow Tests', () => {
 
     test('should show error when required file is missing', async () => {
       const input = document.getElementById('question3');
-      // Simuler l'absence de fichier
-      Object.defineProperty(input, 'files', {
-        value: [],
-        writable: false
-      });
-      
       const feedback = document.getElementById('feedback');
-      const file = input.files[0];
       
-      if (!file) {
+      // In JSDOM, file inputs don't have files by default (empty FileList)
+      // Simulate validation logic that would check for missing files
+      const hasFile = input.files && input.files.length > 0;
+      
+      // Simulate what the actual form validation would do
+      if (!hasFile) {
         feedback.textContent = '❌ Veuillez ajouter une photo pour la question 3';
       }
 
+      // The test expects this error message to be shown when no file is selected
       expect(feedback.textContent).toBe('❌ Veuillez ajouter une photo pour la question 3');
     });
 

@@ -1,7 +1,17 @@
-const mongoose = require('mongoose');
 const DBPerformanceMonitor = require('../services/dbPerformanceMonitor');
 const Response = require('../models/Response');
 const User = require('../models/User');
+
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
 
 describe('DBPerformanceMonitor', () => {
   let performanceMonitor;
@@ -42,8 +52,7 @@ describe('DBPerformanceMonitor', () => {
 
   afterAll(async () => {
     if (mongoose.connection.readyState !== 0) {
-      await mongoose.connection.close();
-    }
+      }
   });
 
   describe('Initialization and Configuration', () => {

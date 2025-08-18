@@ -62,11 +62,41 @@ function createAnswerContent(answer) {
       (answer.includes('res.cloudinary.com') || imageExtensions.test(answer)) && 
       isValidImageUrl(answer)) {
     
-    // Create secure image element
+    // Create secure image element with lightbox integration
     const img = document.createElement('img');
     img.src = answer;
     img.alt = 'Image de réponse';
-    img.style.cssText = 'max-width: 400px; max-height: 300px; border-radius: 8px; margin: 10px 0;';
+    img.style.cssText = 'max-width: 400px; max-height: 300px; border-radius: 8px; margin: 10px 0; cursor: pointer; transition: transform 0.2s ease;';
+    
+    // Add hover effect
+    img.addEventListener('mouseenter', () => {
+      img.style.transform = 'scale(1.05)';
+    });
+    
+    img.addEventListener('mouseleave', () => {
+      img.style.transform = 'scale(1)';
+    });
+    
+    // Add lightbox functionality
+    img.addEventListener('click', (e) => {
+      e.preventDefault();
+      
+      // Collect all images for lightbox gallery
+      const allImages = document.querySelectorAll('img[src*="res.cloudinary.com"]');
+      const photos = Array.from(allImages).map((imgEl, index) => ({
+        url: imgEl.src,
+        title: imgEl.alt || `Image ${index + 1}`,
+        description: ''
+      }));
+      
+      // Find current image index
+      const currentIndex = Array.from(allImages).indexOf(img);
+      
+      // Open lightbox
+      if (window.PhotoLightbox) {
+        window.PhotoLightbox.open(photos, currentIndex);
+      }
+    });
     
     // Add error handling for failed image loads
     img.onerror = function() {

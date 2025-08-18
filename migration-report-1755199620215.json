@@ -1,0 +1,57 @@
+{
+  "timestamp": "2025-08-14T19:27:00.207Z",
+  "duration": 9355348,
+  "phases": [
+    {
+      "id": 1,
+      "name": "MODÈLES DB",
+      "status": "completed",
+      "progress": 100,
+      "eta": null
+    },
+    {
+      "id": 2,
+      "name": "SERVICES LAYER",
+      "status": "in_progress",
+      "progress": 100,
+      "eta": null
+    },
+    {
+      "id": 3,
+      "name": "APIs REST",
+      "status": "in_progress",
+      "progress": 0,
+      "eta": null
+    },
+    {
+      "id": 4,
+      "name": "EMAIL AUTO",
+      "status": "pending",
+      "progress": 0,
+      "eta": null
+    },
+    {
+      "id": 5,
+      "name": "FRONTEND",
+      "status": "pending",
+      "progress": 0,
+      "eta": null
+    },
+    {
+      "id": 6,
+      "name": "MIGRATION",
+      "status": "pending",
+      "progress": 0,
+      "eta": null
+    }
+  ],
+  "finalStats": {
+    "testsTotal": 0,
+    "testsPassed": 0,
+    "testsFailed": 667,
+    "securityStatus": "unknown",
+    "avgPerformance": 213
+  },
+  "alerts": [],
+  "completedPhases": 1
+}

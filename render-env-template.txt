@@ -1,0 +1,59 @@
+# Variables d'environnement pour Render.com
+# Copiez ces variables dans le dashboard Render > Environment Variables
+
+# ========== VARIABLES OBLIGATOIRES ==========
+
+# Base de données MongoDB Atlas
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/faf-production?retryWrites=true&w=majority
+
+# Sécurité des sessions (utilisez la valeur générée ci-dessus)
+SESSION_SECRET=b670852724bbe667c1baf7069570b40be2d5b1cd82918e111a1feb57f2bf9f95
+
+# Authentification admin
+LOGIN_ADMIN_USER=admin
+LOGIN_ADMIN_PASS=votre-mot-de-passe-admin-très-sécurisé
+FORM_ADMIN_NAME=riri
+
+# URLs et CORS (mettez à jour avec votre vraie URL Render)
+APP_BASE_URL=https://votre-app.onrender.com
+FRONTEND_URL=https://votre-app.onrender.com
+
+# Upload d'images Cloudinary
+CLOUDINARY_CLOUD_NAME=votre-cloud-name
+CLOUDINARY_API_KEY=votre-api-key
+CLOUDINARY_API_SECRET=votre-api-secret
+
+# Configuration production
+NODE_ENV=production
+PORT=10000
+HTTPS=true
+
+# ========== VARIABLES OPTIONNELLES ==========
+
+# Domaine des cookies (pour sous-domaines)
+COOKIE_DOMAIN=.votre-domaine.com
+
+# Email service
+RESEND_API_KEY=votre-resend-api-key
+EMAIL_FROM_ADDRESS=noreply@votre-domaine.com
+EMAIL_FROM_NAME=Form-a-Friend
+
+# Monitoring email
+ENABLE_EMAIL_MONITORING=true
+EMAIL_BOUNCE_RATE_THRESHOLD=0.05
+EMAIL_COMPLAINT_RATE_THRESHOLD=0.01
+
+# Configuration scheduler
+SCHEDULER_TIMEZONE=Europe/Paris
+SCHEDULER_MONTHLY_JOB_DAY=5
+SCHEDULER_MONTHLY_JOB_HOUR=18
+
+# Limites service
+CONTACT_MAX_CSV_SIZE=5242880
+CONTACT_MAX_BATCH_SIZE=100
+INVITATION_EXPIRATION_DAYS=60
+HANDSHAKE_EXPIRATION_DAYS=30
+
+# Debug et développement
+DISABLE_RATE_LIMITING=false
+DEBUG_VERBOSE=false

@@ -36,10 +36,21 @@ ResponseSchema.index({ month: 1, userId: 1 }, {
   partialFilterExpression: { authMethod: 'user' }
 });
 
+// Unique constraint for admin responses (one admin per month)
+ResponseSchema.index(
+  { month: 1, isAdmin: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { 
+      isAdmin: true
+    }
+  }
+);
+
+// Additional index for name lookups  
 ResponseSchema.index(
   { month: 1, isAdmin: 1, name: 1 },
   {
-    unique: true,
     partialFilterExpression: { 
       isAdmin: true, 
       authMethod: 'token'
