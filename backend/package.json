@@ -39,6 +39,8 @@
     "test:post-deployment:regression": "node tests/post-deployment/run-post-deployment-tests.js --suite Regression",
     "test:post-deployment:monitoring": "node tests/post-deployment/run-post-deployment-tests.js --suite Monitoring",
     "test:post-deployment:critical": "node tests/post-deployment/run-post-deployment-tests.js --suite Functionality --suite Performance --suite Security",
+    "test:production": "node scripts/test-production-deployment.js",
+    "test:prod": "npm run test:production",
     "scheduler": "node scripts/runScheduler.js",
     "scheduler:demo": "node scripts/schedulerDemo.js"
   },
@@ -59,6 +61,8 @@
     "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
     "mongoose": "^8.16.3",
+    "axios": "^1.5.0",
+    "form-data": "^4.0.0",
     "multer": "^2.0.1",
     "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^4.2.1",

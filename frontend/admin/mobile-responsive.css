@@ -4,6 +4,85 @@
  */
 
 /* =============================================================================
+   LIGHTBOX STYLES (moved from inline styles for CSP compliance)
+   ============================================================================= */
+
+/* overlay full‐screen */
+.lightbox-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--lightbox-z-index);
+}
+
+/*légende sur l'image*/
+.lightbox-caption {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+
+/* image agrandie */
+.lightbox-overlay img {
+  max-width: 90%;
+  max-height: 90%;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  border-radius: 4px;
+}
+
+/* bouton fermer */
+.lightbox-overlay .close-btn {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Role-based visibility */
+.admin-only.hidden,
+.user-only.hidden {
+  display: none !important;
+}
+
+/* Dashboard specific styles */
+.dashboard-nav .user-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dashboard-nav .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard-nav {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .dashboard-nav .nav-links {
+    justify-content: center;
+  }
+}
+
+/* =============================================================================
    MOBILE-FIRST RESPONSIVE DESIGN
    ============================================================================= */
 
