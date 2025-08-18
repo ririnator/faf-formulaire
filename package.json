@@ -1,0 +1,55 @@
+{
+  "name": "faf-backend",
+  "version": "1.0.0",
+  "description": "Form-a-Friend Backend",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "NODE_ENV=test jest --testTimeout=10000",
+    "test:watch": "NODE_ENV=test jest --watch --testTimeout=10000",
+    "test:coverage": "NODE_ENV=test jest --coverage --testTimeout=10000",
+    "test:dynamic": "NODE_ENV=test npm test -- dynamic.option.integration.test.js",
+    "test:frontend": "NODE_ENV=test jest --testPathPattern=frontend --testTimeout=10000",
+    "test:frontend:watch": "NODE_ENV=test jest --testPathPattern=frontend --watch --testTimeout=10000",
+    "test:frontend:coverage": "NODE_ENV=test jest --testPathPattern=frontend --coverage --testTimeout=10000",
+    "test:form": "node scripts/test-form-locally.js",
+    "test:all": "npm run test && npm run test:frontend",
+    "test:all:coverage": "npm run test:coverage && npm run test:frontend:coverage",
+    "test:production": "node scripts/test-production-deployment.js",
+    "test:prod": "npm run test:production"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.5.0",
+    "bcrypt": "^5.1.1",
+    "express-session": "^1.17.3",
+    "connect-mongo": "^5.0.0",
+    "helmet": "^7.0.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^6.10.0",
+    "cloudinary": "^1.40.0",
+    "multer": "^1.4.5-lts.1",
+    "dotenv": "^16.3.1",
+    "express-validator": "^7.0.1",
+    "axios": "^1.5.0",
+    "form-data": "^4.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.6.2",
+    "supertest": "^6.3.3",
+    "mongodb-memory-server": "^8.15.1",
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "express",
+    "mongodb",
+    "form",
+    "friend"
+  ],
+  "author": "FAF Team",
+  "license": "MIT"
+}

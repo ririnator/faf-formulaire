@@ -131,7 +131,7 @@ describe('Modular Architecture Tests', () => {
       
       if (formHTML) {
         expect(formHTML).toContain('/css/faf-base.css');
-        expect(formHTML).toContain('/admin/mobile-responsive.css');
+        expect(formHTML).toContain('/css/mobile-responsive.css');
       }
     });
 
@@ -142,8 +142,18 @@ describe('Modular Architecture Tests', () => {
         expect(errorHTML).toContain('/css/faf-base.css');
         // Should not load additional modules
         expect(errorHTML).not.toContain('/styles/homepage.css');
-        expect(errorHTML).not.toContain('/admin/mobile-responsive.css');
+        expect(errorHTML).not.toContain('/css/mobile-responsive.css');
       }
+    });
+
+    test('mobile-responsive.css should be accessible in public CSS directory', () => {
+      // Validate that mobile-responsive.css exists in the new location
+      const mobileCSS = cssFiles['mobile-responsive'];
+      expect(mobileCSS).toBeDefined();
+      
+      // Should contain mobile-specific media queries
+      expect(mobileCSS).toMatch(/@media.*max-width/);
+      expect(mobileCSS).toMatch(/responsive|mobile|viewport/i);
     });
   });
 
