@@ -272,7 +272,7 @@ document.getElementById('friendForm').addEventListener('submit', async e => {
     const resJ = await resp.json();
 
     if (!resp.ok) {
-      throw new Error(resJ.message || 'Erreur lors de l'envoi');
+      throw new Error(resJ.message || 'Erreur lors de l\'envoi');
     }
 
     // Affiche le message et le lien de manière sécurisée

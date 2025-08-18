@@ -723,12 +723,14 @@ window.PhotoOptimization.DeviceCapabilities = DeviceCapabilities;
 window.PhotoOptimization.PhotoPreviewManager = PhotoPreviewManager;
 window.PhotoOptimization.DragDropManager = DragDropManager;
 
-// Export for ES6 modules
-export {
-  PhotoOptimizationManager,
-  PhotoCompressor,
-  DeviceCapabilities,
-  PhotoPreviewManager,
-  DragDropManager,
-  COMPRESSION_CONFIG
-};
+// Export for ES6 modules (commented out for browser compatibility)
+// export {
+//   PhotoOptimizationManager,
+//   PhotoCompressor,
+//   DeviceCapabilities,
+//   PhotoPreviewManager,
+//   DragDropManager,
+//   COMPRESSION_CONFIG
+// };
+
+// Browser-compatible exports via global object (already done above via window.PhotoOptimization)

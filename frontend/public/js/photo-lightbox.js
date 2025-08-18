@@ -832,5 +832,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Export for ES6 modules
-export { PhotoLightbox, createLightboxFromImages, createLightboxFromResponses };
+// Export for ES6 modules (commented out for browser compatibility)
+// export { PhotoLightbox, createLightboxFromImages, createLightboxFromResponses };
+
+// Browser-compatible exports via global object
+window.PhotoLightbox = PhotoLightbox;
+window.createLightboxFromImages = createLightboxFromImages;
+window.createLightboxFromResponses = createLightboxFromResponses;

@@ -215,7 +215,19 @@ app.get('/form', (req, res) => {
 });
 
 // 7) Front public (autres fichiers statiques)
-app.use(express.static(path.join(__dirname, '../frontend/public')));
+app.use((req, res, next) => {
+  // Set proper MIME types for public assets
+  if (req.path.endsWith('.js')) {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 3600;
+    res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+  } else if (req.path.endsWith('.css')) {
+    res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 3600;
+    res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+  }
+  next();
+}, express.static(path.join(__dirname, '../frontend/public')));
 
 // 8) Pages d'authentification avec CSP nonce
 app.get('/auth-choice', (req, res) => {
@@ -297,9 +309,14 @@ app.get('/admin/compare', detectAuthMethod, enrichUserData, requireDashboardAcce
 
 // Dashboard assets (faf-admin.js module, CSS, images, etc.) - accessible to all authenticated users
 app.use('/admin', detectAuthMethod, enrichUserData, requireDashboardAccess, (req, res, next) => {
-  // Set proper MIME type for JavaScript modules
+  // Set proper MIME types for assets
   if (req.path.endsWith('.js')) {
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    // Cache pour 1 heure en développement, 24h en production
+    const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 3600;
+    res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+  } else if (req.path.endsWith('.css')) {
+    res.setHeader('Content-Type', 'text/css; charset=utf-8');
     // Cache pour 1 heure en développement, 24h en production
     const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 3600;
     res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
