@@ -24,9 +24,6 @@
       </div>
       
       <form id="friendForm" role="form" aria-labelledby="form-title" novalidate>
-      <!-- Honeypot field for spam protection -->
-      <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off" aria-hidden="true">
-
     <!-- Champ Nom -->
     <div class="form-group">
       <label for="name"><span class="form-icon">👤</span>Ton nom :</label>
@@ -117,6 +114,11 @@
     <div class="form-group">
       <label for="question10"><span class="form-icon">🌿</span>Pour terminer : une photo de toi qui touche de l'herbe ou un arbre :</label>
       <input type="file" id="question10" name="question10" accept="image/*" required>
+    </div>
+
+    <!-- Honeypot field for spam protection - positioned at end to avoid visual impact -->
+    <div style="position: absolute; left: -9999px; top: -9999px; visibility: hidden;">
+      <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
     </div>
 
     <button type="submit" 
