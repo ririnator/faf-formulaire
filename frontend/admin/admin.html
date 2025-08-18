@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Interface d'administration – Résumé des réponses</title>
+  <title>Tableau de bord – Form-a-Friend</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/admin/mobile-responsive.css">
+  <link rel="stylesheet" href="/css/photo-lightbox.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="/js/photo-lightbox.js"></script>
   <script type="module" src="/admin/faf-admin.js"></script>
+  <script src="/admin/js/notificationCenter.js"></script>
 
   <style>
     /* overlay full‐screen */
@@ -50,36 +53,107 @@
       cursor: pointer;
       user-select: none;
     }
+    
+    /* Role-based visibility */
+    .admin-only.hidden,
+    .user-only.hidden {
+      display: none !important;
+    }
+    
+    /* Dashboard specific styles */
+    .dashboard-nav .user-info {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .dashboard-nav .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+      .dashboard-nav {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+      }
+      
+      .dashboard-nav .nav-links {
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 <body class="bg-gray-50 p-4">
   <!-- Skip link for keyboard navigation -->
   <a href="#main-content" class="skip-link">Aller au contenu principal</a>
   
-  <nav class="admin-nav flex justify-end mb-4" role="navigation" aria-label="Navigation administrateur">
-    <a href="/admin/gestion" class="text-blue-600 hover:underline" 
-       aria-describedby="gestion-help">Gestion avancée</a>
-    <div id="gestion-help" class="sr-only">Accéder à la liste détaillée des réponses</div>
-    <a href="/logout" class="text-red-600 hover:underline ml-4"
-       aria-describedby="logout-help">Déconnexion</a>
-    <div id="logout-help" class="sr-only">Se déconnecter de l'interface admin</div>
+  <!-- Universal Navigation -->
+  <nav class="dashboard-nav flex justify-between items-center mb-4" role="navigation" aria-label="Navigation tableau de bord">
+    <div class="user-info">
+      <span id="userWelcome" class="text-gray-700 font-medium">Chargement...</span>
+      <span id="userRole" class="text-sm text-gray-500 ml-2"></span>
+    </div>
+    <div class="nav-links flex items-center space-x-4">
+      <!-- Notification Center will be inserted here by NotificationCenter.js -->
+      
+      <!-- Universal navigation for contact management -->
+      <a href="/admin/contacts.html" class="text-blue-600 hover:underline"
+         aria-describedby="contacts-help">📞 Contacts</a>
+      <div id="contacts-help" class="sr-only">Gérer vos contacts et handshakes</div>
+      
+      <!-- Admin-only navigation -->
+      <a href="/admin/gestion" id="adminGestionLink" class="admin-only text-blue-600 hover:underline hidden" 
+         aria-describedby="gestion-help">Gestion avancée</a>
+      <div id="gestion-help" class="sr-only">Accéder à la liste détaillée des réponses</div>
+      
+      <!-- Universal logout -->
+      <a href="/logout" class="text-red-600 hover:underline"
+         aria-describedby="logout-help">Déconnexion</a>
+      <div id="logout-help" class="sr-only">Se déconnecter du tableau de bord</div>
+    </div>
   </nav>
 
   <main id="main-content" class="container mx-auto" role="main">
-    <h1 class="text-3xl font-bold text-center mb-4">Résumé des réponses</h1>
+    <h1 id="dashboardTitle" class="text-3xl font-bold text-center mb-4">Tableau de bord</h1>
+    
+    <!-- Dashboard Stats Section -->
+    <div id="statsSection" class="mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="bg-white p-4 rounded-lg shadow">
+          <h3 class="text-sm font-medium text-gray-500">Mes réponses</h3>
+          <p id="userResponseCount" class="text-2xl font-bold text-blue-600">-</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow user-only">
+          <h3 class="text-sm font-medium text-gray-500">Dernière soumission</h3>
+          <p id="lastSubmission" class="text-sm text-gray-700">-</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow admin-only hidden">
+          <h3 class="text-sm font-medium text-gray-500">Total utilisateurs</h3>
+          <p id="totalUsers" class="text-2xl font-bold text-green-600">-</p>
+        </div>
+      </div>
+    </div>
 
     <!-- Message d'erreur/succès -->
     <div id="alertMessage" class="hidden mb-4 p-4 rounded-lg" 
          role="alert" aria-live="assertive"></div>
 
-    <!-- Filtre par mois -->
-    <div class="mb-6 text-center">
-      <label for="monthFilter" class="font-semibold mr-2">Filtrer par mois :</label>
-      <select id="monthFilter" class="p-2 border rounded"
-              aria-describedby="month-help">
-        <option value="" disabled selected>Choisissez un mois</option>
-      </select>
-      <div id="month-help" class="sr-only">Sélectionnez un mois pour afficher le résumé des réponses</div>
+    <!-- Summary Section Header -->
+    <div class="mb-6">
+      <h2 id="summaryTitle" class="text-xl font-semibold mb-4">Résumé des réponses</h2>
+      
+      <!-- Month Filter -->
+      <div class="text-center">
+        <label for="monthFilter" class="font-semibold mr-2">Filtrer par mois :</label>
+        <select id="monthFilter" class="p-2 border rounded"
+                aria-describedby="month-help">
+          <option value="" disabled selected>Choisissez un mois</option>
+        </select>
+        <div id="month-help" class="sr-only">Sélectionnez un mois pour afficher le résumé des réponses</div>
+      </div>
     </div>
 
     <!-- Conteneur des cards -->
@@ -88,6 +162,10 @@
 
   <script type="module">
     import { AdminAPI, Utils, UI, Charts } from '/admin/faf-admin.js';
+
+    // Global user profile and permissions
+    let userProfile = null;
+    let userPermissions = null;
 
     // Configuration constantes
     const CONFIG = {
@@ -116,46 +194,148 @@
       UI.showAlert(message, type);
     }
 
-    // 1. Charger la liste des mois
+    // Role-based API request helper
+    async function dashboardRequest(endpoint, options = {}, errorMessage = 'Erreur de requête') {
+      const baseUrl = userPermissions?.canViewAdminFeatures ? '/api/admin' : '/api/dashboard';
+      const url = endpoint.startsWith('/') ? `${baseUrl}${endpoint}` : `${baseUrl}/${endpoint}`;
+      
+      return await AdminAPI.request(url, {
+        headers: { 'Content-Type': 'application/json' },
+        ...options
+      }, errorMessage);
+    }
+
+    // Initialize user profile and adapt UI
+    async function initializeUserProfile() {
+      try {
+        userProfile = await AdminAPI.request(
+          '/api/dashboard/profile',
+          { headers: { 'Content-Type': 'application/json' } },
+          'Impossible de charger le profil utilisateur'
+        );
+        
+        if (!userProfile) {
+          throw new Error('No user profile received');
+        }
+        
+        userPermissions = userProfile.permissions;
+        adaptUIToUserRole();
+        
+      } catch (error) {
+        console.error('Failed to initialize user profile:', error);
+        safeAlert('Erreur lors du chargement du profil utilisateur', 'error');
+        throw error;
+      }
+    }
+
+    // Adapt UI based on user role and permissions
+    function adaptUIToUserRole() {
+      // Update welcome message
+      const welcomeEl = document.getElementById('userWelcome');
+      const roleEl = document.getElementById('userRole');
+      
+      if (userProfile.user) {
+        welcomeEl.textContent = `Bonjour, ${userProfile.user.displayName}`;
+        roleEl.textContent = `(${userProfile.user.role === 'admin' ? 'Administrateur' : 'Utilisateur'})`;
+      } else {
+        welcomeEl.textContent = 'Bonjour';
+        roleEl.textContent = '(Admin Legacy)';
+      }
+
+      // Show/hide admin-only elements
+      const adminElements = document.querySelectorAll('.admin-only');
+      const userElements = document.querySelectorAll('.user-only');
+      
+      if (userPermissions.canViewAdminFeatures) {
+        adminElements.forEach(el => el.classList.remove('hidden'));
+        userElements.forEach(el => el.classList.add('hidden'));
+        
+        // Update title for admin view
+        document.getElementById('dashboardTitle').textContent = 'Dashboard Administrateur';
+        document.getElementById('summaryTitle').textContent = 'Résumé global des réponses';
+      } else {
+        adminElements.forEach(el => el.classList.add('hidden'));
+        userElements.forEach(el => el.classList.remove('hidden'));
+        
+        // Update title for user view
+        document.getElementById('dashboardTitle').textContent = 'Mon tableau de bord';
+        document.getElementById('summaryTitle').textContent = 'Mes réponses';
+      }
+    }
+
+    // Load dashboard statistics
+    async function loadDashboardStats() {
+      try {
+        const stats = await dashboardRequest('/stats', {}, 'Impossible de charger les statistiques');
+        
+        if (stats) {
+          // Always show user's response count
+          document.getElementById('userResponseCount').textContent = stats.totalResponses || 0;
+          
+          if (userPermissions.canViewAdminFeatures) {
+            // Admin view - show system stats
+            document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
+          } else {
+            // User view - show personal stats
+            if (stats.latestSubmission) {
+              const date = new Date(stats.latestSubmission);
+              document.getElementById('lastSubmission').textContent = date.toLocaleDateString('fr-FR');
+            } else {
+              document.getElementById('lastSubmission').textContent = 'Aucune';
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load dashboard stats:', error);
+        // Continue without stats rather than failing completely
+      }
+    }
+
+    // Load months list with role-based filtering
     async function loadMonths() {
-      const months = await AdminAPI.request(
-        '/api/admin/months',
-        { headers: { 'Content-Type': 'application/json' } },
-        'Impossible de charger la liste des mois'
-      );
+      const months = await dashboardRequest('/months', {}, 'Impossible de charger la liste des mois');
       
       if (!months) return [];
       
       const sel = document.getElementById('monthFilter');
+      sel.innerHTML = '<option value="" disabled selected>Choisissez un mois</option>';
+      
       months.forEach(m => {
         const opt = document.createElement('option');
         opt.value = m.key;
         opt.textContent = m.label;
         sel.appendChild(opt);
       });
+      
       return months;
     }
 
-    // 2. Charger et afficher le résumé
+    // Load and display summary with role-based data
     async function loadSummary() {
       const month = document.getElementById('monthFilter').value;
       if (!month) return;
       
-      const summary = await AdminAPI.request(
-        `/api/admin/summary?month=${month}`,
-        { headers: { 'Content-Type': 'application/json' } },
-        'Impossible de charger le résumé'
-      );
+      const summary = await dashboardRequest(`/summary?month=${month}`, {}, 'Impossible de charger le résumé');
       
       if (summary) {
         displaySummary(summary);
       }
     }
 
-    // 3. Rendu des cartes
+    // Render summary cards
     function displaySummary(summary) {
       const container = document.getElementById('summaryContainer');
       container.replaceChildren();
+
+      if (summary.length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'text-center text-gray-500 py-8';
+        emptyMessage.textContent = userPermissions.canViewAdminFeatures 
+          ? 'Aucune réponse trouvée pour ce mois.'
+          : 'Vous n\'avez pas encore soumis de réponses pour ce mois.';
+        container.appendChild(emptyMessage);
+        return;
+      }
 
       summary.forEach(({ question, items }) => {
         const card = createSummaryCard(question, items);
@@ -167,21 +347,21 @@
       const card = document.createElement('div');
       card.className = "bg-white shadow rounded p-4 mb-4";
 
-      // Titre (décoder les entités HTML)
+      // Title (decode HTML entities)
       const h2 = document.createElement('h2');
       h2.className = "text-lg font-bold mb-2";
       h2.textContent = Utils.unescapeHTML(question);
       card.appendChild(h2);
 
-      if (question === CONFIG.pieQuestion) {
-        // Graphique en camembert
+      if (question === CONFIG.pieQuestion && userPermissions.canViewAdminFeatures) {
+        // Pie chart for admins only
         const chartWrapper = Charts.createPieChart(items, {
           chartWidth: CONFIG.chart.width,
           chartHeight: CONFIG.chart.height
         });
         card.appendChild(chartWrapper);
       } else {
-        // Liste textuelle ou images
+        // Text/image list for all users
         const answersList = Charts.createAnswersList(items, CONFIG.image);
         card.appendChild(answersList);
       }
@@ -189,23 +369,88 @@
       return card;
     }
 
-    // 4. Listeners + initialisation
-    document.getElementById('monthFilter')
-      .addEventListener('change', loadSummary);
+    // Event listeners
+    document.getElementById('monthFilter').addEventListener('change', loadSummary);
 
+    // Initialize notification center
+    let notificationCenter = null;
+    
+    async function initializeNotificationCenter() {
+      try {
+        notificationCenter = new NotificationCenter({
+          enableSSE: true,
+          enableBrowserNotifications: true,
+          apiBaseUrl: '/api/notifications'
+        });
+        
+        await notificationCenter.init();
+        
+        // Set up event listeners
+        notificationCenter.on('newNotification', (notification) => {
+          console.log('📨 New notification received:', notification);
+          
+          // Show additional UI feedback for handshake requests
+          if (notification.type === 'handshake_request') {
+            safeAlert('Nouvelle demande de handshake reçue!', 'info');
+          }
+        });
+        
+        notificationCenter.on('handshakeAction', (data) => {
+          console.log('🤝 Handshake action completed:', data);
+          
+          // Refresh relevant sections if needed
+          if (typeof loadDashboardStats === 'function') {
+            loadDashboardStats();
+          }
+        });
+        
+        notificationCenter.on('notificationClick', (notification) => {
+          console.log('📱 Notification clicked:', notification);
+          
+          // Handle navigation based on notification type
+          if (notification.type === 'handshake_request' || 
+              notification.type === 'handshake_accepted' ||
+              notification.type === 'handshake_declined') {
+            // Could navigate to contacts page or show handshake details
+            if (notification.relatedHandshakeId) {
+              console.log('Navigate to handshake:', notification.relatedHandshakeId);
+            }
+          }
+        });
+        
+        console.log('✅ Notification center initialized successfully');
+        
+      } catch (error) {
+        console.error('❌ Failed to initialize notification center:', error);
+        // Don't fail the entire dashboard if notifications fail
+      }
+    }
+
+    // Main initialization
     (async () => {
       try {
-        // Initialiser l'API FAF
+        // Initialize API
         await AdminAPI.init();
         
+        // Load user profile and adapt UI
+        await initializeUserProfile();
+        
+        // Initialize notification center after user profile is loaded
+        await initializeNotificationCenter();
+        
+        // Load dashboard statistics
+        await loadDashboardStats();
+        
+        // Load months and auto-select first one
         const months = await loadMonths();
         if (months.length) {
           document.getElementById('monthFilter').value = months[0].key;
           await loadSummary();
         }
+        
       } catch (err) {
-        console.error('Initialisation admin.html :', err);
-        safeAlert('Erreur lors du chargement de l\'interface. Veuillez recharger la page.', 'error');
+        console.error('Dashboard initialization error:', err);
+        safeAlert('Erreur lors du chargement du tableau de bord. Veuillez recharger la page.', 'error');
       }
     })();
   </script>

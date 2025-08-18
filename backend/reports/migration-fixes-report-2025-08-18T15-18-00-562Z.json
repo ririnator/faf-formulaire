@@ -1,0 +1,57 @@
+{
+  "timestamp": "2025-08-18T15:18:00.562Z",
+  "dryRun": false,
+  "executionTime": 83,
+  "statistics": {
+    "totalFixes": 4,
+    "successfulFixes": 2,
+    "failedFixes": 2,
+    "skippedFixes": 0
+  },
+  "fixes": {
+    "orphanedResponses": [
+      {
+        "responseId": "68a34428bef88ed6660230c8",
+        "name": "orphan_user",
+        "month": "2024-06",
+        "type": "missing_user_account",
+        "status": "failed",
+        "error": "User validation failed: email: Email invalide"
+      },
+      {
+        "responseId": "68a34428bef88ed6660230cd",
+        "name": "user_with_no_submission",
+        "month": "2024-07",
+        "type": "missing_submission",
+        "status": "failed",
+        "error": "user.save is not a function"
+      }
+    ],
+    "missingUserAccounts": [],
+    "brokenRelationships": [
+      {
+        "submissionId": "68a34428bef88ed6660230d1",
+        "month": "2024-08",
+        "action": "deleted_orphaned_submission",
+        "status": "fixed"
+      }
+    ],
+    "orphanedData": [],
+    "statisticsErrors": [
+      {
+        "userId": "68a34428bef88ed6660230cb",
+        "username": "no_submission_user",
+        "oldCount": 1,
+        "newCount": 1,
+        "status": "fixed"
+      }
+    ]
+  },
+  "summary": {
+    "totalIssuesFound": 4,
+    "successfulFixes": 2,
+    "failedFixes": 2,
+    "skippedFixes": 0,
+    "successRate": 50
+  }
+}

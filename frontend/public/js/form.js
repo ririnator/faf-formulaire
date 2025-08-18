@@ -1,4 +1,24 @@
 // JavaScript pour la page de formulaire - validation, upload et soumission
+// Intégration avec le système de compression photo
+
+// Import des modules de photo optimization
+let photoOptimization = null;
+
+// Fonction d'initialisation des photos avec compression
+function initializePhotoOptimization() {
+  if (window.PhotoOptimization) {
+    photoOptimization = window.PhotoOptimization;
+    
+    // Initialiser la compression pour tous les inputs de type file
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => {
+      photoOptimization.initializeForInput(input, {
+        autoCompress: true,
+        quality: 'auto' // Qualité automatique basée sur l'appareil
+      });
+    });
+  }
+}
 
 // Fonctionnalité de barre de progression
 document.addEventListener('DOMContentLoaded', function() {
@@ -40,6 +60,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Mise à jour initiale
   updateProgress();
+  
+  // Initialiser l'optimisation photo après le chargement du DOM
+  initializePhotoOptimization();
 });
 
 /**
@@ -86,12 +109,20 @@ function showLoading(show = true, message = 'Traitement en cours...') {
     overlay = document.createElement('div');
     overlay.id = 'loadingOverlay';
     overlay.className = 'loading-overlay hidden';
-    overlay.innerHTML = `
-      <div class="loading-content">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">${message}</div>
-      </div>
-    `;
+    // Secure DOM creation instead of innerHTML
+    const loadingContent = document.createElement('div');
+    loadingContent.className = 'loading-content';
+    
+    const spinner = document.createElement('div');
+    spinner.className = 'loading-spinner';
+    
+    const loadingText = document.createElement('div');
+    loadingText.className = 'loading-text';
+    loadingText.textContent = message; // Safe text content
+    
+    loadingContent.appendChild(spinner);
+    loadingContent.appendChild(loadingText);
+    overlay.appendChild(loadingContent);
     document.body.appendChild(overlay);
   }
   
@@ -175,15 +206,31 @@ document.getElementById('friendForm').addEventListener('submit', async e => {
 
   async function uploadFile(id) {
     const inp = document.getElementById(id);
-    const f = inp.files[0];
-    if (!f) return null;
+    let fileToUpload = inp.files[0];
+    
+    if (!fileToUpload) return null;
+    
+    // Utiliser le fichier compressé si disponible
+    if (photoOptimization) {
+      const optimizedFile = photoOptimization.getOptimizedFile(inp);
+      if (optimizedFile) {
+        // Créer un File object à partir du Blob compressé
+        fileToUpload = new File([optimizedFile], fileToUpload.name, {
+          type: optimizedFile.type,
+          lastModified: Date.now()
+        });
+      }
+    }
+    
     const fd = new FormData();
-    fd.append('image', f);
+    fd.append('image', fileToUpload);
+    
     const r = await fetch('/api/upload', {
       method: 'POST',
       credentials:'include',
       body: fd
     });
+    
     if (!r.ok) throw new Error(`Upload ${id} ${r.status}`);
     const j = await r.json();
     return j.url;

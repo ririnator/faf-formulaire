@@ -1,7 +1,5 @@
 // Performance Tests for Dual Authentication System
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const User = require('../models/User');
 const Response = require('../models/Response');
 const TokenGenerator = require('../utils/tokenGenerator');
@@ -12,16 +10,22 @@ const express = require('express');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 
+const { getTestApp, setupTestEnvironment } = require('./test-utils');
+
+// Setup test environment
+setupTestEnvironment();
+
+let app;
+
+beforeAll(async () => {
+  app = getTestApp();
+}, 30000);
+
 describe('Dual Authentication Performance Tests', () => {
-  let mongoServer;
-  let app;
   let performanceData = {};
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-
+    
     // Setup test app with realistic middleware
     app = express();
     app.use(express.json());
@@ -57,8 +61,7 @@ describe('Dual Authentication Performance Tests', () => {
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+    });
 
   beforeEach(async () => {
     await User.deleteMany({});

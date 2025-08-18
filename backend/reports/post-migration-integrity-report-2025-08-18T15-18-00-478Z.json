@@ -1,0 +1,283 @@
+{
+  "timestamp": "2025-08-18T15:18:00.415Z",
+  "summary": {
+    "status": "FAILED",
+    "totalChecks": 6,
+    "passedChecks": 2,
+    "failedChecks": 4,
+    "criticalIssues": [
+      {
+        "type": "MIGRATION_INCOMPLETE",
+        "message": "Migration Response → Submission incomplète (93.10%)",
+        "details": {
+          "orphanedResponses": 2,
+          "integrityIssues": 0
+        }
+      },
+      {
+        "type": "USER_CREATION_INCOMPLETE",
+        "message": "Création des comptes User incomplète (88.89%)",
+        "details": {
+          "missingAccounts": 1,
+          "duplicateUsernames": 0,
+          "invalidData": 0
+        }
+      },
+      {
+        "type": "DATA_CORRUPTION",
+        "message": "1 problèmes d'intégrité de données détectés",
+        "details": {
+          "corruptedResponses": 0,
+          "corruptedSubmissions": 0,
+          "corruptedUsers": 0,
+          "orphanedData": 1
+        }
+      },
+      {
+        "type": "RELATIONSHIP_VALIDATION_FAILED",
+        "message": "Relations User ↔ Submission invalides (3.57% d'erreur)",
+        "details": {
+          "brokenRelationships": 1,
+          "missingUsers": 1,
+          "statisticsErrors": 0
+        }
+      }
+    ],
+    "warnings": []
+  },
+  "data": {
+    "responses": {
+      "total": 29,
+      "legacy": 29,
+      "migrated": 0
+    },
+    "submissions": {
+      "total": 28,
+      "complete": 27,
+      "incomplete": 1
+    },
+    "users": {
+      "total": 8,
+      "migrated": 8,
+      "native": 0,
+      "admin": 2
+    },
+    "invitations": {
+      "total": 0,
+      "active": 0,
+      "expired": 0
+    }
+  },
+  "integrity": {
+    "responsesToSubmissions": {
+      "status": "FAILED",
+      "details": {
+        "totalResponses": 29,
+        "migratedToSubmissions": 27,
+        "orphanedResponses": [
+          {
+            "responseId": "68a34428bef88ed6660230c8",
+            "name": "orphan_user",
+            "month": "2024-06",
+            "reason": "User account not found"
+          },
+          {
+            "responseId": "68a34428bef88ed6660230cd",
+            "name": "user_with_no_submission",
+            "month": "2024-07",
+            "reason": "Corresponding submission not found",
+            "userId": "68a34428bef88ed6660230cb"
+          }
+        ],
+        "duplicatedSubmissions": [],
+        "dataIntegrityIssues": [],
+        "monthlyBreakdown": {
+          "2024-01": {
+            "responses": 6,
+            "submissions": 6,
+            "migrationRate": 100
+          },
+          "2024-04": {
+            "responses": 5,
+            "submissions": 5,
+            "migrationRate": 100
+          },
+          "2024-05": {
+            "responses": 6,
+            "submissions": 6,
+            "migrationRate": 100
+          },
+          "2024-02": {
+            "responses": 5,
+            "submissions": 5,
+            "migrationRate": 100
+          },
+          "2024-03": {
+            "responses": 5,
+            "submissions": 5,
+            "migrationRate": 100
+          }
+        }
+      }
+    },
+    "userAccountCreation": {
+      "status": "FAILED",
+      "details": {
+        "uniqueResponseNames": 9,
+        "createdUserAccounts": 8,
+        "missingUserAccounts": [
+          {
+            "name": "orphan_user",
+            "reason": "User account not created during migration"
+          }
+        ],
+        "duplicateUsernames": [],
+        "invalidUserData": [],
+        "adminAccountsCreated": 1,
+        "nameToUsernameMapping": {
+          "alice": "alice",
+          "bob": "bob",
+          "charlie": "charlie",
+          "david": "david",
+          "eve": "eve",
+          "riri": "riri",
+          "testadmin": "testadmin",
+          "user_with_no_submission": "no_submission_user"
+        }
+      }
+    },
+    "dataConsistency": {
+      "status": "FAILED",
+      "details": {
+        "corruptedResponses": [],
+        "corruptedSubmissions": [],
+        "corruptedUsers": [],
+        "missingFields": [],
+        "invalidDates": [],
+        "orphanedData": [
+          {
+            "type": "Submission",
+            "id": "68a34428bef88ed6660230d1",
+            "userId": "68a34428bef88ed6660230d0",
+            "month": "2024-08"
+          }
+        ],
+        "schemaViolations": []
+      }
+    },
+    "relationshipValidity": {
+      "status": "FAILED",
+      "details": {
+        "totalSubmissions": 28,
+        "validRelationships": 27,
+        "brokenRelationships": [
+          {
+            "userId": "68a34428bef88ed6660230cb",
+            "username": "no_submission_user",
+            "legacyName": "user_with_no_submission",
+            "reason": "User has 1 legacy Response but no Submission"
+          }
+        ],
+        "missingUsers": [
+          {
+            "submissionId": "68a34428bef88ed6660230d1",
+            "month": "2024-08",
+            "reason": "userId is null or undefined"
+          }
+        ],
+        "inconsistentData": [],
+        "statisticsErrors": []
+      }
+    },
+    "backwardCompatibility": {
+      "status": "PASSED",
+      "details": {
+        "legacyTokensWorking": 29,
+        "brokenTokens": [],
+        "legacyDataAccessible": 29,
+        "inaccessibleLegacyData": [],
+        "authMethodConsistency": [],
+        "hybridSystemIssues": []
+      }
+    }
+  },
+  "performance": {
+    "executionTime": 61,
+    "memoryUsage": {
+      "rss": 95551488,
+      "heapTotal": 42795008,
+      "heapUsed": 29016760,
+      "external": 21340147,
+      "arrayBuffers": 18499884
+    },
+    "queryStats": {
+      "totalQueries": 149,
+      "averageQueryTime": 0.40939597315436244
+    }
+  },
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "category": "MIGRATION",
+      "title": "Responses orphelines détectées",
+      "description": "2 Response n'ont pas été migrées vers Submission",
+      "action": "Exécuter un script de migration complémentaire pour traiter les Response orphelines",
+      "impact": "CRITICAL",
+      "automatable": true
+    },
+    {
+      "priority": "HIGH",
+      "category": "USER_MANAGEMENT",
+      "title": "Comptes utilisateur manquants",
+      "description": "1 comptes utilisateur n'ont pas été créés",
+      "action": "Créer les comptes utilisateur manquants avec les paramètres par défaut",
+      "impact": "HIGH",
+      "automatable": true
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "DATA_CLEANUP",
+      "title": "Données orphelines détectées",
+      "description": "1 enregistrements orphelins sans références valides",
+      "action": "Nettoyer les données orphelines ou rétablir les références manquantes",
+      "impact": "MEDIUM",
+      "automatable": true
+    },
+    {
+      "priority": "HIGH",
+      "category": "RELATIONSHIP_INTEGRITY",
+      "title": "Relations brisées User ↔ Submission",
+      "description": "1 relations brisées entre User et Submission",
+      "action": "Rétablir les références manquantes ou supprimer les enregistrements orphelins",
+      "impact": "HIGH",
+      "automatable": true
+    },
+    {
+      "priority": "LOW",
+      "category": "PERFORMANCE",
+      "title": "Optimisation des requêtes de vérification",
+      "description": "149 requêtes exécutées pendant la vérification",
+      "action": "Optimiser les index de base de données pour améliorer les performances",
+      "impact": "LOW",
+      "automatable": true
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "MONITORING",
+      "title": "Surveillance continue de l'intégrité",
+      "description": "Mettre en place une surveillance régulière de l'intégrité des données",
+      "action": "Programmer des vérifications d'intégrité automatiques hebdomadaires",
+      "impact": "MEDIUM",
+      "automatable": true
+    },
+    {
+      "priority": "LOW",
+      "category": "DOCUMENTATION",
+      "title": "Documentation des procédures de migration",
+      "description": "Documenter les leçons apprises et les bonnes pratiques",
+      "action": "Créer un guide de migration et de maintenance pour les futures versions",
+      "impact": "LOW",
+      "automatable": false
+    }
+  ]
+}

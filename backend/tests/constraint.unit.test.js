@@ -27,17 +27,35 @@ describe('Response Model Constraints', () => {
     test('should have token field with sparse unique index', () => {
       const tokenPath = Response.schema.paths.token;
       expect(tokenPath).toBeDefined();
-      expect(tokenPath.options.unique).toBe(true);
-      expect(tokenPath.options.sparse).toBe(true);
+      
+      // Check for index-level constraints (not field-level)
+      const indexes = Response.schema.indexes();
+      const tokenIndex = indexes.find(index => {
+        const keys = index[0];
+        const options = index[1];
+        return keys.token === 1 && options.unique === true && options.sparse === true;
+      });
+      
+      expect(tokenIndex).toBeDefined();
+      expect(tokenIndex[1].unique).toBe(true);
+      expect(tokenIndex[1].sparse).toBe(true);
     });
 
     test('should have required fields properly configured', () => {
-      const requiredFields = ['name', 'month'];
+      // Only month is required in the updated schema (name is legacy, userId is optional)
+      const requiredFields = ['month'];
       
       requiredFields.forEach(field => {
         const path = Response.schema.paths[field];
         expect(path).toBeDefined();
         expect(path.isRequired).toBe(true);
+      });
+      
+      // Verify legacy fields exist but are not required
+      const legacyFields = ['name', 'userId', 'token'];
+      legacyFields.forEach(field => {
+        const path = Response.schema.paths[field];
+        expect(path).toBeDefined();
       });
     });
 
@@ -93,15 +111,15 @@ describe('Response Model Constraints', () => {
     test('should fail validation without required fields', () => {
       const incompleteData = {
         responses: [{ question: 'Q1', answer: 'A1' }]
-        // Missing name and month
+        // Missing month (only required field)
       };
 
       const response = new Response(incompleteData);
       const validationError = response.validateSync();
       
       expect(validationError).toBeDefined();
-      expect(validationError.errors.name).toBeDefined();
       expect(validationError.errors.month).toBeDefined();
+      // name is no longer required (legacy field)
     });
 
     test('should validate responses array structure', () => {
@@ -159,10 +177,20 @@ describe('Response Model Constraints', () => {
     test('should verify token uniqueness is sparse', () => {
       // Check token field configuration
       const tokenField = Response.schema.paths.token;
+      expect(tokenField).toBeDefined();
       
+      // Check for index-level constraints (not field-level)
+      const indexes = Response.schema.indexes();
+      const tokenIndex = indexes.find(index => {
+        const keys = index[0];
+        const options = index[1];
+        return keys.token === 1 && options.unique === true && options.sparse === true;
+      });
+      
+      expect(tokenIndex).toBeDefined();
       // Sparse index means null/undefined values don't create conflicts
-      expect(tokenField.options.sparse).toBe(true);
-      expect(tokenField.options.unique).toBe(true);
+      expect(tokenIndex[1].sparse).toBe(true);
+      expect(tokenIndex[1].unique).toBe(true);
       
       // This allows multiple admin responses without tokens
       // while ensuring unique tokens for user responses

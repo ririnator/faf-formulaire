@@ -1,0 +1,180 @@
+{
+  "timestamp": "2025-08-18T14:39:21.794Z",
+  "testSuite": "Staging Migration Tests",
+  "environment": {
+    "timestamp": "2025-08-18T14:39:21.797Z",
+    "environment": {
+      "nodeEnv": "staging",
+      "stagingMode": "true",
+      "migrationTestMode": "true"
+    },
+    "database": {
+      "name": "faf_staging_1755527946736",
+      "uri": "mongodb://127.0.0.1:59843/",
+      "connected": true
+    },
+    "collections": {
+      "responses": 0,
+      "users": 0
+    },
+    "healthCheck": {
+      "mongoConnection": true,
+      "environmentVariables": true,
+      "testDatabase": true
+    }
+  },
+  "summary": {
+    "totalTests": 0,
+    "performanceMetrics": 2,
+    "errorLogs": 0,
+    "securityEvents": 0
+  },
+  "results": {
+    "testResults": [],
+    "performanceMetrics": [
+      {
+        "testName": "Real-time Performance Monitoring",
+        "report": {
+          "collectionPeriod": 3700,
+          "totalSamples": 37,
+          "memory": {
+            "min": 761898984,
+            "max": 787873352,
+            "avg": 776583558.7027028
+          },
+          "trends": {
+            "memoryTrend": 25974368,
+            "cpuTrend": 1727127
+          }
+        },
+        "timestamp": "2025-08-18T14:39:14.751Z"
+      },
+      {
+        "testName": "Database Performance",
+        "report": {
+          "timestamp": "2025-08-18T14:39:21.788Z",
+          "totalTests": 5,
+          "results": [
+            {
+              "testName": "User Find by Email",
+              "iterations": 5,
+              "times": [
+                1.971,
+                1.284334,
+                1.295333,
+                1.108292,
+                1.869833
+              ],
+              "average": 1.5057584000000002,
+              "min": 1.108292,
+              "max": 1.971,
+              "standardDeviation": 0.346493063060489
+            },
+            {
+              "testName": "Submissions by User",
+              "iterations": 5,
+              "times": [
+                1.170333,
+                0.970708,
+                0.966625,
+                0.977667,
+                0.964834
+              ],
+              "average": 1.0100334,
+              "min": 0.964834,
+              "max": 1.170333,
+              "standardDeviation": 0.08027117495739057
+            },
+            {
+              "testName": "Submissions with User Population",
+              "iterations": 5,
+              "times": [
+                1.408917,
+                1.017291,
+                0.991875,
+                0.935583,
+                0.928958
+              ],
+              "average": 1.0565247999999998,
+              "min": 0.928958,
+              "max": 1.408917,
+              "standardDeviation": 0.17933173604959052
+            },
+            {
+              "testName": "Monthly Submissions Aggregation",
+              "iterations": 5,
+              "times": [
+                7.634542,
+                1.015333,
+                0.925666,
+                0.850625,
+                0.829916
+              ],
+              "average": 2.2512163999999997,
+              "min": 0.829916,
+              "max": 7.634542,
+              "standardDeviation": 2.692450083241849
+            },
+            {
+              "testName": "Legacy Token Search",
+              "iterations": 5,
+              "times": [
+                1.055125,
+                0.945542,
+                0.9615,
+                0.973875,
+                0.937292
+              ],
+              "average": 0.9746667999999999,
+              "min": 0.937292,
+              "max": 1.055125,
+              "standardDeviation": 0.04217260524748267
+            }
+          ],
+          "summary": {
+            "averageQueryTime": 1.3596399599999998,
+            "slowestQuery": {
+              "testName": "Monthly Submissions Aggregation",
+              "iterations": 5,
+              "times": [
+                7.634542,
+                1.015333,
+                0.925666,
+                0.850625,
+                0.829916
+              ],
+              "average": 2.2512163999999997,
+              "min": 0.829916,
+              "max": 7.634542,
+              "standardDeviation": 2.692450083241849
+            },
+            "fastestQuery": {
+              "testName": "Legacy Token Search",
+              "iterations": 5,
+              "times": [
+                1.055125,
+                0.945542,
+                0.9615,
+                0.973875,
+                0.937292
+              ],
+              "average": 0.9746667999999999,
+              "min": 0.937292,
+              "max": 1.055125,
+              "standardDeviation": 0.04217260524748267
+            }
+          }
+        },
+        "timestamp": "2025-08-18T14:39:21.788Z"
+      }
+    ],
+    "errorLogs": [],
+    "securityEvents": []
+  },
+  "recommendations": [
+    "Surveiller les performances en production",
+    "Mettre en place un monitoring continu",
+    "Effectuer des audits de sécurité réguliers",
+    "Maintenir les logs pour le debugging"
+  ]
+}

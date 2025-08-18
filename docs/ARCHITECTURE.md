@@ -1,10 +1,410 @@
-# Architecture Sécurisée - FAF Backend
+# Form-a-Friend - Architecture Technique
 
-## Vue d'ensemble
+## 📋 Table des matières
+1. [Vue d'ensemble](#vue-densemble)
+2. [Architecture Système](#architecture-système)
+3. [Stack Technique](#stack-technique)
+4. [Base de Données](#base-de-données)
+5. [Services & Couches](#services--couches)
+6. [Sécurité](#sécurité)
+7. [Performance & Scalabilité](#performance--scalabilité)
+8. [Monitoring & Logs](#monitoring--logs)
+9. [Infrastructure Existante FAF](#infrastructure-existante-faf)
 
-FAF utilise une architecture modulaire moderne centrée sur la sécurité, avec middleware spécialisés, validation exhaustive (100+ tests), optimisation body parser, et configuration adaptative dev/prod automatique.
+---
 
-## Structure Actuelle
+## 🏗️ Vue d'ensemble
+
+Form-a-Friend utilise une architecture 3-tiers modulaire avec séparation claire des responsabilités, optimisée pour la sécurité et la performance.
+
+### Architecture 3-tiers
+```
+┌─────────────────────────────────────────────────┐
+│                   FRONTEND                       │
+│         HTML/CSS/JS + ES6 Modules                │
+└─────────────────┬───────────────────────────────┘
+                  │ HTTPS
+┌─────────────────▼───────────────────────────────┐
+│                   BACKEND                        │
+│          Node.js + Express + Services            │
+└─────────────────┬───────────────────────────────┘
+                  │ MongoDB Protocol
+┌─────────────────▼───────────────────────────────┐
+│                  DATABASE                        │
+│            MongoDB + Cloudinary                  │
+└─────────────────────────────────────────────────┘
+```
+
+### Principes Architecturaux
+- **Separation of Concerns** : Couches distinctes (routes, services, modèles)
+- **DRY** (Don't Repeat Yourself) : Services réutilisables
+- **SOLID** : Single responsibility par service
+- **Security by Design** : Validation à tous les niveaux
+- **Scalabilité Horizontale** : Stateless, sessions externalisées
+
+---
+
+## 🎯 Architecture Système
+
+### Flux de Données Global
+```mermaid
+graph TB
+    U[User] --> F[Frontend]
+    F --> LB[Load Balancer/Nginx]
+    LB --> E1[Express Server 1]
+    LB --> E2[Express Server N]
+    E1 --> MS[MongoDB Sessions]
+    E1 --> MD[MongoDB Data]
+    E1 --> C[Cloudinary]
+    E1 --> ES[Email Service]
+    E1 --> R[Redis Cache]
+```
+
+### Composants Principaux
+
+#### 1. Frontend Layer
+- **Pages statiques** servies par Express
+- **ES6 Modules** pour organisation
+- **No build process** (simplicité)
+- **Mobile-first responsive**
+
+#### 2. Application Layer
+- **Express.js** : Framework web
+- **Middleware pipeline** : Auth → Validation → Business → Response
+- **Services layer** : Logique métier isolée
+- **RESTful APIs** : Standards HTTP
+
+#### 3. Data Layer
+- **MongoDB** : Données principales
+- **Cloudinary** : Stockage images
+- **Redis** (futur) : Cache et queues
+
+#### 4. External Services
+- **Resend/Postmark** : Emails transactionnels
+- **MongoDB Atlas** : Database hosting
+- **Render/Heroku** : Application hosting
+
+---
+
+## 💻 Stack Technique
+
+### Backend Core
+```json
+{
+  "runtime": "Node.js 18+",
+  "framework": "Express 5.1",
+  "database": "MongoDB 6+ avec Mongoose 8",
+  "authentication": "express-session + connect-mongo",
+  "validation": "express-validator",
+  "security": "helmet, cors, bcrypt",
+  "files": "multer + cloudinary",
+  "scheduling": "node-cron (à ajouter)",
+  "email": "resend (à ajouter)"
+}
+```
+
+### Frontend Stack
+```json
+{
+  "markup": "HTML5 sémantique",
+  "styling": "CSS3 custom + Tailwind (admin)",
+  "scripting": "Vanilla JS ES6+",
+  "modules": "Native ES6 modules",
+  "charts": "Chart.js 4",
+  "icons": "Emoji natives"
+}
+```
+
+### Infrastructure Existante (70%)
+- ✅ MongoDB + Mongoose
+- ✅ Sessions sécurisées
+- ✅ Cloudinary uploads
+- ✅ Validation & sanitization
+- ✅ Rate limiting
+- ✅ CORS & CSP
+- ✅ Tests Jest
+
+### À Ajouter (30%)
+- ⏳ Service email (Resend)
+- ⏳ Scheduler (node-cron)
+- ⏳ Queue system (Bull - optionnel)
+- ⏳ Redis cache (optionnel)
+- ⏳ WebSockets (optionnel)
+
+---
+
+## 🗄️ Base de Données
+
+### Schéma Relationnel Form-a-Friend
+```
+Users (1) ──────< (N) Contacts
+  │                      │
+  │                      │ (handshake)
+  ▼                      ▼
+Submissions (1) ────> (N) Invitations
+  │
+  └──────> visible dans 1-vs-1 views
+```
+
+### Collections MongoDB
+
+#### Existantes FAF (à adapter)
+```javascript
+// Users - EXISTANT, enrichir
+{
+  _id, username, email, password, role,
+  preferences: { sendTime, timezone, ... },
+  metadata: { lastActive, responseCount, ... }
+}
+
+// Responses - LEGACY, remplacer par Submissions
+{
+  _id, name, responses[], month, token, ...
+}
+```
+
+#### Nouvelles Collections Form-a-Friend
+```javascript
+// Contacts - NOUVEAU
+{
+  _id, ownerId, email, firstName,
+  contactUserId?, handshakeId?,
+  status, tracking, tags
+}
+
+// Submissions - NOUVEAU (remplace Response)
+{
+  _id, userId, month,
+  responses[], freeText,
+  submittedAt, completionRate
+}
+
+// Invitations - NOUVEAU
+{
+  _id, fromUserId, toEmail, toUserId?,
+  month, token, type, status,
+  tracking, reminders, expiresAt
+}
+
+// Handshakes - NOUVEAU
+{
+  _id, requesterId, targetId,
+  status, requestedAt, respondedAt
+}
+```
+
+### Indexes Stratégiques
+```javascript
+// Performance
+Contacts.index({ ownerId: 1, email: 1 }, { unique: true })
+Submissions.index({ userId: 1, month: 1 }, { unique: true })
+Invitations.index({ token: 1 }, { unique: true })
+Invitations.index({ month: 1, status: 1 }) // Pour relances
+
+// Recherche
+Users.index({ email: 'text' })
+Contacts.index({ firstName: 'text' })
+```
+
+---
+
+## 🔧 Services & Couches
+
+### Architecture en Couches
+```
+┌──────────────────────────────────┐
+│         Routes Layer             │  ← HTTP endpoints
+├──────────────────────────────────┤
+│        Middleware Layer          │  ← Auth, validation, security
+├──────────────────────────────────┤
+│         Service Layer            │  ← Business logic
+├──────────────────────────────────┤
+│          Data Layer              │  ← Models & DB access
+└──────────────────────────────────┘
+```
+
+### Services Form-a-Friend
+
+#### Services Existants FAF (adapter)
+```javascript
+// AuthService - Garder, enrichir pour Users
+class AuthService {
+  validateCredentials()
+  createSession()
+  validateUser() // NOUVEAU
+}
+
+// ResponseService - Transformer en SubmissionService
+class SubmissionService extends ResponseService {
+  upsertSubmission()  // Une par user/mois
+  getFor1vs1()        // Permissions handshake
+  getTimeline()       // Historique contact
+}
+
+// UploadService - Garder tel quel
+class UploadService {
+  uploadToCloudinary()
+  validateMimeType()
+}
+```
+
+#### Nouveaux Services Form-a-Friend
+```javascript
+// ContactService
+class ContactService {
+  addContact()        // Avec détection user
+  importCSV()         // Batch import
+  syncHandshakes()    // Mise à jour statuts
+  getWithStats()      // Avec taux réponse
+}
+
+// InvitationService  
+class InvitationService {
+  createMonthlyBatch()  // Génération mensuelle
+  sendInvitation()      // Via EmailService
+  processReminders()    // J+3, J+7
+  trackOpening()        // Analytics
+}
+
+// HandshakeService
+class HandshakeService {
+  requestHandshake()    // Demande
+  acceptHandshake()     // Acceptation + sync contacts
+  declineHandshake()    // Refus
+  getPermissions()      // Vérif pour vues
+}
+
+// EmailService
+class EmailService {
+  sendInvitation()      // Template invitation
+  sendReminder()        // Template rappel
+  sendHandshakeRequest() // Template handshake
+  handleWebhook()       // Bounce, unsubscribe
+}
+
+// SchedulerService
+class SchedulerService {
+  initializeJobs()      // Setup cron
+  monthlyInvitations()  // Le 5 à 18h
+  dailyReminders()      // Check relances
+  cleanupExpired()      // Tokens expirés
+}
+```
+
+---
+
+## 🔒 Sécurité
+
+### Défense en Profondeur
+```
+Level 1: Network     → HTTPS, Firewall
+Level 2: Application → Helmet, CORS, CSP
+Level 3: Session     → Secure cookies, CSRF
+Level 4: Data        → Validation, Sanitization
+Level 5: Database    → Prepared statements, Indexes
+```
+
+### Mesures Form-a-Friend
+
+#### Authentication & Authorization
+- **Bcrypt** : Salt rounds 10+
+- **Sessions MongoDB** : 14 jours TTL
+- **Handshake required** : Pour relations comptes
+- **Token expiry** : 60 jours
+
+#### Input Protection
+- **XSS Prevention** : HTML escaping
+- **SQL Injection** : Mongoose parameterized queries
+- **CSRF Tokens** : Double submit cookie
+- **Rate Limiting** : 100 req/15min
+
+#### Headers Security (Helmet.js)
+```javascript
+{
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'nonce-{random}'"],
+      imgSrc: ["'self'", "cloudinary.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"]
+    }
+  },
+  hsts: { maxAge: 31536000 },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: { policy: 'same-origin' }
+}
+```
+
+---
+
+## ⚡ Performance & Scalabilité
+
+### Stratégies d'Optimisation
+
+#### Database
+- **Indexes** sur clés fréquentes
+- **Projections** pour limiter data transfer
+- **Aggregation pipeline** pour calculs DB-side
+- **Connection pooling** : 10-20 connections
+
+#### Application
+- **Stateless design** : Scale horizontal
+- **Async/await** : Non-blocking I/O
+- **Streaming** : Pour gros uploads
+- **Compression** : gzip responses
+
+#### Caching Strategy (futur)
+```javascript
+// Redis pour:
+- Sessions (remplace MongoDB)
+- Submission cache (10min TTL)
+- Rate limit counters
+- Email queue
+```
+
+### Métriques Cibles
+- **Response time** : < 200ms (P50)
+- **Uptime** : 99.9%
+- **Concurrent users** : 1000+
+- **Database queries** : < 50ms
+- **Image upload** : < 5s (10MB)
+
+---
+
+## 📊 Monitoring & Logs
+
+### Logging Strategy
+
+#### Niveaux de Log
+```javascript
+// Production
+ERROR   → Erreurs critiques
+WARN    → Anomalies non-bloquantes
+INFO    → Events importants (login, submission)
+
+// Development
+DEBUG   → Détails execution
+TRACE   → Tout (queries, headers)
+```
+
+### Monitoring Points
+
+#### Application Metrics
+- Request rate & latency
+- Error rate (4xx, 5xx)
+- Session count
+- Memory usage
+
+#### Business Metrics
+- Submissions/jour
+- Taux de réponse
+- Handshakes acceptés
+- Emails envoyés/bounce
+
+---
+
+## 🏗️ Infrastructure Existante FAF
 
 ```
 backend/

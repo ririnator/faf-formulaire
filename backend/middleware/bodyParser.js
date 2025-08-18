@@ -115,10 +115,29 @@ function createSizedBodyParser(limitMB) {
   ];
 }
 
+/**
+ * Large body parser for CSV imports and bulk operations
+ * Used for endpoints that handle bulk data imports
+ */
+function createBulkImportBodyParser() {
+  return [
+    express.json({ 
+      limit: '5mb',
+      type: 'application/json'
+    }),
+    express.urlencoded({ 
+      limit: '5mb', 
+      extended: true,
+      type: 'application/x-www-form-urlencoded'
+    })
+  ];
+}
+
 module.exports = {
   createFormBodyParser,
   createAdminBodyParser,
   createStandardBodyParser,
+  createBulkImportBodyParser,
   createPayloadErrorHandler,
   getBodyParserForEndpoint,
   createSizedBodyParser
