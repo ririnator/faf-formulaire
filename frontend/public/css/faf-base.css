@@ -120,8 +120,21 @@ label {
   color: var(--gray-600);
 }
 
+/* Honeypot field - MUST BE HIDDEN */
+input[name="website"] {
+  display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
 /* Input styles - USED */
-input[type="text"],
+input[type="text"]:not([name="website"]),
 input[type="email"], 
 input[type="password"],
 textarea {
@@ -134,7 +147,7 @@ textarea {
   background: var(--gray-50);
 }
 
-input[type="text"]:focus,
+input[type="text"]:not([name="website"]):focus,
 input[type="email"]:focus,
 input[type="password"]:focus,
 textarea:focus {
