@@ -219,4 +219,4 @@ InvitationSchema.statics.findPendingReminders = function(type, daysAgo) {
   });
 };
 
-module.exports = mongoose.model('Invitation', InvitationSchema);
+module.exports = mongoose.models.Invitation || mongoose.model('Invitation', InvitationSchema);

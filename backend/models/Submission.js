@@ -119,4 +119,4 @@ SubmissionSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('Submission', SubmissionSchema);
+module.exports = mongoose.models.Submission || mongoose.model('Submission', SubmissionSchema);

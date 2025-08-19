@@ -358,4 +358,4 @@ NotificationSchema.statics.cleanupOldNotifications = async function(daysOld = 30
   };
 };
 
-module.exports = mongoose.model('Notification', NotificationSchema);
+module.exports = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);

@@ -69,4 +69,4 @@ ResponseSchema.index({ name: 'text' }, {
   name: 'name_text_search'
 });
 
-module.exports = mongoose.model('Response', ResponseSchema);
+module.exports = mongoose.models.Response || mongoose.model('Response', ResponseSchema);
