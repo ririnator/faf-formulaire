@@ -219,6 +219,14 @@ const statsPerformanceLimiterRaw = rateLimit({
   handler: createSecureHandler('performance_statistics', 1800)
 });
 
+// Dashboard-specific rate limiters
+const dashboardLimiterRaw = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 50, // 50 dashboard requests per 10 minutes
+  message: { success: false, error: "Trop de requêtes de tableau de bord. Réessayez plus tard.", code: 'DASHBOARD_RATE_LIMIT_EXCEEDED' },
+  handler: createSecureHandler('dashboard_operations', 600)
+});
+
 // Notification-specific rate limiters
 const notificationLimiterRaw = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -262,7 +270,8 @@ const statsComparisonLimiter = bypassInTests(statsComparisonLimiterRaw);
 const statsGlobalLimiter = bypassInTests(statsGlobalLimiterRaw);
 const statsPerformanceLimiter = bypassInTests(statsPerformanceLimiterRaw);
 
-// Apply test bypass to notification limiters
+// Apply test bypass to dashboard and notification limiters
+const dashboardLimiter = bypassInTests(dashboardLimiterRaw);
 const notificationLimiter = bypassInTests(notificationLimiterRaw);
 const realtimeLimiter = bypassInTests(realtimeLimiterRaw);
 
@@ -296,6 +305,9 @@ module.exports = {
   statsComparisonLimiter,
   statsGlobalLimiter,
   statsPerformanceLimiter,
+  
+  // Dashboard-specific rate limiters
+  dashboardLimiter,
   
   // Notification-specific rate limiters
   notificationLimiter,

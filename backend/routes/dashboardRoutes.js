@@ -6,11 +6,16 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const Response = require('../models/Response');
 const User = require('../models/User');
+const Contact = require('../models/Contact');
+const Submission = require('../models/Submission');
 const { createAdminBodyParser } = require('../middleware/bodyParser');
 const { csrfProtectionStrict, csrfTokenEndpoint } = require('../middleware/csrf');
 const { normalizeQuestion } = require('../utils/questionNormalizer');
 const { createQuerySanitizationMiddleware, sanitizeMongoInput, sanitizeObjectId } = require('../middleware/querySanitization');
-const { requireAdminAccess, requireDashboardAccess } = require('../middleware/hybridAuth');
+const { requireAdminAccess, requireDashboardAccess, requireUserAuth, detectAuthMethod, enrichUserData } = require('../middleware/hybridAuth');
+const { dashboardLimiter } = require('../middleware/rateLimiting');
+const ContactService = require('../services/contactService');
+const SubmissionService = require('../services/submissionService');
 
 // Configuration constants
 const PIE_CHART_QUESTION = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
@@ -18,6 +23,16 @@ const PIE_CHART_QUESTION = process.env.PIE_CHART_QUESTION || "En rapide, comment
 // Apply dashboard-specific middleware
 router.use(createAdminBodyParser());
 router.use(createQuerySanitizationMiddleware());
+router.use(detectAuthMethod);
+router.use(enrichUserData);
+router.use(requireDashboardAccess);
+
+// Rate limiting for dashboard endpoints
+router.use(dashboardLimiter);
+
+// Initialize services
+const contactService = new ContactService();
+const submissionService = new SubmissionService();
 
 // Helper function to determine user's data access level
 function getUserDataAccess(req) {
@@ -358,6 +373,364 @@ router.get('/stats', async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to get dashboard statistics',
       code: 'STATS_ERROR'
+    });
+  }
+});
+
+// ====================
+// NEW DASHBOARD ROUTES
+// ====================
+
+// GET /dashboard - Main user dashboard with summary data
+router.get('/', async (req, res) => {
+  try {
+    const access = getUserDataAccess(req);
+    
+    if (access.level === 'user') {
+      // User dashboard with personal summary
+      const userId = access.userId;
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      
+      // Get user's submission for current month
+      const currentSubmission = await Submission.findOne({
+        userId: new mongoose.Types.ObjectId(userId),
+        month: currentMonth
+      }).lean();
+      
+      // Get total contacts count
+      const totalContacts = await Contact.countDocuments({
+        ownerId: new mongoose.Types.ObjectId(userId),
+        isActive: true
+      });
+      
+      // Get recent submissions (last 3 months)
+      const recentSubmissions = await Submission.find({
+        userId: new mongoose.Types.ObjectId(userId)
+      })
+      .sort({ month: -1 })
+      .limit(3)
+      .select('month completionRate submittedAt')
+      .lean();
+      
+      // Get contacts with recent activity
+      const recentContacts = await Contact.find({
+        ownerId: new mongoose.Types.ObjectId(userId),
+        'tracking.lastInteractionAt': { $exists: true }
+      })
+      .sort({ 'tracking.lastInteractionAt': -1 })
+      .limit(5)
+      .select('firstName lastName email tracking')
+      .lean();
+      
+      const dashboardData = {
+        user: {
+          username: req.currentUser.username,
+          email: req.currentUser.email,
+          role: req.currentUser.role
+        },
+        currentMonth: {
+          month: currentMonth,
+          hasSubmitted: !!currentSubmission,
+          submission: currentSubmission ? {
+            completionRate: currentSubmission.completionRate,
+            submittedAt: currentSubmission.submittedAt
+          } : null
+        },
+        stats: {
+          totalContacts,
+          totalSubmissions: recentSubmissions.length,
+          averageCompletion: recentSubmissions.length > 0 ? 
+            Math.round(recentSubmissions.reduce((sum, s) => sum + s.completionRate, 0) / recentSubmissions.length) : 0
+        },
+        recentActivity: {
+          submissions: recentSubmissions,
+          contacts: recentContacts
+        }
+      };
+      
+      res.json(dashboardData);
+    } else if (access.level === 'admin') {
+      // Admin dashboard with system overview
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      
+      const [totalUsers, totalSubmissions, thisMonthSubmissions, totalContacts] = await Promise.all([
+        User.countDocuments({ 'metadata.isActive': true }),
+        Submission.countDocuments({}),
+        Submission.countDocuments({ month: currentMonth }),
+        Contact.countDocuments({ isActive: true })
+      ]);
+      
+      const dashboardData = {
+        user: {
+          username: 'Admin',
+          role: 'admin'
+        },
+        currentMonth: {
+          month: currentMonth
+        },
+        systemStats: {
+          totalUsers,
+          totalSubmissions,
+          thisMonthSubmissions,
+          totalContacts,
+          submissionRate: totalUsers > 0 ? Math.round((thisMonthSubmissions / totalUsers) * 100) : 0
+        }
+      };
+      
+      res.json(dashboardData);
+    } else {
+      res.status(403).json({ error: 'Access denied' });
+    }
+  } catch (error) {
+    console.error('Error loading dashboard:', error);
+    res.status(500).json({ 
+      error: 'Failed to load dashboard',
+      code: 'DASHBOARD_ERROR'
+    });
+  }
+});
+
+// GET /dashboard/contacts - Contact management interface
+router.get('/contacts', requireUserAuth, async (req, res) => {
+  try {
+    const userId = req.currentUser.id;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+    const search = req.query.search?.trim();
+    const status = req.query.status;
+    
+    // Build filter
+    let filter = {
+      ownerId: new mongoose.Types.ObjectId(userId)
+    };
+    
+    if (search) {
+      filter.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    if (status && ['active', 'pending', 'opted_out', 'bounced'].includes(status)) {
+      filter.status = status;
+    }
+    
+    const [contacts, totalCount] = await Promise.all([
+      Contact.find(filter)
+        .sort({ 'tracking.lastInteractionAt': -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('firstName lastName email status tracking emailStatus isActive optedOut tags')
+        .lean(),
+      Contact.countDocuments(filter)
+    ]);
+    
+    // Enhanced contact data with response status
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const contactsWithStatus = contacts.map(contact => {
+      return {
+        id: contact._id,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        email: contact.email,
+        status: contact.status,
+        emailStatus: contact.emailStatus,
+        isActive: contact.isActive,
+        optedOut: contact.optedOut,
+        tags: contact.tags || [],
+        tracking: {
+          responsesReceived: contact.tracking?.responsesReceived || 0,
+          responseRate: contact.tracking?.responseRate || 0,
+          lastInteractionAt: contact.tracking?.lastInteractionAt,
+          lastSentAt: contact.tracking?.lastSentAt
+        },
+        canReceiveInvitation: contact.status === 'active' && contact.isActive && !contact.optedOut
+      };
+    });
+    
+    res.json({
+      contacts: contactsWithStatus,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit)
+      },
+      summary: {
+        total: totalCount,
+        active: contacts.filter(c => c.status === 'active').length,
+        pending: contacts.filter(c => c.status === 'pending').length,
+        optedOut: contacts.filter(c => c.optedOut).length
+      }
+    });
+  } catch (error) {
+    console.error('Error loading contacts:', error);
+    res.status(500).json({ 
+      error: 'Failed to load contacts',
+      code: 'CONTACTS_ERROR'
+    });
+  }
+});
+
+// GET /dashboard/responses - Response history and form access
+router.get('/responses', requireUserAuth, async (req, res) => {
+  try {
+    const userId = req.currentUser.id;
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    
+    // Get user's submission history
+    const submissions = await Submission.find({
+      userId: new mongoose.Types.ObjectId(userId)
+    })
+    .sort({ month: -1 })
+    .select('month completionRate submittedAt responses freeText')
+    .lean();
+    
+    // Check if current month form is available
+    const currentSubmission = submissions.find(s => s.month === currentMonth);
+    const canSubmitThisMonth = !currentSubmission;
+    
+    // Process submissions for response
+    const submissionHistory = submissions.map(submission => ({
+      month: submission.month,
+      completionRate: submission.completionRate,
+      submittedAt: submission.submittedAt,
+      responseCount: submission.responses?.length || 0,
+      hasFreeText: !!submission.freeText?.trim()
+    }));
+    
+    // Get monthly stats
+    const stats = {
+      totalSubmissions: submissions.length,
+      averageCompletion: submissions.length > 0 ? 
+        Math.round(submissions.reduce((sum, s) => sum + s.completionRate, 0) / submissions.length) : 0,
+      bestMonth: submissions.length > 0 ? 
+        submissions.reduce((best, current) => 
+          current.completionRate > (best?.completionRate || 0) ? current : best
+        ) : null
+    };
+    
+    res.json({
+      currentMonth: {
+        month: currentMonth,
+        canSubmit: canSubmitThisMonth,
+        hasSubmitted: !!currentSubmission,
+        submission: currentSubmission ? {
+          completionRate: currentSubmission.completionRate,
+          submittedAt: currentSubmission.submittedAt
+        } : null
+      },
+      history: submissionHistory,
+      stats
+    });
+  } catch (error) {
+    console.error('Error loading responses:', error);
+    res.status(500).json({ 
+      error: 'Failed to load responses',
+      code: 'RESPONSES_ERROR'
+    });
+  }
+});
+
+// GET /dashboard/contact/:id - Individual contact 1-vs-1 view
+router.get('/contact/:id', requireUserAuth, async (req, res) => {
+  try {
+    const userId = req.currentUser.id;
+    const contactId = sanitizeObjectId(req.params.id);
+    
+    if (!contactId) {
+      return res.status(400).json({ error: 'Invalid contact ID' });
+    }
+    
+    // Get contact with ownership verification
+    const contact = await Contact.findOne({
+      _id: new mongoose.Types.ObjectId(contactId),
+      ownerId: new mongoose.Types.ObjectId(userId)
+    }).lean();
+    
+    if (!contact) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+    
+    // Get user's submissions
+    const userSubmissions = await Submission.find({
+      userId: new mongoose.Types.ObjectId(userId)
+    })
+    .sort({ month: -1 })
+    .select('month responses freeText submittedAt completionRate')
+    .lean();
+    
+    // Get contact's submissions if they have a user account
+    let contactSubmissions = [];
+    if (contact.contactUserId) {
+      contactSubmissions = await Submission.find({
+        userId: contact.contactUserId
+      })
+      .sort({ month: -1 })
+      .select('month responses freeText submittedAt completionRate')
+      .lean();
+    }
+    
+    // Create comparison data
+    const comparisonData = [];
+    const allMonths = new Set([...userSubmissions.map(s => s.month), ...contactSubmissions.map(s => s.month)]);
+    
+    for (const month of Array.from(allMonths).sort().reverse()) {
+      const userSub = userSubmissions.find(s => s.month === month);
+      const contactSub = contactSubmissions.find(s => s.month === month);
+      
+      comparisonData.push({
+        month,
+        user: userSub ? {
+          submitted: true,
+          completionRate: userSub.completionRate,
+          responseCount: userSub.responses?.length || 0,
+          submittedAt: userSub.submittedAt
+        } : { submitted: false },
+        contact: contactSub ? {
+          submitted: true,
+          completionRate: contactSub.completionRate,
+          responseCount: contactSub.responses?.length || 0,
+          submittedAt: contactSub.submittedAt
+        } : { submitted: false }
+      });
+    }
+    
+    // Enhanced contact info
+    const contactInfo = {
+      id: contact._id,
+      firstName: contact.firstName,
+      lastName: contact.lastName,
+      email: contact.email,
+      status: contact.status,
+      hasUserAccount: !!contact.contactUserId,
+      tracking: {
+        responsesReceived: contact.tracking?.responsesReceived || 0,
+        responseRate: contact.tracking?.responseRate || 0,
+        averageResponseTime: contact.tracking?.averageResponseTime,
+        lastInteractionAt: contact.tracking?.lastInteractionAt,
+        firstResponseAt: contact.tracking?.firstResponseAt
+      },
+      tags: contact.tags || [],
+      notes: contact.notes
+    };
+    
+    res.json({
+      contact: contactInfo,
+      comparison: comparisonData,
+      stats: {
+        totalSharedMonths: comparisonData.filter(m => m.user.submitted && m.contact.submitted).length,
+        userSubmissions: userSubmissions.length,
+        contactSubmissions: contactSubmissions.length
+      }
+    });
+  } catch (error) {
+    console.error('Error loading contact comparison:', error);
+    res.status(500).json({ 
+      error: 'Failed to load contact comparison',
+      code: 'CONTACT_COMPARISON_ERROR'
     });
   }
 });

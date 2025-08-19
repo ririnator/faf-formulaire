@@ -250,4 +250,4 @@ UserSchema.methods.toPublicJSON = function() {
   };
 };
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.models.User || mongoose.model('User', UserSchema);
