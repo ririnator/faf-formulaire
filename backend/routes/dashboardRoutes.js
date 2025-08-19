@@ -20,6 +20,60 @@ const SubmissionService = require('../services/submissionService');
 // Configuration constants
 const PIE_CHART_QUESTION = process.env.PIE_CHART_QUESTION || "En rapide, comment ça va ?";
 
+// Performance optimization: Universal cache system
+const dashboardCache = new Map();
+const CACHE_TTLS = {
+  months: 30 * 60 * 1000,    // 30 minutes (rarely changes)
+  summary: 10 * 60 * 1000,   // 10 minutes (moderate changes)
+  stats: 5 * 60 * 1000,      // 5 minutes (frequent changes)
+  contacts: 15 * 60 * 1000   // 15 minutes (moderate changes)
+};
+
+function getCachedData(type, userId, isAdmin, extra = '') {
+  const cacheKey = `${type}_${userId || 'all'}_${isAdmin ? 'admin' : 'user'}_${extra}`;
+  const cached = dashboardCache.get(cacheKey);
+  
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTLS[type]) {
+    return cached.data;
+  }
+  
+  return null;
+}
+
+function setCachedData(type, userId, isAdmin, data, extra = '') {
+  const cacheKey = `${type}_${userId || 'all'}_${isAdmin ? 'admin' : 'user'}_${extra}`;
+  dashboardCache.set(cacheKey, {
+    data,
+    timestamp: Date.now()
+  });
+  
+  // Prevent memory leaks - limit cache size
+  if (dashboardCache.size > 200) {
+    const firstKey = dashboardCache.keys().next().value;
+    dashboardCache.delete(firstKey);
+  }
+}
+
+// Legacy functions for backward compatibility
+function getCachedMonths(userId, isAdmin) {
+  return getCachedData('months', userId, isAdmin);
+}
+
+function setCachedMonths(userId, isAdmin, data) {
+  setCachedData('months', userId, isAdmin, data);
+}
+
+// Cache invalidation function
+function invalidateUserCache(userId) {
+  const keysToDelete = [];
+  for (const [key] of dashboardCache) {
+    if (key.includes(`_${userId}_`)) {
+      keysToDelete.push(key);
+    }
+  }
+  keysToDelete.forEach(key => dashboardCache.delete(key));
+}
+
 // Apply dashboard-specific middleware
 router.use(createAdminBodyParser());
 router.use(createQuerySanitizationMiddleware());
@@ -126,11 +180,23 @@ router.get('/profile', (req, res) => {
 router.get('/months', async (req, res) => {
   try {
     const access = getUserDataAccess(req);
+    
+    // Check cache first
+    const cachedMonths = getCachedMonths(access.userId, access.level === 'admin');
+    if (cachedMonths) {
+      return res.json(cachedMonths);
+    }
+    
     const matchFilter = createUserDataFilter(req);
     
+    // Optimized pipeline with early projection
     const pipeline = [
       { $match: matchFilter },
-      { $project: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } } },
+      { $project: { 
+          year: { $year: '$createdAt' }, 
+          month: { $month: '$createdAt' },
+          _id: 0  // Exclude _id early to save memory
+      }},
       { $group: { _id: { y: '$year', m: '$month' } } },
       { $sort: { '_id.y': -1, '_id.m': -1 } },
       { $project: {
@@ -158,10 +224,17 @@ router.get('/months', async (req, res) => {
       }}
     ];
 
-    const months = await mongoose.connection.db
-      .collection('responses')
-      .aggregate(pipeline, { allowDiskUse: true })
+    // Use collection with hint for optimal index usage
+    const collection = mongoose.connection.db.collection('responses');
+    const months = await collection
+      .aggregate(pipeline, { 
+        allowDiskUse: true,
+        hint: { createdAt: -1 }  // Use createdAt index for better performance
+      })
       .toArray();
+
+    // Cache the results
+    setCachedMonths(access.userId, access.level === 'admin', months);
 
     res.json(months);
   } catch (error) {
@@ -177,6 +250,13 @@ router.get('/months', async (req, res) => {
 router.get('/summary', async (req, res) => {
   try {
     const access = getUserDataAccess(req);
+    const month = req.query.month || 'all';
+    
+    // Check cache first
+    const cachedSummary = getCachedData('summary', access.userId, access.level === 'admin', month);
+    if (cachedSummary) {
+      return res.json(cachedSummary);
+    }
     
     // Build base match filter with user restrictions
     let match = createUserDataFilter(req);
@@ -234,6 +314,9 @@ router.get('/summary', async (req, res) => {
         if (b.question === PIE_Q) return 1;
         return 0;
       });
+      
+      // Cache the user summary
+      setCachedData('summary', access.userId, access.level === 'admin', summary, month);
       
       return res.json(summary);
     }
@@ -316,6 +399,9 @@ router.get('/summary', async (req, res) => {
       return a.question.localeCompare(b.question);
     });
 
+    // Cache the admin summary
+    setCachedData('summary', access.userId, access.level === 'admin', sortedSummary, month);
+    
     res.json(sortedSummary);
   } catch (error) {
     console.error('Error getting summary:', error);
@@ -654,24 +740,36 @@ router.get('/contact/:id', requireUserAuth, async (req, res) => {
       return res.status(404).json({ error: 'Contact not found' });
     }
     
-    // Get user's submissions
-    const userSubmissions = await Submission.find({
-      userId: new mongoose.Types.ObjectId(userId)
-    })
-    .sort({ month: -1 })
-    .select('month responses freeText submittedAt completionRate')
-    .lean();
+    // Optimized: Use single $facet aggregation to get both user and contact submissions
+    const submissionPipeline = [
+      {
+        $match: {
+          userId: { 
+            $in: contact.contactUserId 
+              ? [new mongoose.Types.ObjectId(userId), contact.contactUserId]
+              : [new mongoose.Types.ObjectId(userId)]
+          }
+        }
+      },
+      {
+        $facet: {
+          userSubmissions: [
+            { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+            { $sort: { month: -1 } },
+            { $project: { month: 1, responses: 1, freeText: 1, submittedAt: 1, completionRate: 1 } }
+          ],
+          contactSubmissions: contact.contactUserId ? [
+            { $match: { userId: contact.contactUserId } },
+            { $sort: { month: -1 } },
+            { $project: { month: 1, responses: 1, freeText: 1, submittedAt: 1, completionRate: 1 } }
+          ] : []
+        }
+      }
+    ];
     
-    // Get contact's submissions if they have a user account
-    let contactSubmissions = [];
-    if (contact.contactUserId) {
-      contactSubmissions = await Submission.find({
-        userId: contact.contactUserId
-      })
-      .sort({ month: -1 })
-      .select('month responses freeText submittedAt completionRate')
-      .lean();
-    }
+    const [result] = await Submission.aggregate(submissionPipeline);
+    const userSubmissions = result.userSubmissions || [];
+    const contactSubmissions = result.contactSubmissions || [];
     
     // Create comparison data
     const comparisonData = [];
