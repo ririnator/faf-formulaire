@@ -144,18 +144,55 @@ const initializeDatabase = async () => {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("Connecté à la base de données");
     
-    // Index for performance (chronological sorting)
+    // Performance indexes for dashboard queries
+    
+    // Index for chronological sorting (existing)
     await mongoose.connection.collection('responses')
       .createIndex({ createdAt: -1 });
     console.log("Index créé sur responses.createdAt");
     
-    // Unique constraint to prevent admin duplicates per month
+    // Unique constraint to prevent admin duplicates per month (existing)
     await mongoose.connection.collection('responses')
       .createIndex(
         { month: 1, isAdmin: 1 }, 
         { unique: true, partialFilterExpression: { isAdmin: true } }
       );
     console.log("Index unique créé sur responses.{month, isAdmin} avec filtre admin");
+    
+    // Performance index for date extraction in month aggregations
+    await mongoose.connection.collection('responses')
+      .createIndex({ createdAt: 1, userId: 1 });
+    console.log("Index composé créé sur responses.{createdAt, userId}");
+    
+    // Performance indexes for submissions (FAF v2)
+    try {
+      await mongoose.connection.collection('submissions')
+        .createIndex({ userId: 1, month: -1 });
+      console.log("Index créé sur submissions.{userId, month}");
+      
+      await mongoose.connection.collection('submissions')
+        .createIndex({ month: -1, completionRate: -1 });
+      console.log("Index créé sur submissions.{month, completionRate}");
+      
+      await mongoose.connection.collection('submissions')
+        .createIndex({ submittedAt: -1 });
+      console.log("Index créé sur submissions.submittedAt");
+    } catch (error) {
+      console.log("Submissions collection not yet available - indexes will be created when needed");
+    }
+    
+    // Performance indexes for contacts
+    try {
+      await mongoose.connection.collection('contacts')
+        .createIndex({ ownerId: 1, isActive: 1 });
+      console.log("Index créé sur contacts.{ownerId, isActive}");
+      
+      await mongoose.connection.collection('contacts')
+        .createIndex({ ownerId: 1, 'tracking.responseRate': -1 });
+      console.log("Index créé sur contacts.{ownerId, tracking.responseRate}");
+    } catch (error) {
+      console.log("Contacts collection not yet available - indexes will be created when needed");
+    }
   } else if (process.env.NODE_ENV === 'test') {
     console.log("Test environment detected - using existing MongoDB connection");
   } else {

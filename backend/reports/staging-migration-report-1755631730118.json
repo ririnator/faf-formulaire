@@ -1,0 +1,313 @@
+{
+  "timestamp": "2025-08-19T19:28:50.099Z",
+  "testSuite": "Staging Migration Tests",
+  "environment": {
+    "timestamp": "2025-08-19T19:28:50.104Z",
+    "environment": {
+      "nodeEnv": "staging",
+      "stagingMode": "true",
+      "migrationTestMode": "true"
+    },
+    "database": {
+      "name": "faf_staging_1755631726848",
+      "uri": "mongodb://127.0.0.1:58333/",
+      "connected": true
+    },
+    "collections": {
+      "responses": 0,
+      "users": 0
+    },
+    "healthCheck": {
+      "mongoConnection": true,
+      "environmentVariables": true,
+      "testDatabase": true
+    }
+  },
+  "summary": {
+    "totalTests": 1,
+    "performanceMetrics": 0,
+    "errorLogs": 0,
+    "securityEvents": 0
+  },
+  "results": {
+    "testResults": [
+      {
+        "testName": "Real-time Dashboard",
+        "report": {
+          "timestamp": "2025-08-19T19:28:50.087Z",
+          "sessionDuration": 1031,
+          "snapshots": [
+            {
+              "timestamp": "2025-08-19T19:28:49.057Z",
+              "uptime": 45.833598417,
+              "metrics": {
+                "system": {
+                  "uptime": 46.658469709,
+                  "memory": {
+                    "rss": 119308288,
+                    "heapTotal": 1008500736,
+                    "heapUsed": 797823704,
+                    "external": 1408690611,
+                    "arrayBuffers": 1405017760
+                  },
+                  "cpu": {
+                    "user": 38877453,
+                    "system": 6910779
+                  },
+                  "pid": 80259
+                },
+                "database": {
+                  "connectionState": 1,
+                  "collections": [
+                    "users",
+                    "responses",
+                    "submissions"
+                  ],
+                  "host": "127.0.0.1",
+                  "name": "test"
+                },
+                "application": {
+                  "environment": "staging",
+                  "stagingMode": "true",
+                  "migrationMode": "true"
+                },
+                "tests": {
+                  "totalResults": 0,
+                  "performanceMetrics": 0,
+                  "errorLogs": 0,
+                  "securityEvents": 0
+                }
+              },
+              "health": {
+                "overall": "healthy",
+                "checks": {
+                  "memory": "healthy",
+                  "database": "healthy",
+                  "tests": "healthy"
+                }
+              }
+            },
+            {
+              "timestamp": "2025-08-19T19:28:49.263Z",
+              "uptime": 46.040686459,
+              "metrics": {
+                "system": {
+                  "uptime": 46.658469709,
+                  "memory": {
+                    "rss": 119308288,
+                    "heapTotal": 1008500736,
+                    "heapUsed": 797823704,
+                    "external": 1408690611,
+                    "arrayBuffers": 1405017760
+                  },
+                  "cpu": {
+                    "user": 38877453,
+                    "system": 6910779
+                  },
+                  "pid": 80259
+                },
+                "database": {
+                  "connectionState": 1,
+                  "collections": [
+                    "users",
+                    "responses",
+                    "submissions"
+                  ],
+                  "host": "127.0.0.1",
+                  "name": "test"
+                },
+                "application": {
+                  "environment": "staging",
+                  "stagingMode": "true",
+                  "migrationMode": "true"
+                },
+                "tests": {
+                  "totalResults": 0,
+                  "performanceMetrics": 0,
+                  "errorLogs": 0,
+                  "securityEvents": 0
+                }
+              },
+              "health": {
+                "overall": "healthy",
+                "checks": {
+                  "memory": "healthy",
+                  "database": "healthy",
+                  "tests": "healthy"
+                }
+              }
+            },
+            {
+              "timestamp": "2025-08-19T19:28:49.468Z",
+              "uptime": 46.245278709,
+              "metrics": {
+                "system": {
+                  "uptime": 46.658469709,
+                  "memory": {
+                    "rss": 119308288,
+                    "heapTotal": 1008500736,
+                    "heapUsed": 797823704,
+                    "external": 1408690611,
+                    "arrayBuffers": 1405017760
+                  },
+                  "cpu": {
+                    "user": 38877453,
+                    "system": 6910779
+                  },
+                  "pid": 80259
+                },
+                "database": {
+                  "connectionState": 1,
+                  "collections": [
+                    "users",
+                    "responses",
+                    "submissions"
+                  ],
+                  "host": "127.0.0.1",
+                  "name": "test"
+                },
+                "application": {
+                  "environment": "staging",
+                  "stagingMode": "true",
+                  "migrationMode": "true"
+                },
+                "tests": {
+                  "totalResults": 0,
+                  "performanceMetrics": 0,
+                  "errorLogs": 0,
+                  "securityEvents": 0
+                }
+              },
+              "health": {
+                "overall": "healthy",
+                "checks": {
+                  "memory": "healthy",
+                  "database": "healthy",
+                  "tests": "healthy"
+                }
+              }
+            },
+            {
+              "timestamp": "2025-08-19T19:28:49.676Z",
+              "uptime": 46.453176334,
+              "metrics": {
+                "system": {
+                  "uptime": 46.658469709,
+                  "memory": {
+                    "rss": 119308288,
+                    "heapTotal": 1008500736,
+                    "heapUsed": 797823704,
+                    "external": 1408690611,
+                    "arrayBuffers": 1405017760
+                  },
+                  "cpu": {
+                    "user": 38877453,
+                    "system": 6910779
+                  },
+                  "pid": 80259
+                },
+                "database": {
+                  "connectionState": 1,
+                  "collections": [
+                    "users",
+                    "responses",
+                    "submissions"
+                  ],
+                  "host": "127.0.0.1",
+                  "name": "test"
+                },
+                "application": {
+                  "environment": "staging",
+                  "stagingMode": "true",
+                  "migrationMode": "true"
+                },
+                "tests": {
+                  "totalResults": 0,
+                  "performanceMetrics": 0,
+                  "errorLogs": 0,
+                  "securityEvents": 0
+                }
+              },
+              "health": {
+                "overall": "healthy",
+                "checks": {
+                  "memory": "healthy",
+                  "database": "healthy",
+                  "tests": "healthy"
+                }
+              }
+            },
+            {
+              "timestamp": "2025-08-19T19:28:49.881Z",
+              "uptime": 46.658469709,
+              "metrics": {
+                "system": {
+                  "uptime": 46.658469709,
+                  "memory": {
+                    "rss": 119308288,
+                    "heapTotal": 1008500736,
+                    "heapUsed": 797823704,
+                    "external": 1408690611,
+                    "arrayBuffers": 1405017760
+                  },
+                  "cpu": {
+                    "user": 38877453,
+                    "system": 6910779
+                  },
+                  "pid": 80259
+                },
+                "database": {
+                  "connectionState": 1,
+                  "collections": [
+                    "users",
+                    "responses",
+                    "submissions"
+                  ],
+                  "host": "127.0.0.1",
+                  "name": "test"
+                },
+                "application": {
+                  "environment": "staging",
+                  "stagingMode": "true",
+                  "migrationMode": "true"
+                },
+                "tests": {
+                  "totalResults": 0,
+                  "performanceMetrics": 0,
+                  "errorLogs": 0,
+                  "securityEvents": 0
+                }
+              },
+              "health": {
+                "overall": "healthy",
+                "checks": {
+                  "memory": "healthy",
+                  "database": "healthy",
+                  "tests": "healthy"
+                }
+              }
+            }
+          ],
+          "summary": {
+            "totalSnapshots": 5,
+            "healthySnapshots": 5,
+            "warningSnapshots": 0,
+            "unhealthySnapshots": 0,
+            "averageMemoryUsage": 797823704,
+            "databaseConnected": true
+          }
+        },
+        "timestamp": "2025-08-19T19:28:50.087Z"
+      }
+    ],
+    "performanceMetrics": [],
+    "errorLogs": [],
+    "securityEvents": []
+  },
+  "recommendations": [
+    "Surveiller les performances en production",
+    "Mettre en place un monitoring continu",
+    "Effectuer des audits de sécurité réguliers",
+    "Maintenir les logs pour le debugging"
+  ]
+}
