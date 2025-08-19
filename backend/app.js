@@ -144,18 +144,55 @@ const initializeDatabase = async () => {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("Connecté à la base de données");
     
-    // Index for performance (chronological sorting)
+    // Performance indexes for dashboard queries
+    
+    // Index for chronological sorting (existing)
     await mongoose.connection.collection('responses')
       .createIndex({ createdAt: -1 });
     console.log("Index créé sur responses.createdAt");
     
-    // Unique constraint to prevent admin duplicates per month
+    // Unique constraint to prevent admin duplicates per month (existing)
     await mongoose.connection.collection('responses')
       .createIndex(
         { month: 1, isAdmin: 1 }, 
         { unique: true, partialFilterExpression: { isAdmin: true } }
       );
     console.log("Index unique créé sur responses.{month, isAdmin} avec filtre admin");
+    
+    // Performance index for date extraction in month aggregations
+    await mongoose.connection.collection('responses')
+      .createIndex({ createdAt: 1, userId: 1 });
+    console.log("Index composé créé sur responses.{createdAt, userId}");
+    
+    // Performance indexes for submissions (FAF v2)
+    try {
+      await mongoose.connection.collection('submissions')
+        .createIndex({ userId: 1, month: -1 });
+      console.log("Index créé sur submissions.{userId, month}");
+      
+      await mongoose.connection.collection('submissions')
+        .createIndex({ month: -1, completionRate: -1 });
+      console.log("Index créé sur submissions.{month, completionRate}");
+      
+      await mongoose.connection.collection('submissions')
+        .createIndex({ submittedAt: -1 });
+      console.log("Index créé sur submissions.submittedAt");
+    } catch (error) {
+      console.log("Submissions collection not yet available - indexes will be created when needed");
+    }
+    
+    // Performance indexes for contacts
+    try {
+      await mongoose.connection.collection('contacts')
+        .createIndex({ ownerId: 1, isActive: 1 });
+      console.log("Index créé sur contacts.{ownerId, isActive}");
+      
+      await mongoose.connection.collection('contacts')
+        .createIndex({ ownerId: 1, 'tracking.responseRate': -1 });
+      console.log("Index créé sur contacts.{ownerId, tracking.responseRate}");
+    } catch (error) {
+      console.log("Contacts collection not yet available - indexes will be created when needed");
+    }
   } else if (process.env.NODE_ENV === 'test') {
     console.log("Test environment detected - using existing MongoDB connection");
   } else {
@@ -275,10 +312,38 @@ app.get('/logout', destroySession);
 // Main dashboard route - universal access for users and admins
 app.get('/dashboard', detectAuthMethod, enrichUserData, requireDashboardAccess, (req, res) => {
   try {
-    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/admin/admin.html'), res);
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/dashboard/dashboard.html'), res);
     res.send(html);
   } catch (error) {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Dashboard not available');
+  }
+});
+
+// Dashboard sub-pages - all require authentication
+app.get('/dashboard/contacts', detectAuthMethod, enrichUserData, requireDashboardAccess, (req, res) => {
+  try {
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/dashboard/dashboard-contacts.html'), res);
+    res.send(html);
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Contacts page not available');
+  }
+});
+
+app.get('/dashboard/responses', detectAuthMethod, enrichUserData, requireDashboardAccess, (req, res) => {
+  try {
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/dashboard/dashboard-responses.html'), res);
+    res.send(html);
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Responses page not available');
+  }
+});
+
+app.get('/dashboard/contact/:id', detectAuthMethod, enrichUserData, requireDashboardAccess, (req, res) => {
+  try {
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/dashboard/dashboard-contact-view.html'), res);
+    res.send(html);
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Contact view not available');
   }
 });
 
@@ -307,7 +372,24 @@ app.get('/admin/compare', detectAuthMethod, enrichUserData, requireDashboardAcce
   }
 });
 
-// Dashboard assets (faf-admin.js module, CSS, images, etc.) - accessible to all authenticated users
+// Dashboard assets (dashboard.js module, CSS, images, etc.) - accessible to all authenticated users
+app.use('/dashboard', detectAuthMethod, enrichUserData, requireDashboardAccess, (req, res, next) => {
+  // Set proper MIME types for assets
+  if (req.path.endsWith('.js')) {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    // Cache pour 1 heure en développement, 24h en production
+    const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 3600;
+    res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+  } else if (req.path.endsWith('.css')) {
+    res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    // Cache pour 1 heure en développement, 24h en production
+    const cacheMaxAge = process.env.NODE_ENV === 'production' ? 86400 : 3600;
+    res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+  }
+  next();
+}, express.static(path.join(__dirname, '../frontend/dashboard')));
+
+// Admin assets (faf-admin.js module, CSS, images, etc.) - accessible to all authenticated users
 app.use('/admin', detectAuthMethod, enrichUserData, requireDashboardAccess, (req, res, next) => {
   // Set proper MIME types for assets
   if (req.path.endsWith('.js')) {

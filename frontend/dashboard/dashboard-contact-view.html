@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Comparaison 1-vs-1 – Form-a-Friend</title>
+  <script src="https://cdn.tailwindcss.com" nonce="<%= locals.nonce %>"></script>
+  <link rel="stylesheet" href="/css/shared-base.css">
+  <link rel="stylesheet" href="/css/mobile-responsive.css">
+  <link rel="stylesheet" href="/css/photo-lightbox.css">
+  <link rel="stylesheet" href="/dashboard/css/dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" nonce="<%= locals.nonce %>"></script>
+  <script src="/js/photo-lightbox.js" nonce="<%= locals.nonce %>"></script>
+  <script src="/js/photo-compression.js" nonce="<%= locals.nonce %>"></script>
+  <script type="module" src="/admin/faf-admin.js" nonce="<%= locals.nonce %>"></script>
+  <script type="module" src="/dashboard/dashboard.js" nonce="<%= locals.nonce %>"></script>
+  <script src="/admin/js/notificationCenter.js" nonce="<%= locals.nonce %>"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Skip link for keyboard navigation -->
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  
+  <!-- Universal Navigation -->
+  <nav class="dashboard-nav bg-white shadow-sm border-b" role="navigation" aria-label="Navigation principale">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-4">
+          <a href="/dashboard/dashboard.html" class="text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors">Form-a-Friend</a>
+          <span class="text-gray-300">›</span>
+          <a href="/dashboard/dashboard-contacts.html" class="text-gray-600 hover:text-blue-600 transition-colors">Contacts</a>
+          <span class="text-gray-300">›</span>
+          <h1 class="text-lg font-medium text-gray-700">Comparaison</h1>
+        </div>
+        <div class="nav-links flex items-center space-x-4">
+          <!-- Notification Center will be inserted here by NotificationCenter.js -->
+          
+          <a href="/dashboard/dashboard.html" class="nav-button text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors">🏠 Accueil</a>
+          <a href="/dashboard/dashboard-contacts.html" class="nav-button text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors">📞 Contacts</a>
+          <a href="/dashboard/dashboard-responses.html" class="nav-button text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors">📝 Réponses</a>
+          
+          <!-- Admin-only navigation -->
+          <a href="/admin/admin.html" id="adminPanelLink" class="admin-only nav-button text-orange-600 hover:bg-orange-50 px-3 py-2 rounded-lg transition-colors hidden">⚙️ Admin</a>
+          
+          <a href="/logout" class="nav-button text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors">Déconnexion</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" role="main">
+    <!-- Alert Message -->
+    <div id="alertMessage" class="hidden mb-6 p-4 rounded-lg" 
+         role="alert" aria-live="assertive"></div>
+
+    <!-- Page Header -->
+    <div class="mb-8">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Comparaison 1-vs-1</h2>
+          <p class="text-gray-600">Comparez vos réponses avec celles de vos contacts mois par mois.</p>
+        </div>
+        
+        <!-- Contact Selector -->
+        <div class="flex items-center gap-3">
+          <label for="contactSelector" class="text-sm font-medium text-gray-700">Contact :</label>
+          <select id="contactSelector" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[200px]"
+                  aria-label="Sélectionner un contact">
+            <option value="" disabled selected>Choisir un contact</option>
+            <!-- Contacts will be populated dynamically -->
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Info Cards -->
+    <section class="mb-8" aria-label="Informations des contacts">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Your Info Card -->
+        <div class="contact-info-card bg-white rounded-lg shadow-sm p-6">
+          <div class="flex items-center mb-4">
+            <div class="contact-avatar bg-gradient-to-br from-blue-500 to-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold mr-4">
+              <span id="userInitials">-</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900" id="userName">Vous</h3>
+              <p class="text-sm text-gray-500" id="userEmail">-</p>
+              <div class="flex items-center mt-1">
+                <span class="status-indicator bg-green-500 w-2 h-2 rounded-full mr-2"></span>
+                <span class="text-xs text-green-600 font-medium">Actif</span>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="text-gray-500">Réponses totales</p>
+              <p class="font-semibold" id="userTotalResponses">-</p>
+            </div>
+            <div>
+              <p class="text-gray-500">Taux de remplissage</p>
+              <p class="font-semibold" id="userCompletionRate">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Info Card -->
+        <div class="contact-info-card bg-white rounded-lg shadow-sm p-6">
+          <div class="flex items-center mb-4">
+            <div class="contact-avatar bg-gradient-to-br from-purple-500 to-purple-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold mr-4">
+              <span id="contactInitials">?</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900" id="contactName">Sélectionnez un contact</h3>
+              <p class="text-sm text-gray-500" id="contactEmail">-</p>
+              <div class="flex items-center mt-1">
+                <span id="contactStatusIndicator" class="status-indicator bg-gray-400 w-2 h-2 rounded-full mr-2"></span>
+                <span id="contactStatus" class="text-xs text-gray-600 font-medium">-</span>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="text-gray-500">Réponses totales</p>
+              <p class="font-semibold" id="contactTotalResponses">-</p>
+            </div>
+            <div>
+              <p class="text-gray-500">Taux de remplissage</p>
+              <p class="font-semibold" id="contactCompletionRate">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Month Navigation -->
+    <section class="mb-6" aria-label="Navigation par mois">
+      <div class="bg-white p-6 rounded-lg shadow-sm">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">Sélectionner un mois</h3>
+          
+          <div class="flex items-center gap-2">
+            <button id="prevMonth" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Mois précédent">
+              ← Précédent
+            </button>
+            
+            <select id="monthSelector" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[150px]"
+                    aria-label="Sélectionner un mois">
+              <option value="" disabled selected>Choisir un mois</option>
+              <!-- Months will be populated dynamically -->
+            </select>
+            
+            <button id="nextMonth" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Mois suivant">
+              Suivant →
+            </button>
+          </div>
+        </div>
+        
+        <!-- Quick Month Navigation -->
+        <div class="flex flex-wrap gap-2">
+          <button class="month-tab active px-3 py-1 text-sm font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors" data-offset="0">
+            Ce mois
+          </button>
+          <button class="month-tab px-3 py-1 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" data-offset="-1">
+            Mois dernier
+          </button>
+          <button class="month-tab px-3 py-1 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" data-offset="-2">
+            Il y a 2 mois
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison Content -->
+    <section aria-label="Contenu de la comparaison">
+      <div id="comparisonContent" class="space-y-6">
+        <!-- Comparison content will be loaded here -->
+      </div>
+      
+      <!-- Loading State -->
+      <div id="loadingState" class="bg-white rounded-lg shadow-sm p-8 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+        <div class="text-gray-500">Chargement de la comparaison...</div>
+      </div>
+      
+      <!-- Empty State -->
+      <div id="emptyState" class="bg-white rounded-lg shadow-sm p-8 text-center hidden">
+        <div class="text-6xl mb-4">🤝</div>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucune donnée à comparer</h3>
+        <p class="text-gray-500 mb-6">Sélectionnez un contact et un mois pour voir la comparaison des réponses.</p>
+      </div>
+
+      <!-- No Contact Selected State -->
+      <div id="noContactState" class="bg-white rounded-lg shadow-sm p-8 text-center">
+        <div class="text-6xl mb-4">👥</div>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">Sélectionnez un contact</h3>
+        <p class="text-gray-500 mb-6">Choisissez un contact dans la liste déroulante pour commencer la comparaison.</p>
+      </div>
+    </section>
+
+    <!-- Photo Gallery Modal -->
+    <div id="photoGalleryModal" class="modal-overlay" role="dialog" aria-labelledby="photoGalleryModalTitle" aria-hidden="true">
+      <div class="modal-content max-w-4xl max-h-[90vh] overflow-hidden">
+        <div class="flex justify-between items-center mb-6">
+          <h2 id="photoGalleryModalTitle" class="text-xl font-semibold">Galerie photo</h2>
+          <button id="closeGalleryModal" class="text-gray-500 hover:text-gray-700 text-2xl" aria-label="Fermer la modal">×</button>
+        </div>
+        
+        <div class="photo-gallery-container">
+          <div class="flex items-center justify-between mb-4">
+            <button id="prevPhoto" class="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" aria-label="Photo précédente">
+              ← Précédente
+            </button>
+            <span id="photoCounter" class="text-sm text-gray-600">1 / 1</span>
+            <button id="nextPhoto" class="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" aria-label="Photo suivante">
+              Suivante →
+            </button>
+          </div>
+          
+          <div id="photoDisplayContainer" class="photo-display-container relative bg-gray-100 rounded-lg overflow-hidden">
+            <!-- Photo will be displayed here -->
+          </div>
+          
+          <div class="mt-4">
+            <h4 id="photoTitle" class="font-semibold text-gray-900 mb-2"></h4>
+            <p id="photoDescription" class="text-gray-600 text-sm"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Custom Styles for Comparison View -->
+  <style>
+    /* Comparison specific styles */
+    .comparison-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem;
+      align-items: start;
+      padding: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .comparison-row:last-child {
+      border-bottom: none;
+    }
+    
+    .comparison-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: #f3f4f6;
+      border-radius: 50%;
+      font-weight: bold;
+      color: #6b7280;
+    }
+    
+    .response-card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+    
+    .response-card.user-response {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      border-color: #93c5fd;
+    }
+    
+    .response-card.contact-response {
+      background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+      border-color: #c4b5fd;
+    }
+    
+    .response-card.empty {
+      background: #f9fafb;
+      border: 2px dashed #d1d5db;
+      color: #9ca3af;
+      font-style: italic;
+      justify-content: center;
+    }
+    
+    .response-image {
+      max-width: 100px;
+      max-height: 100px;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    
+    .response-image:hover {
+      transform: scale(1.05);
+    }
+    
+    .question-header {
+      background: #f3f4f6;
+      padding: 1rem 1.5rem;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+      .comparison-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
+      
+      .comparison-divider {
+        display: none;
+      }
+      
+      .response-card {
+        margin-bottom: 0.5rem;
+      }
+      
+      .contact-info-card {
+        text-align: center;
+      }
+      
+      .contact-avatar {
+        margin: 0 auto 1rem auto;
+      }
+    }
+    
+    /* Touch-friendly elements */
+    .month-tab {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .nav-button {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Status indicators */
+    .status-indicator.status-active { background-color: #10b981; }
+    .status-indicator.status-pending { background-color: #f59e0b; }
+    .status-indicator.status-declined { background-color: #ef4444; }
+    .status-indicator.status-blocked { background-color: #6b7280; }
+  </style>
+</body>
+</html>

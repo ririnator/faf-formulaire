@@ -363,11 +363,8 @@ class AuthStateManager {
   // Redirect helpers
   redirectIfAuthenticated() {
     if (this.isAuthenticated() && !this.isLoading()) {
-      if (this.isAdmin()) {
-        window.location.href = '/admin';
-      } else {
-        window.location.href = '/dashboard';
-      }
+      // Redirection universelle vers le dashboard pour tous les utilisateurs
+      window.location.href = '/dashboard';
       return true;
     }
     return false;

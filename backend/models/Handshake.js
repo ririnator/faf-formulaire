@@ -121,4 +121,4 @@ HandshakeSchema.statics.checkPermission = async function(userId1, userId2) {
   return !!handshake;
 };
 
-module.exports = mongoose.model('Handshake', HandshakeSchema);
+module.exports = mongoose.models.Handshake || mongoose.model('Handshake', HandshakeSchema);

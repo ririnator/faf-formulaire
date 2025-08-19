@@ -80,17 +80,24 @@ class EmailService extends EventEmitter {
    */
   initializeProviders() {
     try {
-      if (this.config.resendApiKey) {
+      // Skip initialization if email services are disabled (test environment)
+      if (process.env.DISABLE_EMAIL_SERVICES === 'true') {
+        SecureLogger.logInfo('Email services disabled - using mock providers');
+        this.providers.mock = true;
+        return;
+      }
+
+      if (this.config.resendApiKey && this.config.resendApiKey !== 'test-resend-key-for-testing-purposes-only') {
         this.providers.resend = new Resend(this.config.resendApiKey);
         SecureLogger.logInfo('Resend provider initialized');
       }
 
-      if (this.config.postmarkApiKey) {
+      if (this.config.postmarkApiKey && this.config.postmarkApiKey !== 'test-postmark-key-for-testing-purposes-only') {
         this.providers.postmark = new ServerClient(this.config.postmarkApiKey);
         SecureLogger.logInfo('Postmark provider initialized');
       }
 
-      if (!this.providers.resend && !this.providers.postmark) {
+      if (!this.providers.resend && !this.providers.postmark && !this.providers.mock) {
         throw new Error('No email providers configured. Please set RESEND_API_KEY or POSTMARK_API_KEY');
       }
     } catch (error) {
@@ -375,6 +382,19 @@ class EmailService extends EventEmitter {
    * @param {Object} emailData - Email data object
    */
   async sendEmail(emailData) {
+    // Handle mock provider for testing
+    if (this.providers.mock) {
+      SecureLogger.logInfo('Mock email sent', {
+        to: emailData.to,
+        subject: emailData.subject,
+        type: emailData.metadata?.type || 'unknown'
+      });
+      return {
+        messageId: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        provider: 'mock'
+      };
+    }
+
     const providers = ['resend', 'postmark'].filter(p => this.providers[p]);
     
     if (providers.length === 0) {

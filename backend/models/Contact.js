@@ -314,4 +314,4 @@ ContactSchema.methods.reactivate = function(adminNote = null) {
   return this.save();
 };
 
-module.exports = mongoose.model('Contact', ContactSchema);
+module.exports = mongoose.models.Contact || mongoose.model('Contact', ContactSchema);

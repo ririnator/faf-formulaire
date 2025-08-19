@@ -92,11 +92,8 @@
                     
                     // Redirection selon le rôle
                     setTimeout(() => {
-                        if (result.user.role === 'admin') {
-                            window.location.href = '/admin';
-                        } else {
-                            window.location.href = '/form';
-                        }
+                        // Redirection universelle vers le dashboard
+                        window.location.href = '/dashboard';
                     }, 1500);
                     
                 } else {

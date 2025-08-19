@@ -217,14 +217,20 @@ function requireDashboardAccess(req, res, next) {
   }
   
   // No valid authentication found
-  if (req.accepts('html')) {
-    return res.redirect('/login');
-  } else {
+  // Improved API detection for consistent JSON responses
+  const isApiRequest = req.path.startsWith('/api/') || 
+                      req.xhr || 
+                      req.headers.accept?.includes('application/json') ||
+                      req.headers['content-type']?.includes('application/json');
+  
+  if (isApiRequest) {
     return res.status(401).json({
       success: false,
       error: 'Authentication required for dashboard access',
       message: 'Veuillez vous connecter pour accéder au tableau de bord'
     });
+  } else {
+    return res.redirect('/login');
   }
 }
 

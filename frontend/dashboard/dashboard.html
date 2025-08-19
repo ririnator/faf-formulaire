@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tableau de bord – Form-a-Friend</title>
+  <script src="https://cdn.tailwindcss.com" nonce="<%= locals.nonce %>"></script>
+  <link rel="stylesheet" href="/css/shared-base.css">
+  <link rel="stylesheet" href="/css/mobile-responsive.css">
+  <link rel="stylesheet" href="/css/photo-lightbox.css">
+  <link rel="stylesheet" href="/dashboard/css/dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" nonce="<%= locals.nonce %>"></script>
+  <script src="/js/photo-lightbox.js" nonce="<%= locals.nonce %>"></script>
+  <script src="/js/photo-compression.js" nonce="<%= locals.nonce %>"></script>
+  <script type="module" src="/admin/faf-admin.js" nonce="<%= locals.nonce %>"></script>
+  <script type="module" src="/dashboard/dashboard.js" nonce="<%= locals.nonce %>"></script>
+  <script src="/admin/js/notificationCenter.js" nonce="<%= locals.nonce %>"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Skip link for keyboard navigation -->
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  
+  <!-- Universal Navigation -->
+  <nav class="dashboard-nav bg-white shadow-sm border-b" role="navigation" aria-label="Navigation tableau de bord">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-4">
+          <h1 class="text-xl font-semibold text-gray-900">Form-a-Friend</h1>
+          <div class="user-info">
+            <span id="userWelcome" class="text-gray-700 font-medium">Chargement...</span>
+            <span id="userRole" class="text-sm text-gray-500 ml-2"></span>
+          </div>
+        </div>
+        <div class="nav-links flex items-center space-x-4">
+          <!-- Notification Center will be inserted here by NotificationCenter.js -->
+          
+          <!-- Navigation buttons -->
+          <a href="/dashboard/dashboard-contacts.html" class="nav-button text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+             aria-describedby="contacts-help">📞 Contacts</a>
+          <div id="contacts-help" class="sr-only">Gérer vos contacts et handshakes</div>
+          
+          <a href="/dashboard/dashboard-responses.html" class="nav-button text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+             aria-describedby="responses-help">📝 Réponses</a>
+          <div id="responses-help" class="sr-only">Voir l'historique de vos réponses et remplir les formulaires</div>
+          
+          <!-- Admin-only navigation -->
+          <a href="/admin/admin.html" id="adminPanelLink" class="admin-only nav-button text-orange-600 hover:bg-orange-50 px-3 py-2 rounded-lg transition-colors hidden" 
+             aria-describedby="admin-help">⚙️ Admin</a>
+          <div id="admin-help" class="sr-only">Accéder au panneau d'administration avancé</div>
+          
+          <!-- Universal logout -->
+          <a href="/logout" class="nav-button text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+             aria-describedby="logout-help">Déconnexion</a>
+          <div id="logout-help" class="sr-only">Se déconnecter du tableau de bord</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" role="main">
+    <!-- Alert Message -->
+    <div id="alertMessage" class="hidden mb-6 p-4 rounded-lg" 
+         role="alert" aria-live="assertive"></div>
+
+    <!-- Welcome Section -->
+    <section class="mb-8" aria-label="Accueil">
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 id="welcomeTitle" class="text-2xl font-bold text-gray-900 mb-4">Bienvenue sur votre tableau de bord</h2>
+        <p class="text-gray-600 mb-6">Gérez vos contacts, remplissez vos formulaires mensuels et consultez l'historique de vos réponses.</p>
+        
+        <!-- Primary Action Button -->
+        <div class="text-center mb-6">
+          <button id="fillFormBtn" class="prominent-cta bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+            📝 Remplir le formulaire de ce mois
+          </button>
+          <p class="text-sm text-gray-500 mt-2" id="formStatusText">Chargement du statut...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Stats Section -->
+    <section class="mb-8" aria-label="Statistiques rapides">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Aperçu rapide</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="stat-card bg-white p-4 rounded-lg shadow-sm">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">👥</div>
+            <div>
+              <p class="text-sm font-medium text-gray-500">Contacts</p>
+              <p id="contactCount" class="text-2xl font-bold text-gray-900">-</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="stat-card bg-white p-4 rounded-lg shadow-sm">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">🤝</div>
+            <div>
+              <p class="text-sm font-medium text-gray-500">Handshakes actifs</p>
+              <p id="activeHandshakes" class="text-2xl font-bold text-gray-900">-</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="stat-card bg-white p-4 rounded-lg shadow-sm user-only">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">📊</div>
+            <div>
+              <p class="text-sm font-medium text-gray-500">Mes réponses</p>
+              <p id="responseCount" class="text-2xl font-bold text-gray-900">-</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="stat-card bg-white p-4 rounded-lg shadow-sm admin-only hidden">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-orange-100 text-orange-600 mr-4">👨‍👩‍👧‍👦</div>
+            <div>
+              <p class="text-sm font-medium text-gray-500">Total utilisateurs</p>
+              <p id="totalUsers" class="text-2xl font-bold text-gray-900">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Activity Section -->
+    <section class="mb-8" aria-label="Activité récente">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Activité récente</h3>
+      <div class="bg-white rounded-lg shadow-sm">
+        <div id="recentActivity" class="divide-y divide-gray-200">
+          <!-- Recent activity items will be loaded here -->
+        </div>
+        <div id="noActivity" class="text-center py-8 text-gray-500 hidden">
+          <p>Aucune activité récente</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Actions Section -->
+    <section class="mb-8" aria-label="Actions rapides">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <a href="/dashboard/dashboard-contacts.html" class="quick-action-card bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow group">
+          <div class="flex items-center mb-3">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600 group-hover:bg-blue-200 transition-colors mr-4">📞</div>
+            <h4 class="text-lg font-semibold text-gray-900">Gérer les contacts</h4>
+          </div>
+          <p class="text-gray-600">Ajouter, modifier ou supprimer vos contacts et gérer les handshakes.</p>
+        </a>
+        
+        <a href="/dashboard/dashboard-responses.html" class="quick-action-card bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow group">
+          <div class="flex items-center mb-3">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600 group-hover:bg-purple-200 transition-colors mr-4">📊</div>
+            <h4 class="text-lg font-semibold text-gray-900">Historique des réponses</h4>
+          </div>
+          <p class="text-gray-600">Consultez vos réponses passées et naviguez entre les mois.</p>
+        </a>
+        
+        <div class="quick-action-card bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow group admin-only hidden">
+          <div class="flex items-center mb-3">
+            <div class="p-3 rounded-full bg-orange-100 text-orange-600 group-hover:bg-orange-200 transition-colors mr-4">⚙️</div>
+            <h4 class="text-lg font-semibold text-gray-900">Administration</h4>
+          </div>
+          <p class="text-gray-600">Accéder aux outils d'administration et gestion des utilisateurs.</p>
+          <a href="/admin/admin.html" class="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium">
+            Ouvrir le panneau admin →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Monthly Form Status -->
+    <section class="mb-8 user-only" aria-label="Statut du formulaire mensuel">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Formulaire de ce mois</h3>
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <div id="monthlyFormStatus" class="text-center">
+          <!-- Form status will be loaded here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Highlights -->
+    <section class="mb-8" aria-label="Contacts en vedette">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">Contacts récents</h3>
+        <a href="/dashboard/dashboard-contacts.html" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+          Voir tous →
+        </a>
+      </div>
+      <div id="recentContacts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Recent contacts will be loaded here -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Monthly Form Modal -->
+  <div id="monthlyFormModal" class="modal-overlay" role="dialog" aria-labelledby="monthlyFormModalTitle" aria-hidden="true">
+    <div class="modal-content max-w-md">
+      <div class="flex justify-between items-center mb-6">
+        <h2 id="monthlyFormModalTitle" class="text-xl font-semibold">Formulaire mensuel</h2>
+        <button id="closeFormModal" class="text-gray-500 hover:text-gray-700 text-2xl" aria-label="Fermer la modal">×</button>
+      </div>
+      
+      <div id="formModalContent">
+        <!-- Form content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</body>
+</html>

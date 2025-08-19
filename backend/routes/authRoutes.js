@@ -166,7 +166,8 @@ router.post('/register', authLimiters.register, emailDomainValidation, registerV
       message: 'Compte créé avec succès',
       user: user.toPublicJSON(),
       migrated: migratedResponses > 0,
-      migratedCount: migratedResponses
+      migratedCount: migratedResponses,
+      redirect: '/dashboard'
     });
 
   } catch (error) {
@@ -220,7 +221,8 @@ router.post('/login', authLimiters.login, loginValidation, async (req, res) => {
 
     res.json({
       message: 'Connexion réussie',
-      user: user.toPublicJSON()
+      user: user.toPublicJSON(),
+      redirect: '/dashboard'
     });
 
   } catch (error) {
