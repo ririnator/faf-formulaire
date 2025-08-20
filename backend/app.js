@@ -231,10 +231,10 @@ app.use(createStandardBodyParser());
 app.use(createPayloadErrorHandler());
 
 // 6) Pages avec CSP nonce (AVANT les fichiers statiques)
-// Page d'accueil moderne avec CSP nonce
+// Page d'accueil redirige vers auth-choice
 app.get('/', (req, res) => {
   try {
-    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/public/index.html'), res);
+    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/public/auth-choice.html'), res);
     res.send(html);
   } catch (error) {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Page not found');
@@ -267,13 +267,9 @@ app.use((req, res, next) => {
 }, express.static(path.join(__dirname, '../frontend/public')));
 
 // 8) Pages d'authentification avec CSP nonce
+// /auth-choice redirige maintenant vers la racine pour éviter la duplication
 app.get('/auth-choice', (req, res) => {
-  try {
-    const html = TemplateRenderer.renderWithNonce(path.join(__dirname, '../frontend/public/auth-choice.html'), res);
-    res.send(html);
-  } catch (error) {
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send('Page not found');
-  }
+  res.redirect('/');
 });
 
 app.get('/register', (req, res) => {
