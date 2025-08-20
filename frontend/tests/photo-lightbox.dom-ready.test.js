@@ -21,9 +21,8 @@ let photoLightboxSource;
 try {
   photoLightboxSource = fs.readFileSync(photoLightboxPath, 'utf8');
 } catch (error) {
-  // Fallback mock for testing when actual file is not accessible
-  // This ensures tests can run in isolated environments or CI/CD
-  console.warn('⚠️ Using mock photo-lightbox.js - actual file not found at:', photoLightboxPath);
+  // Simplified fallback mock for testing - only essential functionality
+  console.warn('⚠️ Using simplified photo-lightbox mock for testing');
   photoLightboxSource = `
     // Mock photo-lightbox.js content
     const LIGHTBOX_CONFIG = {
