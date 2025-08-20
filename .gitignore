@@ -10,3 +10,16 @@ backend/node_modules/
 cookies*.txt
 *.session
 *.log
+
+# Temporary documentation files (organized docs go in /docs/)
+/*RAPPORT*.md
+/*SUMMARY*.md 
+/*ANALYSIS*.md
+/*IMPLEMENTATION*.md
+/*VALIDATION*.md
+/*AUDIT*.md
+/*CHECKLIST*.md
+/*GUIDE*.md
+*-analysis.md
+*-summary.md
+*-report.md
