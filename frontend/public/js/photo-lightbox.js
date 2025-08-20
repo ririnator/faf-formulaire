@@ -817,11 +817,17 @@ function createLightboxFromResponses(responses, options = {}) {
 // GLOBAL INITIALIZATION
 // =============================================================================
 
-// Create global lightbox instance
-window.PhotoLightbox = new PhotoLightbox();
-
-// Export helper functions
-window.PhotoLightbox.createFromImages = createLightboxFromImages;
+// Wait for DOM to be ready before creating lightbox
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.PhotoLightbox = new PhotoLightbox();
+    window.PhotoLightbox.createFromImages = createLightboxFromImages;
+  });
+} else {
+  // DOM is already ready
+  window.PhotoLightbox = new PhotoLightbox();
+  window.PhotoLightbox.createFromImages = createLightboxFromImages;
+}
 window.PhotoLightbox.createFromResponses = createLightboxFromResponses;
 
 // Auto-initialize lightbox for images with data-lightbox attribute

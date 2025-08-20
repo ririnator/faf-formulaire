@@ -720,6 +720,36 @@ router.get('/responses', requireUserAuth, async (req, res) => {
   }
 });
 
+// GET /responses/current - Get current month status  
+router.get('/responses/current', requireUserAuth, async (req, res) => {
+  try {
+    const userId = req.currentUser.id;
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    
+    // Check if user has submitted for current month
+    const currentSubmission = await Submission.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+      month: currentMonth
+    }).lean();
+    
+    res.json({
+      month: currentMonth,
+      hasSubmitted: !!currentSubmission,
+      submission: currentSubmission ? {
+        completionRate: currentSubmission.completionRate,
+        submittedAt: currentSubmission.submittedAt,
+        responseCount: currentSubmission.responses?.length || 0
+      } : null
+    });
+  } catch (error) {
+    console.error('Error getting current month status:', error);
+    res.status(500).json({ 
+      error: 'Failed to get current month status',
+      code: 'CURRENT_STATUS_ERROR'
+    });
+  }
+});
+
 // GET /dashboard/contact/:id - Individual contact 1-vs-1 view
 router.get('/contact/:id', requireUserAuth, async (req, res) => {
   try {

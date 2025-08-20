@@ -49,7 +49,7 @@ export class AdminAPI {
    */
   static async fetchCSRFToken() {
     try {
-      const response = await fetch('/api/admin/csrf-token', {
+      const response = await fetch('/api/csrf-token', {
         credentials: 'include'
       });
       
