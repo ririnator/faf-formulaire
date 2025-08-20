@@ -23,3 +23,14 @@ cookies*.txt
 *-analysis.md
 *-summary.md
 *-report.md
+
+# Temporary and development files
+temp/
+temp/*
+cookies*.txt
+*.zip
+test-*.html
+
+# System files
+.DS_Store
+**/.DS_Store
