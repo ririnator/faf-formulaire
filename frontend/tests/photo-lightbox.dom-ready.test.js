@@ -176,7 +176,7 @@ describe('Photo Lightbox - DOM Ready Behavior Tests', () => {
       setTimeout(() => {
         const lightboxElement = document.getElementById('photo-lightbox');
         expect(lightboxElement).toBeTruthy();
-        expect(lightboxElement.classList.contains('lightbox-overlay')).toBe(true);
+        expect(lightboxElement.classList.contains('photo-lightbox')).toBe(true);
         done();
       }, 50);
     });
@@ -233,7 +233,7 @@ describe('Photo Lightbox - DOM Ready Behavior Tests', () => {
       const lightboxElement = document.getElementById('photo-lightbox');
       expect(lightboxElement).toBeTruthy();
       expect(lightboxElement.tagName).toBe('DIV');
-      expect(lightboxElement.classList.contains('lightbox-overlay')).toBe(true);
+      expect(lightboxElement.classList.contains('photo-lightbox')).toBe(true);
       expect(lightboxElement.style.display).toBe('none');
     });
 
