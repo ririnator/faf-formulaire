@@ -102,6 +102,13 @@ export class DashboardAPI extends AdminAPI {
   }
 
   /**
+   * Get current month status with submission info
+   */
+  static async getCurrentMonthStatus() {
+    return await this.request('/api/responses/current', {}, 'Erreur lors de la vérification du statut du mois');
+  }
+
+  /**
    * Upload photo with compression
    */
   static async uploadPhoto(file, options = {}) {
@@ -717,6 +724,39 @@ export const DashboardController = {
     const element = document.getElementById(id);
     if (element) {
       element.textContent = content;
+    }
+  },
+
+  /**
+   * Update form submission status for current month
+   */
+  async updateFormStatus() {
+    try {
+      const response = await DashboardAPI.getCurrentMonthStatus();
+      if (response) {
+        const statusElement = document.getElementById('formStatus');
+        const fillFormBtn = document.getElementById('fillFormBtn');
+        
+        if (statusElement) {
+          if (response.hasSubmitted) {
+            statusElement.innerHTML = `
+              <span class="text-green-600">✓ Formulaire soumis pour ${response.month}</span>
+            `;
+            if (fillFormBtn) {
+              fillFormBtn.textContent = 'Modifier ma réponse';
+            }
+          } else {
+            statusElement.innerHTML = `
+              <span class="text-yellow-600">⏳ En attente pour ${response.month}</span>
+            `;
+            if (fillFormBtn) {
+              fillFormBtn.textContent = 'Remplir le formulaire';
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating form status:', error);
     }
   },
 
