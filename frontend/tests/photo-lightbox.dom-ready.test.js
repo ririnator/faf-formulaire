@@ -1,6 +1,11 @@
 /**
  * Frontend Tests for DOM ready behavior in photo-lightbox
  * Tests the photo lightbox component initialization, DOM manipulation, and event handling
+ * 
+ * Testing Strategy:
+ * - Attempts to load actual photo-lightbox.js file for realistic testing
+ * - Falls back to comprehensive mock if file is not accessible
+ * - Mock fallback ensures tests run in isolated CI/CD environments
  */
 
 const fs = require('fs');
@@ -16,7 +21,9 @@ let photoLightboxSource;
 try {
   photoLightboxSource = fs.readFileSync(photoLightboxPath, 'utf8');
 } catch (error) {
-  // Fallback mock if file doesn't exist
+  // Fallback mock for testing when actual file is not accessible
+  // This ensures tests can run in isolated environments or CI/CD
+  console.warn('⚠️ Using mock photo-lightbox.js - actual file not found at:', photoLightboxPath);
   photoLightboxSource = `
     // Mock photo-lightbox.js content
     const LIGHTBOX_CONFIG = {

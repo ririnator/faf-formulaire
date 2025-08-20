@@ -1,6 +1,11 @@
 /**
  * E2E Tests for Complete Dashboard Error Elimination
  * Tests the entire dashboard flow from authentication to data display without errors
+ * 
+ * Includes internationalization testing with French text to validate:
+ * - UTF-8 character encoding support 
+ * - French UI element handling
+ * - Accented character storage and retrieval
  */
 
 const request = require('supertest');
@@ -166,6 +171,7 @@ describe('Dashboard E2E - Complete Error Elimination Tests', () => {
         requesterId: testUser._id,
         targetId: testUser._id,  // Use correct field name
         status: 'accepted',
+        // French text for internationalization testing - Form-a-Friend supports French UI
         message: 'Salut! Veux-tu rejoindre Form-a-Friend?',
         createdAt: new Date(),
         respondedAt: new Date(),
@@ -175,6 +181,7 @@ describe('Dashboard E2E - Complete Error Elimination Tests', () => {
       const testNotification = await Notification.create({
         recipientId: testUser._id,  // Use correct field name
         type: 'handshake_accepted',
+        // French text for internationalization testing - validates UTF-8 support
         title: 'Handshake accepté',
         message: 'Votre demande de contact a été acceptée par friend@example.com',
         read: false,
