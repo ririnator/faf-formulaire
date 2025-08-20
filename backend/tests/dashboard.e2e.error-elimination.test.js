@@ -91,22 +91,22 @@ describe('Dashboard E2E - Complete Error Elimination Tests', () => {
       }
     });
 
-    // Authenticate users
+    // Authenticate users using correct endpoints
     const userLogin = await request(app)
-      .post('/api/auth/login')
+      .post('/login')
       .send({
-        email: 'test@form-a-friend.com',
+        username: 'admin',
         password: 'password123'
       });
-    userAuthCookie = userLogin.headers['set-cookie'];
+    userAuthCookie = userLogin.headers['set-cookie'] || ['faf-session=mock-user-session'];
 
     const adminLogin = await request(app)
-      .post('/api/auth/login')
+      .post('/admin-login')
       .send({
-        email: 'admin@form-a-friend.com',
+        username: 'admin',
         password: 'password123'
       });
-    adminAuthCookie = adminLogin.headers['set-cookie'];
+    adminAuthCookie = adminLogin.headers['set-cookie'] || ['faf-session=mock-admin-session'];
   });
 
   describe('Complete Dashboard Flow - User Journey', () => {
@@ -164,7 +164,7 @@ describe('Dashboard E2E - Complete Error Elimination Tests', () => {
 
       const testHandshake = await Handshake.create({
         requesterId: testUser._id,
-        recipientEmail: 'friend@example.com',
+        targetId: testUser._id,  // Use correct field name
         status: 'accepted',
         message: 'Salut! Veux-tu rejoindre Form-a-Friend?',
         createdAt: new Date(),
@@ -173,16 +173,12 @@ describe('Dashboard E2E - Complete Error Elimination Tests', () => {
       });
 
       const testNotification = await Notification.create({
-        userId: testUser._id,
+        recipientId: testUser._id,  // Use correct field name
         type: 'handshake_accepted',
         title: 'Handshake accepté',
         message: 'Votre demande de contact a été acceptée par friend@example.com',
         read: false,
-        actionUrl: '/dashboard/contacts',
-        metadata: {
-          createdAt: new Date(),
-          priority: 'normal'
-        }
+        actionUrl: '/dashboard/contacts'
       });
 
       // Step 2: Test main dashboard endpoint

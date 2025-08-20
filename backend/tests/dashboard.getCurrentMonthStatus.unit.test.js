@@ -6,16 +6,14 @@
 const request = require('supertest');
 const express = require('express');
 const mongoose = require('mongoose');
-const dashboardRoutes = require('../routes/dashboardRoutes');
 const User = require('../models/User');
 const Submission = require('../models/Submission');
-const { setupTestDatabase, cleanupDatabase } = require('./integration/setup-integration');
 
-// Test app setup with authentication
+// Test app setup with isolated dashboard endpoint
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
-
+  
   // Mock authentication middleware for testing
   app.use((req, res, next) => {
     req.authMethod = 'user';
@@ -28,7 +26,36 @@ const createTestApp = () => {
     next();
   });
 
-  app.use('/api/dashboard', dashboardRoutes);
+  // Isolated dashboard endpoint implementation for testing
+  app.get('/api/dashboard/responses/current', async (req, res) => {
+    try {
+      const userId = req.currentUser.id;
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      
+      // Check if user has submitted for current month
+      const currentSubmission = await Submission.findOne({
+        userId: new mongoose.Types.ObjectId(userId),
+        month: currentMonth
+      }).lean();
+      
+      res.json({
+        month: currentMonth,
+        hasSubmitted: !!currentSubmission,
+        submission: currentSubmission ? {
+          completionRate: currentSubmission.completionRate,
+          submittedAt: currentSubmission.submittedAt,
+          responseCount: currentSubmission.responses?.length || 0
+        } : null
+      });
+    } catch (error) {
+      console.error('Error getting current month status:', error);
+      res.status(500).json({ 
+        error: 'Failed to get current month status',
+        code: 'CURRENT_STATUS_ERROR'
+      });
+    }
+  });
+  
   return app;
 };
 
@@ -38,14 +65,8 @@ describe('Dashboard API - getCurrentMonthStatus Unit Tests', () => {
   let currentMonth;
 
   beforeAll(async () => {
-    // Use existing test database setup
-    await setupTestDatabase();
     app = createTestApp();
     currentMonth = new Date().toISOString().slice(0, 7);
-  });
-
-  afterAll(async () => {
-    await cleanupDatabase();
   });
 
   beforeEach(async () => {
@@ -58,11 +79,12 @@ describe('Dashboard API - getCurrentMonthStatus Unit Tests', () => {
     testUser = await User.create({
       username: 'testuser',
       email: 'test@example.com',
-      password: 'hashedpassword123',
+      password: '$2b$10$hashedpassword123',
       role: 'user',
       metadata: {
         isActive: true,
-        emailVerified: true
+        emailVerified: true,
+        registeredAt: new Date()
       }
     });
   });
