@@ -1,17 +1,23 @@
-# 🤝 FAF (Form-a-Friend) - Application Mensuelle Sécurisée
+# 🤝 Form-a-Friend v2 - Plateforme Sociale de Partage Mensuel
 
-> **Application de formulaires mensuels entre amis avec architecture sécurisée, validation XSS, et protection anti-spam**
+> **Plateforme complète de partage social avec interactions mensuelles symétriques, gestion de contacts avancée, et système d'automatisation intelligent**
 
 ![Node.js](https://img.shields.io/badge/node.js-v18+-green.svg)
 ![Express](https://img.shields.io/badge/express-v5+-blue.svg) 
-![Security](https://img.shields.io/badge/security-helmet+XSS-red.svg)
-![Tests](https://img.shields.io/badge/tests-100+-brightgreen.svg)
+![MongoDB](https://img.shields.io/badge/mongodb-v8+-green.svg)
+![Security](https://img.shields.io/badge/security-enterprise-red.svg)
+![Tests](https://img.shields.io/badge/tests-500+-brightgreen.svg)
+![Email](https://img.shields.io/badge/email-multi--provider-blue.svg)
+![Automation](https://img.shields.io/badge/automation-scheduler-orange.svg)
 
 ## 📋 Table des Matières
 
 - [🚀 Installation Rapide](#-installation-rapide)
+- [✨ Fonctionnalités Principales](#-fonctionnalités-principales)
 - [🏗️ Architecture](#️-architecture)
 - [🛡️ Sécurité](#️-sécurité)
+- [📧 Système Email](#-système-email)
+- [🤖 Automatisation](#-automatisation)
 - [🧪 Tests](#-tests)
 - [🌍 Déploiement](#-déploiement)
 - [📚 Documentation](#-documentation)
@@ -47,18 +53,37 @@ npm run dev
 ### Variables d'Environnement Requises
 
 ```bash
-# .env
+# .env - Configuration Form-a-Friend v2
 NODE_ENV=development                    # ou production
-MONGODB_URI=mongodb://localhost:27017/faf
-SESSION_SECRET=your-super-secret-key
+MONGODB_URI=mongodb://localhost:27017/form-a-friend-v2
+SESSION_SECRET=your-super-secret-key-32-chars-minimum
 LOGIN_ADMIN_USER=admin
 LOGIN_ADMIN_PASS=$2b$10$hashed_password
 FORM_ADMIN_NAME=riri
 APP_BASE_URL=http://localhost:3000
 FRONTEND_URL=http://localhost:3000
+
+# Email Service (Multi-provider)
+EMAIL_PROVIDER=resend                   # ou postmark
+RESEND_API_KEY=re_your_resend_key      # si Resend
+POSTMARK_API_TOKEN=your_postmark_token  # si Postmark
+EMAIL_FROM_ADDRESS=noreply@form-a-friend.com
+EMAIL_FROM_NAME=Form-a-Friend
+
+# Scheduler Service
+SCHEDULER_TIMEZONE=Europe/Paris
+MONTHLY_SEND_DAY=5                      # 5e jour du mois
+MONTHLY_SEND_TIME=18:00                 # 18h00 Paris
+
+# File Upload
 CLOUDINARY_CLOUD_NAME=your-cloud
 CLOUDINARY_API_KEY=your-key
 CLOUDINARY_API_SECRET=your-secret
+
+# Performance Monitoring (optionnel)
+PERFORMANCE_MONITORING_ENABLED=true
+SESSION_MONITORING_ENABLED=true
+DATABASE_MONITORING_ENABLED=true
 ```
 
 ### Commandes Disponibles
@@ -83,6 +108,52 @@ npm run test:all:coverage # Couverture complète
 # Utilitaires
 npm run validate-env    # Vérifier les variables d'env
 ```
+
+---
+
+## ✨ Fonctionnalités Principales
+
+### 🎯 **Système de Partage Social**
+- **Interactions Symétriques** - Les utilisateurs peuvent voir les réponses de leurs contacts et vice-versa
+- **Formulaires Mensuels** - Nouveau formulaire chaque mois avec questions personnalisées
+- **Dashboard Universel** - Interface adaptée au rôle (utilisateur/admin) avec fonctionnalités complètes
+- **Page d'Accueil Intelligente** - `auth-choice.html` guide les nouveaux utilisateurs
+
+### 🏗️ **Architecture Avancée**
+- **Microservices** - Architecture modulaire avec services instances dédiés
+- **Authentification Hybride** - Support FAF v1 legacy + système utilisateur moderne
+- **Universal Dashboard** - Interface unifiée pour tous les types d'utilisateurs
+- **Mobile-First Design** - Responsive design optimisé pour tous les appareils
+
+### 📧 **Système Email Multi-Provider**
+- **Providers Multiples** - Resend et Postmark avec basculement automatique
+- **Templates Responsives** - Emails HTML optimisés pour tous les clients
+- **Webhooks** - Gestion automatique des bounces et désabonnements
+- **Tracking Avancé** - Suivi d'ouverture, clics, et statuts de livraison
+
+### 🤖 **Automatisation Intelligente**
+- **Cycles Mensuels** - Envoi automatique le 5 de chaque mois à 18h Paris
+- **Système de Rappels** - Rappels J+3 et J+7 avec logique intelligente
+- **Batch Processing** - Traitement par lots pour milliers d'invitations
+- **Monitoring Temps Réel** - Surveillance des performances et alertes
+
+### 🏢 **Gestion de Contacts Enterprise**
+- **Import CSV** - Import massif avec déduplication intelligente
+- **Système de Tags** - Organisation flexible avec tags personnalisés
+- **Handshakes** - Workflow de demande/acceptation entre utilisateurs
+- **États Avancés** - Gestion des statuts (actif, inactif, bloqué, en attente)
+
+### 🛡️ **Sécurité Enterprise**
+- **Surveillance Temps Réel** - Détection automatique d'activités suspectes
+- **Blocage IP Intelligent** - Protection anti-brute force avec seuils adaptatifs
+- **Monitoring de Performance** - Surveillance de la base de données et alertes
+- **Architecture XSS-Proof** - Protection multicouche contre les attaques
+
+### 🔄 **Migration & Compatibilité**
+- **Migration Assistée** - Outils complets FAF v1 → Form-a-Friend v2
+- **Rollback Automatique** - Procédures de rollback avec sauvegarde
+- **Compatibilité Legacy** - Maintien des URLs et fonctionnalités FAF v1
+- **Validation d'Intégrité** - Vérification complète des données migrées
 
 ---
 
@@ -285,12 +356,95 @@ if (isAdmin && adminAlreadyExists) {
 
 ---
 
+## 📧 Système Email
+
+### Architecture Multi-Provider
+
+Form-a-Friend v2 intègre un système email enterprise avec support multi-provider :
+
+```javascript
+// Configuration automatique avec fallback
+EMAIL_PROVIDER=resend                    # Provider principal
+EMAIL_FALLBACK_PROVIDER=postmark        # Basculement automatique si échec
+
+// Templates email responsives
+📧 templates/emails/
+├── invitation.html        # Invitation mensuelle
+├── handshake.html        # Demande de contact
+├── reminder-j3.html      # Rappel J+3
+├── reminder-j7.html      # Rappel J+7
+└── reminder-*.html       # Autres rappels
+```
+
+### Fonctionnalités Avancées
+
+**Providers Supportés** :
+- ✅ **Resend** - Provider principal avec API moderne
+- ✅ **Postmark** - Fallback fiable avec delivery tracking
+- 🔄 **Basculement Automatique** - Si un provider échoue, basculement transparent
+
+**Webhooks Intelligents** :
+- 📨 **Bounces** - Gestion automatique des emails non délivrés
+- 🚫 **Unsubscribes** - Désabonnements automatiques avec mise à jour base
+- 📊 **Tracking** - Ouvertures, clics, et statuts de livraison en temps réel
+- ✅ **Validation Signatures** - Vérification cryptographique des webhooks
+
+**Templates Responsives** :
+- 📱 **Mobile-First** - Optimisé pour tous les clients email
+- 🎨 **Design Cohérent** - Charte graphique Form-a-Friend
+- 🌍 **Internationalisation** - Support français avec accents
+- 🔒 **Sécurité** - Protection contre le spam et phishing
+
+---
+
+## 🤖 Automatisation
+
+### Scheduler Service Enterprise
+
+Le système d'automatisation de Form-a-Friend v2 gère les cycles mensuels avec une architecture microservice :
+
+```javascript
+// Configuration scheduler
+SCHEDULER_TIMEZONE=Europe/Paris          # Timezone Paris
+MONTHLY_SEND_DAY=5                      # 5e jour du mois  
+MONTHLY_SEND_TIME=18:00                 # 18h00 Paris
+SCHEDULER_ENABLED=true                  # Activer le scheduler
+```
+
+### Fonctionnalités Automatisation
+
+**Cycles Mensuels** :
+- 🗓️ **Envoi Automatique** - Le 5 de chaque mois à 18h00 (Paris)
+- 📧 **Invitations Massives** - Envoi batch pour milliers d'utilisateurs
+- ⚡ **Batch Processing** - Traitement optimisé avec workers dédiés
+- 🔄 **Retry Logic** - Nouvelle tentative automatique si échec
+
+**Système de Rappels Intelligent** :
+- 📅 **J+3 Reminder** - Premier rappel 3 jours après invitation
+- 📅 **J+7 Reminder** - Deuxième rappel 7 jours après invitation  
+- 🧠 **Logic Adaptative** - Pas de rappel si déjà répondu
+- 🎯 **Personnalisation** - Messages adaptés au contexte utilisateur
+
+**Monitoring & Alertes** :
+- 📊 **Métriques Temps Réel** - Dashboard de surveillance scheduler
+- 🚨 **Alertes Intelligentes** - Notifications si problèmes détectés
+- 📈 **Performance Tracking** - Suivi des performances et optimisations
+- 🛠️ **Intervention Manuelle** - Contrôles admin pour situations exceptionnelles
+
+**Architecture Robuste** :
+- 🔧 **Services Dédiés** - `schedulerService.js` + monitoring intégré
+- 🧪 **Tests Complets** - Validation scheduler avec scénarios réels
+- 📝 **Logs Structurés** - Traçabilité complète des opérations
+- 🔐 **Sécurité** - Protection contre les manipulations malveillantes
+
+---
+
 ## 🧪 Tests
 
-### Suite de Tests Sécurité Complète (100+ tests)
+### Suite de Tests Enterprise Complète (500+ tests)
 
 ```bash
-# Tests backend (validation et sécurité)
+# Tests backend sécurité et validation (100+ tests)
 npm test tests/validation.edge-cases.test.js    # 30 tests null/undefined/edge cases
 npm test tests/validation.boundary.test.js      # 32 tests limites exactes
 npm test tests/validation.security.test.js      # 22 tests XSS + HTML escaping
@@ -298,24 +452,48 @@ npm test tests/security.enhanced.test.js        # 19 tests CSP nonce + sessions
 npm test tests/bodyParser.limits.test.js        # 16 tests limites optimisées
 npm test tests/constraint.unit.test.js          # 14 tests contraintes DB
 
-# Tests intégration et options dynamiques
-npm test tests/dynamic.option.integration.test.js # Tests options formulaires dynamiques
-npm test tests/integration.full.test.js           # Tests intégration complète
-npm test tests/middleware.integration.test.js     # Tests intégration middleware
-npm test tests/sessionMonitoring.test.js          # Tests surveillance sessions (25+ tests)
-npm test tests/sessionManagement.integration.test.js # Tests intégration sessions
-npm test tests/dbPerformanceMonitor.test.js       # Tests monitoring performance
+# Tests Form-a-Friend v2 core (150+ tests)
+npm test tests/api.*.integration.test.js        # API integration tests
+npm test tests/contact.*.test.js                # Contact management tests
+npm test tests/handshake.*.test.js              # Handshake workflow tests
+npm test tests/submission.*.test.js             # Submission system tests
+npm test tests/invitation.*.test.js             # Invitation system tests
+npm test tests/notification.*.test.js           # Notification system tests
 
-# Tests frontend
-npm run test:frontend                              # Tous les tests frontend
-npm test frontend/tests/dynamic-option.test.js    # Tests options dynamiques frontend
-npm test frontend/tests/form-integration.test.js  # Tests intégration formulaires
-npm test frontend/tests/real-form-submission.test.js # Tests soumission réalistes
+# Tests automatisation et scheduler (75+ tests)
+npm test tests/scheduler*.test.js               # Scheduler service tests
+npm test tests/email*.test.js                   # Email service tests
+npm test tests/batch*.test.js                   # Batch processing tests
+npm test tests/webhook*.test.js                 # Webhook handling tests
 
-# Tests complets
-npm test                                        # Tous les tests backend
-npm run test:all                               # Backend + Frontend
-npm run test:all:coverage                     # Couverture complète
+# Tests monitoring et performance (50+ tests)  
+npm test tests/sessionMonitoring.test.js        # Session monitoring (25+ tests)
+npm test tests/dbPerformanceMonitor.test.js     # Database monitoring tests
+npm test tests/performanceAlerting.test.js      # Performance alerting tests
+npm test tests/realTimeMetrics.test.js          # Real-time metrics tests
+
+# Tests migration et compatibilité (40+ tests)
+npm test tests/migration.*.test.js              # Migration system tests
+npm test tests/hybrid-auth.*.test.js            # Hybrid authentication tests
+npm test tests/user.enriched.test.js            # User model enrichment tests
+
+# Tests frontend avancés (25+ tests)
+npm run test:frontend                            # Tous les tests frontend
+npm test frontend/tests/dashboard*.test.js      # Universal dashboard tests
+npm test frontend/tests/cross-browser*.test.js  # Cross-browser compatibility
+npm test frontend/tests/photo*.test.js          # Photo optimization tests
+npm test frontend/tests/mobile*.test.js         # Mobile interface tests
+
+# Tests spécialisés par environnement
+npm run test:staging                             # Tests environnement staging
+npm run test:post-deployment                    # Tests post-déploiement
+npm run test:production                          # Tests production readiness
+npm run test:security                           # Tests sécurité complets
+
+# Tests complets avec couverture
+npm test                                        # Tous les tests backend (400+)
+npm run test:all                               # Backend + Frontend (500+)
+npm run test:all:coverage                     # Couverture complète détaillée
 ```
 
 ### Couverture de Tests Exhaustive
@@ -623,48 +801,78 @@ MIT License - Voir [LICENSE.md](LICENSE.md) pour détails.
 
 ## 🎯 Roadmap
 
-### 🚀 **Version 2.0 (En cours)**
-- [x] **Architecture sécurisée** - Middleware modulaire
-- [x] **Protection XSS** - Validation stricte
-- [x] **Tests de sécurité** - 38+ tests
-- [x] **Configuration adaptative** - Dev/Prod
+### ✅ **Form-a-Friend v2.0 (Terminé - Août 2025)**
+- [x] **Architecture Enterprise** - Microservices + service instances
+- [x] **Système Email Multi-Provider** - Resend/Postmark avec failover
+- [x] **Automatisation Complète** - Scheduler avec batch processing
+- [x] **Universal Dashboard** - Interface unifiée pour tous les utilisateurs
+- [x] **Gestion Contacts Avancée** - CSV import + handshakes + tags
+- [x] **Migration System** - Outils complets FAF v1 → v2 avec rollback
+- [x] **Sécurité Enterprise** - Session monitoring + threat detection
+- [x] **Tests Exhaustifs** - 500+ tests avec couverture complète
 
-### 🔮 **Version 2.1 (Futur)**
-- [ ] **API Rate Limiting** granulaire par endpoint
-- [ ] **Cache Redis** pour performances
-- [ ] **Monitoring** avec métriques Prometheus
-- [ ] **PWA** - Service Worker + offline
+### 🚀 **Version 2.1 (Q4 2025)**
+- [ ] **Analytics Dashboard** - Métriques utilisateur avancées
+- [ ] **API Rate Limiting V2** - Rate limiting intelligent par user
+- [ ] **Cache Redis** - Cache distribué pour performance
+- [ ] **Mobile App** - Application React Native
+- [ ] **Webhooks API** - API webhooks pour intégrations tierces
+- [ ] **Advanced Notifications** - Push notifications + SMS
+
+### 🔮 **Version 3.0 (2026)**
+- [ ] **AI Insights** - Analyse IA des réponses et recommendations
+- [ ] **Multi-tenancy** - Support organisations multiples
+- [ ] **Real-time Collaboration** - Édition collaborative des réponses
+- [ ] **Advanced Analytics** - Business intelligence et reporting
+- [ ] **Monitoring Enterprise** - Prometheus + Grafana + alerting
+- [ ] **PWA Complete** - Service Worker + mode hors ligne
 
 ---
 
-## 🆕 Dernières Améliorations (Janvier 2025)
+## 🆕 Dernières Améliorations (Août 2025)
 
-### **🔐 Session Management & Monitoring (Août 2025)**
+### **🚀 Form-a-Friend v2.0 - Refonte Complète (Août 2025)**
+- **🏗️ Architecture Enterprise**: Migration complète vers microservices avec service instances
+- **📧 Système Email Multi-Provider**: Integration Resend/Postmark avec failover automatique
+- **🤖 Automatisation Complète**: Scheduler service avec cycles mensuels et rappels intelligents
+- **👥 Gestion Contacts Avancée**: Import CSV, système de tags, handshakes, états avancés
+- **📊 Universal Dashboard**: Interface unifiée pour tous les utilisateurs avec rôles adaptatifs
+- **🔄 Migration Assistée**: Outils complets FAF v1 → v2 avec rollback automatique
+
+### **🔐 Sécurité Enterprise & Monitoring (Août 2025)**
 - **🔍 Surveillance Temps Réel**: SessionMonitoringService pour détection activité suspecte
-- **🧹 Nettoyage Automatique**: Sessions expirées + utilisateurs inactifs (90j)
+- **🧹 Nettoyage Automatique**: Sessions expirées + utilisateurs inactifs (90j rétention)
 - **🚫 Blocage IP Intelligent**: 5 tentatives échouées = IP bloquée automatiquement
-- **📊 Métriques Détaillées**: Dashboard admin avec statistiques sécurité temps réel
-- **⚡ Performance Monitoring**: HybridIndexMonitor pour surveillance dual-auth
-- **🔄 Rollback Procedures**: Documentation complète procédures migration rollback
+- **📊 Métriques Avancées**: Dashboard admin avec statistiques sécurité temps réel
+- **⚡ Performance Monitoring**: HybridIndexMonitor + alertes intelligentes
+- **🔄 Rollback Enterprise**: Procédures complètes avec sauvegarde automatique
 
-### **🔧 Corrections d'Affichage & UI/UX**
-- **✨ Affichage Naturel Français**: Correction du problème d'affichage des apostrophes (`&#x27;` → `'`) dans admin.html
-- **🎯 Stratégie d'Échappement Intelligente**: Suppression de `.escape()` express-validator trop agressif, conservation de `escapeQuestion()` qui préserve le français
-- **🛡️ Sécurité Préservée**: Toutes les protections XSS maintenues (60/60 tests passent)
-- **🧪 Décodage HTML Amélioré**: Fonction `Utils.unescapeHTML()` optimisée avec création DOM sécurisée
+### **🎯 Interface Utilisateur & Expérience (Août 2025)**
+- **🏠 Landing Page Intelligente**: `auth-choice.html` comme point d'entrée optimisé
+- **📱 Mobile-First Design**: Responsive design complet avec navigation optimisée
+- **✨ Affichage Naturel Français**: Correction des apostrophes et accents (`&#x27;` → `'`)
+- **🎨 Architecture CSS Modulaire**: Styles partagés avec `faf-base.css` et `shared-base.css`
+- **🖼️ Système Photo Avancé**: Compression client, lazy loading, lightbox intégré
 
-### **🛡️ Sécurité & XSS**
-- **🚨 Fix XSS Critique**: Remplacement complet de `innerHTML` par `textContent` sécurisé
-- **🔧 Correction Cookies**: Nom de cookie corrigé de `connect.sid` à `faf-session`
-- **🔒 Debug Production**: Endpoints de debug désactivés en production
-- **📐 Limites Corpo**: Optimisation body parser par endpoint (80% réduction mémoire)
+### **🧪 Tests & Qualité Enterprise (Août 2025)**
+- **📈 Couverture Exhaustive**: 500+ tests couvrant toutes les fonctionnalités
+- **🔧 Tests Spécialisés**: Staging, post-deployment, production readiness
+- **⚡ Tests Performance**: Load testing, stress testing, concurrence
+- **🛡️ Tests Sécurité**: XSS, injection, threat detection, session security
+- **🔄 Tests Migration**: Validation complète des procédures de migration
 
-### **🏗️ Architecture & Code**
-- **🧹 Refactoring Module**: Remplacement admin-utils.js + core-utils.js par faf-admin.js ES6 unifié
-- **✅ Tests Robustes**: 25+ nouveaux tests session monitoring + intégration
-- **🚀 Cache Intelligent**: Système de cache 10min avec prévention memory leaks
-- **📊 Logging Structuré**: Debug contextuel avec métriques performance
-- **🏭 Service Layer**: Architecture modulaire services avec monitoring intégré
+### **📧 Système Email & Automatisation (Août 2025)**
+- **📨 Templates Responsives**: Emails HTML optimisés pour tous les clients
+- **🔔 Webhooks Intelligents**: Gestion automatique bounces/unsubscribes
+- **📊 Tracking Avancé**: Ouvertures, clics, statuts de livraison temps réel
+- **🗓️ Scheduler Robuste**: Cycles mensuels avec retry logic et batch processing
+- **🧠 Rappels Intelligents**: Logic adaptative J+3/J+7 sans spam
+
+### **🏭 DevOps & Production (Août 2025)**
+- **📋 Documentation Complète**: Architecture, API, déploiement, troubleshooting
+- **🔧 Configuration Enterprise**: Variables d'environnement pour tous les services
+- **📊 Monitoring Production**: Métriques temps réel avec alerting intelligent
+- **🚀 Déploiement Optimisé**: Scripts automatisés avec validation pre/post-déploiement
 
 ---
 
