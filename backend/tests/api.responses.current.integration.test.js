@@ -1,6 +1,27 @@
 /**
  * Integration Tests for /api/responses/current endpoint
  * Tests the complete request flow from API to database for current month status
+ * 
+ * Test Coverage:
+ * - Authentication and Authorization (5 tests)
+ * - Rate Limiting (2 tests) 
+ * - Data Consistency and Integrity (3 tests)
+ * - Performance and Caching (2 tests)
+ * - Error Handling and Edge Cases (4 tests)
+ * - Cross-User Data Isolation (2 tests)
+ * - API Response Format Validation (2 tests)
+ * 
+ * Security Features Tested:
+ * - Proper authentication requirement
+ * - Session validation
+ * - Data isolation between users
+ * - Input parameter validation
+ * - Error message security
+ * 
+ * Performance Benchmarks:
+ * - Response time < 500ms (configurable)
+ * - Concurrent request handling
+ * - Large dataset efficiency
  */
 
 const request = require('supertest');
@@ -11,17 +32,28 @@ const User = require('../models/User');
 const Submission = require('../models/Submission');
 const Contact = require('../models/Contact');
 const { setupTestDatabase, cleanupDatabase } = require('./integration/setup-integration');
+const { getTestCredentials } = require('./config/test-credentials');
+const { TEST_DATA, PERFORMANCE_THRESHOLDS, ERROR_PATTERNS, TEST_ENV } = require('./config/test-constants');
+const { performanceOptimizer, setupPerformanceMonitoring } = require('./config/performance-optimization');
 
 describe('API Integration - /api/responses/current', () => {
   let mongoServer;
   let testUser;
+  let testAdmin;
   let authCookie;
   let currentMonth;
+  let testCredentials;
+
+  // Setup performance monitoring for this test suite
+  setupPerformanceMonitoring();
 
   beforeAll(async () => {
     // Use the same setup as other integration tests
     await setupTestDatabase();
     currentMonth = new Date().toISOString().slice(0, 7);
+    
+    // Initialize secure test credentials
+    testCredentials = getTestCredentials();
   });
 
   afterAll(async () => {
@@ -29,18 +61,16 @@ describe('API Integration - /api/responses/current', () => {
   });
 
   beforeEach(async () => {
-    // Clear database and create fresh test user
-    await Promise.all([
-      User.deleteMany({}),
-      Submission.deleteMany({}),
-      Contact.deleteMany({})
-    ]);
+    // Optimized parallel cleanup using performance optimizer
+    await performanceOptimizer.parallelCleanup([
+      User, Submission, Contact
+    ], 3);
 
-    // Create and authenticate test user
+    // Create test user with secure credentials
     testUser = await User.create({
-      username: 'testuser',
-      email: 'test@form-a-friend.com',
-      password: '$2b$10$hashedpassword',
+      username: testCredentials.user.username,
+      email: testCredentials.user.email,
+      password: testCredentials.user.hashedPassword,
       role: 'user',
       metadata: {
         isActive: true,
@@ -49,12 +79,25 @@ describe('API Integration - /api/responses/current', () => {
       }
     });
 
-    // Login to get session cookie - using correct endpoint
+    // Create test admin with secure credentials
+    testAdmin = await User.create({
+      username: testCredentials.admin.username,
+      email: testCredentials.admin.email,
+      password: testCredentials.admin.hashedPassword,
+      role: 'admin',
+      metadata: {
+        isActive: true,
+        emailVerified: true,
+        registeredAt: new Date()
+      }
+    });
+
+    // Login with secure test credentials
     const loginResponse = await request(app)
       .post('/login')
       .send({
-        username: 'admin',  // Use admin credentials for access
-        password: 'password123'
+        username: testCredentials.admin.username,
+        password: testCredentials.admin.password
       });
 
     if (loginResponse.status === 200) {
@@ -229,8 +272,8 @@ describe('API Integration - /api/responses/current', () => {
 
       const responseTime = Date.now() - startTime;
       
-      // Should respond within 1 second
-      expect(responseTime).toBeLessThan(1000);
+      // Use performance threshold from constants
+      expect(responseTime).toBeLessThan(PERFORMANCE_THRESHOLDS.API_RESPONSE_TIME);
       expect(response.body.month).toBeDefined();
     });
 
@@ -281,12 +324,12 @@ describe('API Integration - /api/responses/current', () => {
         role: 'user'
       });
 
-      // Login as problematic user
+      // Login as problematic user with secure credentials
       const loginResponse = await request(app)
         .post('/login')
         .send({
-          username: 'admin',
-          password: 'password123'
+          username: testCredentials.admin.username,
+          password: testCredentials.admin.password
         });
 
       const problematicCookie = loginResponse.headers['set-cookie'] || ['faf-session=mock-session'];
@@ -300,20 +343,26 @@ describe('API Integration - /api/responses/current', () => {
     });
 
     test('should handle database connection issues', async () => {
-      // This is difficult to test without actually disrupting the connection
-      // Instead, we test that the endpoint handles errors appropriately
+      // Simulate database connection error by temporarily disrupting the connection
+      const originalFind = Submission.findOne;
+      Submission.findOne = jest.fn().mockRejectedValue(new Error('Database connection lost'));
       
       const response = await request(app)
         .get('/api/dashboard/responses/current')
-        .set('Cookie', authCookie);
+        .set('Cookie', authCookie)
+        .expect(500);
 
-      // Should either succeed (200) or fail gracefully (500)
-      expect([200, 500]).toContain(response.status);
+      // Validate proper error response structure
+      expect(response.body).toMatchObject({
+        error: expect.stringMatching(/Failed to get current month status|Database connection lost/),
+        code: expect.stringMatching(/CURRENT_STATUS_ERROR|DATABASE_ERROR/)
+      });
       
-      if (response.status === 500) {
-        expect(response.body.error).toBeDefined();
-        expect(response.body.code).toBe('CURRENT_STATUS_ERROR');
-      }
+      // Validate error is logged (check for proper error handling)
+      expect(Submission.findOne).toHaveBeenCalled();
+      
+      // Restore original method
+      Submission.findOne = originalFind;
     });
 
     test('should validate input parameters properly', async () => {
@@ -339,8 +388,8 @@ describe('API Integration - /api/responses/current', () => {
       const loginResponse = await request(app)
         .post('/login')
         .send({
-          username: 'admin',
-          password: 'password123'
+          username: testCredentials.admin.username,
+          password: testCredentials.admin.password
         });
 
       const specialCookie = loginResponse.headers['set-cookie'] || ['faf-session=mock-session'];
