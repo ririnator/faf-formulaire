@@ -15,13 +15,13 @@ const generateTestCredentials = async () => {
       username: process.env.TEST_ADMIN_USERNAME || 'test_admin_user',
       password: testPassword,
       hashedPassword: hashedPassword,
-      email: process.env.TEST_ADMIN_EMAIL || 'test.admin@faf-testing.local'
+      email: process.env.TEST_ADMIN_EMAIL || 'test.admin@example.com'
     },
     user: {
       username: process.env.TEST_USER_USERNAME || 'test_regular_user',
       password: testPassword,
       hashedPassword: hashedPassword,
-      email: process.env.TEST_USER_EMAIL || 'test.user@faf-testing.local'
+      email: process.env.TEST_USER_EMAIL || 'test.user@example.com'
     }
   };
 };
@@ -34,13 +34,13 @@ const getTestCredentials = () => ({
     username: process.env.TEST_ADMIN_USERNAME || 'test_admin_user',
     password: process.env.TEST_PASSWORD || 'SecureTestPass2024!',
     hashedPassword: TEST_PASSWORD_HASH,
-    email: process.env.TEST_ADMIN_EMAIL || 'test.admin@faf-testing.local'
+    email: process.env.TEST_ADMIN_EMAIL || 'test.admin@example.com'
   },
   user: {
     username: process.env.TEST_USER_USERNAME || 'test_regular_user',
     password: process.env.TEST_PASSWORD || 'SecureTestPass2024!',
     hashedPassword: TEST_PASSWORD_HASH,
-    email: process.env.TEST_USER_EMAIL || 'test.user@faf-testing.local'
+    email: process.env.TEST_USER_EMAIL || 'test.user@example.com'
   }
 });
 
