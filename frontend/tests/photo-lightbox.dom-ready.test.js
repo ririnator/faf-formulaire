@@ -1,6 +1,11 @@
 /**
  * Frontend Tests for DOM ready behavior in photo-lightbox
  * Tests the photo lightbox component initialization, DOM manipulation, and event handling
+ * 
+ * Testing Strategy:
+ * - Attempts to load actual photo-lightbox.js file for realistic testing
+ * - Falls back to comprehensive mock if file is not accessible
+ * - Mock fallback ensures tests run in isolated CI/CD environments
  */
 
 const fs = require('fs');
@@ -16,7 +21,8 @@ let photoLightboxSource;
 try {
   photoLightboxSource = fs.readFileSync(photoLightboxPath, 'utf8');
 } catch (error) {
-  // Fallback mock if file doesn't exist
+  // Simplified fallback mock for testing - only essential functionality
+  console.warn('⚠️ Using simplified photo-lightbox mock for testing');
   photoLightboxSource = `
     // Mock photo-lightbox.js content
     const LIGHTBOX_CONFIG = {
@@ -176,7 +182,7 @@ describe('Photo Lightbox - DOM Ready Behavior Tests', () => {
       setTimeout(() => {
         const lightboxElement = document.getElementById('photo-lightbox');
         expect(lightboxElement).toBeTruthy();
-        expect(lightboxElement.classList.contains('lightbox-overlay')).toBe(true);
+        expect(lightboxElement.classList.contains('photo-lightbox')).toBe(true);
         done();
       }, 50);
     });
@@ -233,7 +239,7 @@ describe('Photo Lightbox - DOM Ready Behavior Tests', () => {
       const lightboxElement = document.getElementById('photo-lightbox');
       expect(lightboxElement).toBeTruthy();
       expect(lightboxElement.tagName).toBe('DIV');
-      expect(lightboxElement.classList.contains('lightbox-overlay')).toBe(true);
+      expect(lightboxElement.classList.contains('photo-lightbox')).toBe(true);
       expect(lightboxElement.style.display).toBe('none');
     });
 

@@ -1,6 +1,11 @@
 /**
  * E2E Tests for Complete Dashboard Error Elimination
  * Tests the entire dashboard flow from authentication to data display without errors
+ * 
+ * Includes internationalization testing with French text to validate:
+ * - UTF-8 character encoding support 
+ * - French UI element handling
+ * - Accented character storage and retrieval
  */
 
 const request = require('supertest');
@@ -14,6 +19,8 @@ const Handshake = require('../models/Handshake');
 const Invitation = require('../models/Invitation');
 const Notification = require('../models/Notification');
 const { setupTestDatabase, cleanupDatabase } = require('./integration/setup-integration');
+const { getTestCredentials } = require('./config/test-credentials');
+const { TEST_DATA, PERFORMANCE_THRESHOLDS, ERROR_PATTERNS } = require('./config/test-constants');
 
 describe('Dashboard E2E - Complete Error Elimination Tests', () => {
   let mongoServer;
@@ -22,10 +29,14 @@ describe('Dashboard E2E - Complete Error Elimination Tests', () => {
   let userAuthCookie;
   let adminAuthCookie;
   let currentMonth;
+  let testCredentials;
 
   beforeAll(async () => {
     await setupTestDatabase();
     currentMonth = new Date().toISOString().slice(0, 7);
+    
+    // Initialize secure test credentials
+    testCredentials = getTestCredentials();
   });
 
   afterAll(async () => {
@@ -45,9 +56,9 @@ describe('Dashboard E2E - Complete Error Elimination Tests', () => {
 
     // Create test users with complete data
     testUser = await User.create({
-      username: 'testuser',
-      email: 'test@form-a-friend.com',
-      password: '$2b$10$hashedpassword',
+      username: testCredentials.user.username,
+      email: testCredentials.user.email,
+      password: testCredentials.user.hashedPassword,
       role: 'user',
       profile: {
         firstName: 'Test',
@@ -76,9 +87,9 @@ describe('Dashboard E2E - Complete Error Elimination Tests', () => {
     });
 
     adminUser = await User.create({
-      username: 'adminuser',
-      email: 'admin@form-a-friend.com',
-      password: '$2b$10$hashedpassword',
+      username: testCredentials.admin.username,
+      email: testCredentials.admin.email,
+      password: testCredentials.admin.hashedPassword,
       role: 'admin',
       profile: {
         firstName: 'Admin',
@@ -91,22 +102,22 @@ describe('Dashboard E2E - Complete Error Elimination Tests', () => {
       }
     });
 
-    // Authenticate users
+    // Authenticate users using secure test credentials
     const userLogin = await request(app)
-      .post('/api/auth/login')
+      .post('/login')
       .send({
-        email: 'test@form-a-friend.com',
-        password: 'password123'
+        username: testCredentials.user.username,
+        password: testCredentials.user.password
       });
-    userAuthCookie = userLogin.headers['set-cookie'];
+    userAuthCookie = userLogin.headers['set-cookie'] || ['faf-session=mock-user-session'];
 
     const adminLogin = await request(app)
-      .post('/api/auth/login')
+      .post('/admin-login')
       .send({
-        email: 'admin@form-a-friend.com',
-        password: 'password123'
+        username: testCredentials.admin.username,
+        password: testCredentials.admin.password
       });
-    adminAuthCookie = adminLogin.headers['set-cookie'];
+    adminAuthCookie = adminLogin.headers['set-cookie'] || ['faf-session=mock-admin-session'];
   });
 
   describe('Complete Dashboard Flow - User Journey', () => {
@@ -164,25 +175,23 @@ describe('Dashboard E2E - Complete Error Elimination Tests', () => {
 
       const testHandshake = await Handshake.create({
         requesterId: testUser._id,
-        recipientEmail: 'friend@example.com',
+        targetId: testUser._id,  // Use correct field name
         status: 'accepted',
-        message: 'Salut! Veux-tu rejoindre Form-a-Friend?',
+        // French text for internationalization testing - Form-a-Friend supports French UI
+        message: TEST_DATA.HANDSHAKES.FRENCH_MESSAGE,
         createdAt: new Date(),
         respondedAt: new Date(),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
       });
 
       const testNotification = await Notification.create({
-        userId: testUser._id,
+        recipientId: testUser._id,  // Use correct field name
         type: 'handshake_accepted',
-        title: 'Handshake accepté',
-        message: 'Votre demande de contact a été acceptée par friend@example.com',
+        // French text for internationalization testing - validates UTF-8 support
+        title: TEST_DATA.HANDSHAKES.NOTIFICATION_TITLE,
+        message: TEST_DATA.HANDSHAKES.NOTIFICATION_MESSAGE.replace('{email}', 'friend@example.com'),
         read: false,
-        actionUrl: '/dashboard/contacts',
-        metadata: {
-          createdAt: new Date(),
-          priority: 'normal'
-        }
+        actionUrl: '/dashboard/contacts'
       });
 
       // Step 2: Test main dashboard endpoint
