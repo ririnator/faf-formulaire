@@ -4,7 +4,7 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   color: #333;
-  background: linear-gradient(135deg, #CC5803 0%, #E2711D 50%, #FF9505 100%);
+  background: linear-gradient(135deg, #FFF8F0 0%, #FFF3E6 50%, #FFEEDC 100%);
   margin: 0;
   padding: 20px;
   min-height: 100vh;
@@ -32,11 +32,11 @@ body {
 }
 
 .team-left {
-  color: #CC5803;
+  color: #B8860B;
 }
 
 .team-right {
-  color: #E2711D;
+  color: #CD853F;
 }
 
 .team-name {
@@ -60,13 +60,13 @@ body {
 .vs-text {
   font-size: 3em;
   font-weight: bold;
-  color: #FFB627;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  color: #D2691E;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
   margin-bottom: 10px;
 }
 
 .match-info {
-  background: #FFB627;
+  background: #D2691E;
   color: white;
   padding: 8px 20px;
   border-radius: 20px;
@@ -94,10 +94,10 @@ body {
   text-align: center;
   font-size: 1.8em;
   font-weight: bold;
-  color: #CC5803;
+  color: #B8860B;
   margin-bottom: 30px;
   padding-bottom: 15px;
-  border-bottom: 3px solid #FFC971;
+  border-bottom: 3px solid #F5DEB3;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -126,14 +126,14 @@ body {
 }
 
 .user-side {
-  background: linear-gradient(135deg, #FFC971, #FFB627);
-  border: 2px solid #CC5803;
+  background: linear-gradient(135deg, #FFF8DC, #F5DEB3);
+  border: 2px solid #D2B48C;
   margin-right: 15px;
 }
 
 .admin-side {
-  background: linear-gradient(135deg, #FF9505, #E2711D);
-  border: 2px solid #CC5803;
+  background: linear-gradient(135deg, #FFEFD5, #F4A460);
+  border: 2px solid #DEB887;
   margin-left: 15px;
 }
 
@@ -153,7 +153,7 @@ body {
 /* Question au centre */
 .question-center {
   flex: 0 0 300px;
-  background: linear-gradient(135deg, #E2711D, #CC5803);
+  background: linear-gradient(135deg, #D2691E, #B8860B);
   color: white;
   padding: 20px;
   border-radius: 12px;
@@ -161,7 +161,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(204, 88, 3, 0.4);
+  box-shadow: 0 4px 15px rgba(210, 105, 30, 0.2);
 }
 
 .question-number {
