@@ -190,22 +190,27 @@ body {
 /* Question au centre */
 .question-center {
   flex: 0 0 300px;
-  background: #D2691E;
-  color: white;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #8B6508;
   padding: 20px;
   border-radius: 12px;
   text-align: center;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(210, 105, 30, 0.2);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .question-number {
   font-size: 1.4em;
   font-weight: bold;
   margin-bottom: 10px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(139, 101, 8, 0.1);
   padding: 5px 15px;
   border-radius: 20px;
   display: inline-block;
