@@ -484,6 +484,43 @@ router.get('/summary', async (req, res) => {
     const textSummary = Object.entries(textMap)
       .map(([question, items]) => ({ question, items }));
 
+    // STEP 1.5: Decode HTML entities in answers (FIX for apostrophes)
+    // ================================================================
+    // The issue was that apostrophes are HTML-encoded in the database (&#39;)
+    // We need to decode them on the backend before sending to frontend
+    function decodeHtmlEntities(text) {
+      if (!text || typeof text !== 'string') return text;
+      return text
+        .replace(/&#39;/g, "'")     // &#39; → ' (apostrophe decimal)
+        .replace(/&#x27;/g, "'")    // &#x27; → ' (apostrophe hexadecimal)  
+        .replace(/&apos;/g, "'")    // &apos; → ' (apostrophe named)
+        .replace(/&quot;/g, '"')    // &quot; → " (guillemet)
+        .replace(/&amp;/g, '&');    // &amp; → & (ampersand)
+        // Note: We don't decode < > for XSS security
+    }
+    
+    // Apply decoding to pie chart data
+    pieSummary.forEach(item => {
+      if (item.items) {
+        item.items.forEach(response => {
+          if (response.answer) {
+            response.answer = decodeHtmlEntities(response.answer);
+          }
+        });
+      }
+    });
+    
+    // Apply decoding to text summary data  
+    textSummary.forEach(item => {
+      if (item.items) {
+        item.items.forEach(response => {
+          if (response.answer) {
+            response.answer = decodeHtmlEntities(response.answer);
+          }
+        });
+      }
+    });
+
     // Debug sécurisé pour diagnostiquer (LOCAL uniquement)
     if (process.env.NODE_ENV === 'development' && !process.env.RENDER) {
       console.log('📊 Questions regroupées:', Object.keys(textMap).length);
