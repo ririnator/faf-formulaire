@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="/css/view.css">
 </head>
 <body>
-  <h1>Vos réponses – <span id="month"></span></h1>
+  <h1><span id="user-name"></span> vs <span id="admin-name"></span> – <span id="month"></span></h1>
   <div id="qa-container"></div>
 
   <script>
@@ -52,6 +52,8 @@
         return;
       }
       const { user, admin, adminName } = await res.json();
+      document.getElementById('user-name').textContent = user.name;
+      document.getElementById('admin-name').textContent = adminName || 'Admin';
       document.getElementById('month').textContent = user.month;
 
       // Configuration du regroupement des questions
