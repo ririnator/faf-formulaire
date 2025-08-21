@@ -499,15 +499,26 @@ export const Charts = {
     const freq = {}, userMap = {};
     items.forEach(({ user, answer }) => {
       // Décoder les entités HTML sécurisées pour l'affichage du graphique
-      const decodedAnswer = answer
-        .replace(/&#39;/g, "'")    // &#39; → ' (apostrophe decimal)
-        .replace(/&#x27;/g, "'")   // &#x27; → ' (apostrophe hexadecimal)  
-        .replace(/&apos;/g, "'")   // &apos; → ' (apostrophe named)
-        .replace(/&quot;/g, '"')   // &quot; → " (guillemet)
-        .replace(/&amp;/g, '&')    // &amp; → & (ampersand)
-        .replace(/&nbsp;/g, ' ')   // &nbsp; → ' ' (espace insécable)
-        // NOTE: On ne décode PAS < > pour préserver la sécurité XSS
-        .trim();
+      // IMPORTANT: Utiliser Utils.unescapeHTML qui gère tous les cas
+      let decodedAnswer = answer;
+      
+      // Si la réponse contient des entités HTML, les décoder
+      if (answer && answer.includes('&')) {
+        decodedAnswer = Utils.unescapeHTML(answer);
+      }
+      
+      // Backup: Si Utils.unescapeHTML ne fonctionne pas, décoder manuellement
+      if (decodedAnswer.includes('&#')) {
+        decodedAnswer = decodedAnswer
+          .replace(/&#39;/g, "'")    // &#39; → ' (apostrophe decimal)
+          .replace(/&#x27;/g, "'")   // &#x27; → ' (apostrophe hexadecimal)  
+          .replace(/&apos;/g, "'")   // &apos; → ' (apostrophe named)
+          .replace(/&quot;/g, '"')   // &quot; → " (guillemet)
+          .replace(/&amp;/g, '&')    // &amp; → & (ampersand)
+          .replace(/&nbsp;/g, ' ');  // &nbsp; → ' ' (espace insécable)
+      }
+      
+      decodedAnswer = decodedAnswer.trim();
       
       freq[decodedAnswer] = (freq[decodedAnswer] || 0) + 1;
       (userMap[decodedAnswer] = userMap[decodedAnswer] || []).push(user);
