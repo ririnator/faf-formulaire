@@ -189,7 +189,8 @@ app.get('/api/view/:token', async (req, res) => {
       return res.status(404).json({ error: 'Lien invalide ou expiré' });
     }
     const adminResp = await Response.findOne({ month: userResp.month, isAdmin: true }).lean();
-    return res.json({ user: userResp, admin: adminResp });
+    const adminName = process.env.FORM_ADMIN_NAME || 'Admin'; // Récupérer le nom admin depuis env
+    return res.json({ user: userResp, admin: adminResp, adminName });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Server error' });
