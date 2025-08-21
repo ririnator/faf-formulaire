@@ -1,79 +1,259 @@
-/* Style pour les réponses admin */
-.admin-answer {
-  margin-left: 1rem;
-  font-style: italic;
-  color: #c0392b;
-}
+/* ===== DESIGN 1VS1 STYLE MATCH DE FOOTBALL ===== */
 
-/* Style pour les groupes de questions */
-.question-group {
-  margin-bottom: 30px;
-  padding: 20px;
-  border: 2px solid #e3f2fd;
-  border-radius: 10px;
-  background-color: #f9f9f9;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.question-group h2 {
-  color: #1976d2;
-  border-bottom: 2px solid #1976d2;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
-  font-size: 1.5em;
-}
-
-.question-group h3 {
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
   color: #333;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+/* Header style match */
+.match-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 30px;
+}
+
+.team {
+  text-align: center;
+  flex: 1;
+}
+
+.team-left {
+  color: #2196F3;
+}
+
+.team-right {
+  color: #FF5722;
+}
+
+.team-name {
+  font-size: 2.2em;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.team-role {
+  font-size: 1.1em;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.vs-section {
+  text-align: center;
+  margin: 0 40px;
+}
+
+.vs-text {
+  font-size: 3em;
+  font-weight: bold;
+  color: #FF4081;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
   margin-bottom: 10px;
-  font-size: 1.2em;
 }
 
-/* Style pour les images */
-.question-group img {
-  max-width: 300px;
-  max-height: 300px;
+.match-info {
+  background: #FF4081;
+  color: white;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+/* Container principal */
+#qa-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Groupes de questions */
+.question-group {
+  margin-bottom: 40px;
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.group-title {
+  text-align: center;
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #1976d2;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 3px solid #e3f2fd;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Container match pour chaque question */
+.match-container {
+  display: flex;
+  align-items: stretch;
+  margin-bottom: 25px;
+  min-height: 120px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 15px;
+  border: 2px solid #e9ecef;
+}
+
+/* Côtés des joueurs */
+.player-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  border-radius: 10px;
+  position: relative;
+}
+
+.user-side {
+  background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+  border: 2px solid #2196F3;
+  margin-right: 15px;
+}
+
+.admin-side {
+  background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+  border: 2px solid #FF5722;
+  margin-left: 15px;
+}
+
+.answer-content {
+  text-align: center;
+  width: 100%;
+  word-wrap: break-word;
+  font-size: 1em;
+  line-height: 1.4;
+}
+
+.no-answer {
+  color: #999;
+  font-style: italic;
+}
+
+/* Question au centre */
+.question-center {
+  flex: 0 0 300px;
+  background: linear-gradient(135deg, #FF4081, #E91E63);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(255, 64, 129, 0.4);
+}
+
+.question-number {
+  font-size: 1.4em;
+  font-weight: bold;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,0.2);
+  padding: 5px 15px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.question-text {
+  font-size: 1.1em;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+/* Images dans le format 1vs1 */
+.answer-content img {
+  max-width: 200px;
+  max-height: 200px;
   border-radius: 8px;
-  margin: 10px 0;
+  margin: 5px 0;
   display: block;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  transition: transform 0.2s ease;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease;
 }
 
-.question-group img:hover {
-  transform: scale(1.05);
+.answer-content img:hover {
+  transform: scale(1.1);
   cursor: pointer;
 }
 
-/* Style responsive pour mobile */
-@media (max-width: 768px) {
+/* Style responsive */
+@media (max-width: 900px) {
+  .match-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .team {
+    margin: 10px 0;
+  }
+  
+  .vs-section {
+    margin: 20px 0;
+  }
+  
+  .match-container {
+    flex-direction: column;
+    min-height: auto;
+  }
+  
+  .question-center {
+    flex: none;
+    margin: 15px 0;
+    order: -1;
+  }
+  
+  .player-side {
+    margin: 10px 0;
+  }
+  
+  .user-side, .admin-side {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .match-header {
+    padding: 20px;
+  }
+  
+  .team-name {
+    font-size: 1.8em;
+  }
+  
+  .vs-text {
+    font-size: 2.5em;
+  }
+  
   .question-group {
     margin: 10px;
     padding: 15px;
   }
   
-  .question-group img {
-    max-width: 100%;
-    max-height: 250px;
+  .answer-content img {
+    max-width: 150px;
+    max-height: 150px;
   }
-}
-
-/* Style pour le conteneur principal */
-#qa-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-body {
-  font-family: 'Arial', sans-serif;
-  line-height: 1.6;
-  color: #333;
-  background-color: #f5f5f5;
-}
-
-h1 {
-  text-align: center;
-  color: #1976d2;
-  margin-bottom: 30px;
 }

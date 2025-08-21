@@ -6,7 +6,21 @@
   <link rel="stylesheet" href="/css/view.css">
 </head>
 <body>
-  <h1><span id="user-name"></span> vs <span id="admin-name"></span> – <span id="month"></span></h1>
+  <div class="match-header">
+    <div class="team team-left">
+      <div class="team-name" id="user-name"></div>
+      <div class="team-role">Ami</div>
+    </div>
+    <div class="vs-section">
+      <div class="vs-text">VS</div>
+      <div class="match-info" id="month"></div>
+    </div>
+    <div class="team team-right">
+      <div class="team-name" id="admin-name"></div>
+      <div class="team-role">Admin</div>
+    </div>
+  </div>
+  
   <div id="qa-container"></div>
 
   <script>
@@ -147,67 +161,76 @@
         return container;
       }
 
-      // Affichage par groupes
+      // Affichage en format 1vs1 - Questions au centre, réponses de chaque côté
       questionGroups.forEach(group => {
         const groupBlock = document.createElement('div');
         groupBlock.className = 'question-group';
-        groupBlock.style.marginBottom = '30px';
-        groupBlock.style.padding = '20px';
-        groupBlock.style.border = '2px solid #e3f2fd';
-        groupBlock.style.borderRadius = '10px';
-        groupBlock.style.backgroundColor = '#f9f9f9';
 
-        const groupTitle = document.createElement('h2');
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'group-title';
         groupTitle.textContent = group.name;
-        groupTitle.style.color = '#1976d2';
-        groupTitle.style.borderBottom = '2px solid #1976d2';
-        groupTitle.style.paddingBottom = '10px';
-        groupTitle.style.marginBottom = '20px';
         groupBlock.appendChild(groupTitle);
 
         group.questions.forEach(questionIndex => {
           if (questionIndex < user.responses.length) {
             const q = user.responses[questionIndex];
-            const questionDiv = document.createElement('div');
-            questionDiv.style.marginBottom = '20px';
             
             // Décoder les entités HTML de manière sécurisée
             const question = unescapeHTML(q.question);
             const answer = unescapeHTML(q.answer);
 
-            // Question
-            const questionElement = document.createElement('h3');
-            questionElement.textContent = `Q${questionIndex+1}: ${question}`;
-            questionElement.style.color = '#333';
-            questionElement.style.marginBottom = '10px';
+            // Container 1vs1 pour cette question
+            const matchContainer = document.createElement('div');
+            matchContainer.className = 'match-container';
 
-            // Réponse de l'utilisateur
-            const yourAnswer = document.createElement('p');
-            const yourLabel = document.createElement('strong');
-            yourLabel.textContent = `${user.name}: `;
-            yourAnswer.appendChild(yourLabel);
-            yourAnswer.appendChild(createAnswerContent(answer));
-            yourAnswer.style.marginBottom = '10px';
+            // Réponse utilisateur (gauche)
+            const userSide = document.createElement('div');
+            userSide.className = 'player-side user-side';
+            
+            const userAnswer = document.createElement('div');
+            userAnswer.className = 'answer-content';
+            userAnswer.appendChild(createAnswerContent(answer));
+            userSide.appendChild(userAnswer);
 
-            // Réponse admin
-            const adminAnswerElement = document.createElement('p');
-            adminAnswerElement.className = 'admin-answer';
-            const adminLabel = document.createElement('strong');
-            adminLabel.textContent = `${adminName || 'Admin'}: `;
-            adminAnswerElement.appendChild(adminLabel);
+            // Question au centre
+            const questionCenter = document.createElement('div');
+            questionCenter.className = 'question-center';
+            
+            const questionNumber = document.createElement('div');
+            questionNumber.className = 'question-number';
+            questionNumber.textContent = `Q${questionIndex+1}`;
+            
+            const questionText = document.createElement('div');
+            questionText.className = 'question-text';
+            questionText.textContent = question;
+            
+            questionCenter.appendChild(questionNumber);
+            questionCenter.appendChild(questionText);
+
+            // Réponse admin (droite)
+            const adminSide = document.createElement('div');
+            adminSide.className = 'player-side admin-side';
+            
+            const adminAnswer = document.createElement('div');
+            adminAnswer.className = 'answer-content';
+            
             if (admin && admin.responses[questionIndex]) {
               const adminAnswerText = unescapeHTML(admin.responses[questionIndex].answer);
-              adminAnswerElement.appendChild(createAnswerContent(adminAnswerText));
+              adminAnswer.appendChild(createAnswerContent(adminAnswerText));
             } else {
               const emElement = document.createElement('em');
               emElement.textContent = 'Pas encore répondu';
-              adminAnswerElement.appendChild(emElement);
+              emElement.className = 'no-answer';
+              adminAnswer.appendChild(emElement);
             }
+            adminSide.appendChild(adminAnswer);
 
-            questionDiv.appendChild(questionElement);
-            questionDiv.appendChild(yourAnswer);
-            questionDiv.appendChild(adminAnswerElement);
-            groupBlock.appendChild(questionDiv);
+            // Assemblage du match
+            matchContainer.appendChild(userSide);
+            matchContainer.appendChild(questionCenter);
+            matchContainer.appendChild(adminSide);
+            
+            groupBlock.appendChild(matchContainer);
           }
         });
 
