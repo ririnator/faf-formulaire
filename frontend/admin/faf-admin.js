@@ -262,6 +262,43 @@ export const Utils = {
   },
 
   /**
+   * Formate un mois au format français (YYYY-MM -> Mois YYYY)
+   */
+  formatMonth(monthString) {
+    if (!monthString || typeof monthString !== 'string') return monthString || '';
+    
+    const monthNames = {
+      '01': 'Janvier',
+      '02': 'Février', 
+      '03': 'Mars',
+      '04': 'Avril',
+      '05': 'Mai',
+      '06': 'Juin',
+      '07': 'Juillet',
+      '08': 'Août',
+      '09': 'Septembre',
+      '10': 'Octobre',
+      '11': 'Novembre',
+      '12': 'Décembre'
+    };
+    
+    // Format attendu: "YYYY-MM" -> "Mois YYYY"
+    const parts = monthString.split('-');
+    if (parts.length === 2) {
+      const year = parts[0];
+      const month = parts[1];
+      const monthName = monthNames[month];
+      
+      if (monthName) {
+        return `${monthName} ${year}`;
+      }
+    }
+    
+    // Si le format n'est pas reconnu, retourner tel quel
+    return monthString;
+  },
+
+  /**
    * Debounce function pour limiter les appels
    */
   debounce(func, wait) {
