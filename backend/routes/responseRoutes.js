@@ -77,9 +77,12 @@ router.post(
         ? `${baseUrl}/view/${token}`
         : null;
 
+      const adminName = process.env.FORM_ADMIN_NAME || 'Admin';
       return res.status(201).json({
         message: 'Réponse enregistrée avec succès !',
-        link
+        link,
+        userName: name,
+        adminName
       });
     } catch (err) {
       console.error('Erreur en sauvegardant la réponse :', err);

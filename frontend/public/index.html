@@ -338,7 +338,9 @@
         
         if (resJ.link) {
           const br = document.createElement('br');
-          const linkText = document.createTextNode('Votre lien privé : ');
+          const userName = resJ.userName || 'Vous';
+          const adminName = resJ.adminName || 'Admin';
+          const linkText = document.createTextNode(`Votre lien privé pour voir la comparaison ${userName} vs ${adminName} : `);
           const linkEl = document.createElement('a');
           linkEl.href = resJ.link;
           linkEl.target = '_blank';
