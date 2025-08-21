@@ -51,7 +51,7 @@
         document.body.textContent = 'Lien invalide ou expiré.';
         return;
       }
-      const { user, admin } = await res.json();
+      const { user, admin, adminName } = await res.json();
       document.getElementById('month').textContent = user.month;
 
       // Configuration du regroupement des questions
@@ -191,7 +191,7 @@
             const adminAnswerElement = document.createElement('p');
             adminAnswerElement.className = 'admin-answer';
             const adminLabel = document.createElement('strong');
-            adminLabel.textContent = 'Moi (Admin): ';
+            adminLabel.textContent = `${adminName || 'Admin'}: `;
             adminAnswerElement.appendChild(adminLabel);
             if (admin && admin.responses[questionIndex]) {
               const adminAnswerText = unescapeHTML(admin.responses[questionIndex].answer);
