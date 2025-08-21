@@ -179,10 +179,10 @@
             questionElement.style.color = '#333';
             questionElement.style.marginBottom = '10px';
 
-            // Votre réponse
+            // Réponse de l'utilisateur
             const yourAnswer = document.createElement('p');
             const yourLabel = document.createElement('strong');
-            yourLabel.textContent = 'Vous: ';
+            yourLabel.textContent = `${user.name}: `;
             yourAnswer.appendChild(yourLabel);
             yourAnswer.appendChild(createAnswerContent(answer));
             yourAnswer.style.marginBottom = '10px';
