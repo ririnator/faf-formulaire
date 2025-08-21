@@ -18,6 +18,149 @@
     .radio-group input[type="radio"] { margin-right: 8px; }
     #feedback { margin-top: 20px; font-size: 16px; }
     #feedback a { color: blue; text-decoration: underline; }
+    
+    /* ===== MODAL POPUP SUCCESS ===== */
+    .success-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .success-modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .success-modal-content {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      transform: scale(0.7);
+      transition: transform 0.3s ease;
+      position: relative;
+      animation: modalPop 0.5s ease forwards;
+    }
+    
+    .success-modal.show .success-modal-content {
+      transform: scale(1);
+    }
+    
+    @keyframes modalPop {
+      0% {
+        transform: scale(0.5) rotate(-5deg);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.05) rotate(1deg);
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+    
+    .success-icon {
+      font-size: 4em;
+      margin-bottom: 20px;
+      display: block;
+    }
+    
+    .success-title {
+      font-size: 1.8em;
+      font-weight: bold;
+      color: #2196F3;
+      margin-bottom: 15px;
+    }
+    
+    .success-message {
+      font-size: 1.1em;
+      color: #333;
+      margin-bottom: 25px;
+      line-height: 1.5;
+    }
+    
+    .success-link {
+      background: linear-gradient(135deg, #FF4081, #E91E63);
+      color: white !important;
+      padding: 15px 25px;
+      border-radius: 30px;
+      text-decoration: none !important;
+      font-weight: bold;
+      font-size: 1.1em;
+      display: inline-block;
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(255, 64, 129, 0.4);
+    }
+    
+    .success-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 64, 129, 0.6);
+    }
+    
+    .modal-close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 1.5em;
+      cursor: pointer;
+      color: #999;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    
+    .modal-close-btn:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .close-instruction {
+      font-size: 0.9em;
+      color: #777;
+      margin-top: 15px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+      .success-modal-content {
+        padding: 30px 20px;
+        margin: 20px;
+      }
+      
+      .success-icon {
+        font-size: 3em;
+      }
+      
+      .success-title {
+        font-size: 1.5em;
+      }
+      
+      .success-link {
+        padding: 12px 20px;
+        font-size: 1em;
+      }
+    }
   </style>
 </head>
 <body>
@@ -203,6 +346,51 @@
       }
     }
 
+    // === GESTION MODAL SUCCESS ===
+    function showSuccessModal(message, link, userName, adminName) {
+      const modal = document.getElementById('successModal');
+      const messageElement = document.getElementById('success-message');
+      const linkElement = document.getElementById('success-link');
+      
+      // Mise à jour du contenu
+      if (link) {
+        messageElement.textContent = `Votre formulaire a été envoyé ! Voici votre lien privé pour voir la comparaison ${userName} vs ${adminName} :`;
+        linkElement.href = link;
+        linkElement.style.display = 'inline-block';
+      } else {
+        messageElement.textContent = message;
+        linkElement.style.display = 'none';
+      }
+      
+      // Afficher la modal
+      modal.setAttribute('aria-hidden', 'false');
+      modal.classList.add('show');
+      
+      // Focus pour l'accessibilité
+      modal.querySelector('.modal-close-btn').focus();
+      
+      // Fermeture automatique au clic sur l'overlay
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          closeSuccessModal();
+        }
+      });
+      
+      // Fermeture avec Échap
+      document.addEventListener('keydown', function escapeHandler(e) {
+        if (e.key === 'Escape') {
+          closeSuccessModal();
+          document.removeEventListener('keydown', escapeHandler);
+        }
+      });
+    }
+    
+    function closeSuccessModal() {
+      const modal = document.getElementById('successModal');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.classList.remove('show');
+    }
+
     // Upload et soumission
     document.getElementById('friendForm').addEventListener('submit', async e => {
       e.preventDefault();
@@ -328,28 +516,14 @@
           throw new Error(resJ.message || 'Erreur lors de l’envoi');
         }
 
-        // Affiche le message et le lien de manière sécurisée
-        feedback.replaceChildren();
+        // Afficher la modal de succès au lieu du message dans feedback
+        feedback.replaceChildren(); // Nettoyer au cas où
         
-        const successIcon = document.createTextNode('✅ ');
-        const messageText = document.createTextNode(resJ.message);
-        feedback.appendChild(successIcon);
-        feedback.appendChild(messageText);
+        const userName = resJ.userName || 'Vous';
+        const adminName = resJ.adminName || 'Admin';
         
-        if (resJ.link) {
-          const br = document.createElement('br');
-          const userName = resJ.userName || 'Vous';
-          const adminName = resJ.adminName || 'Admin';
-          const linkText = document.createTextNode(`Votre lien privé pour voir la comparaison ${userName} vs ${adminName} : `);
-          const linkEl = document.createElement('a');
-          linkEl.href = resJ.link;
-          linkEl.target = '_blank';
-          linkEl.textContent = resJ.link;
-          
-          feedback.appendChild(br);
-          feedback.appendChild(linkText);
-          feedback.appendChild(linkEl);
-        }
+        // Utiliser la modal pop-up pour un affichage plus visible
+        showSuccessModal(resJ.message, resJ.link, userName, adminName);
       } catch (err) {
         console.error(err);
         feedback.textContent = '❌ ' + err.message;
@@ -361,5 +535,29 @@
       }
     });
   </script>
+
+  <!-- Modal de succès -->
+  <div id="successModal" class="success-modal" aria-hidden="true" role="dialog" aria-labelledby="success-title" aria-describedby="success-message">
+    <div class="success-modal-content">
+      <button class="modal-close-btn" aria-label="Fermer la fenêtre" onclick="closeSuccessModal()">&times;</button>
+      
+      <div class="success-icon">🎉</div>
+      
+      <div id="success-title" class="success-title">✅ Réponse enregistrée avec succès !</div>
+      
+      <div id="success-message" class="success-message">
+        Votre formulaire a été envoyé. Voici votre lien privé pour voir la comparaison :
+      </div>
+      
+      <a id="success-link" class="success-link" href="#" target="_blank">
+        Voir ma comparaison 🔗
+      </a>
+      
+      <div class="close-instruction">
+        Cliquez sur le lien ou fermez cette fenêtre
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
