@@ -198,12 +198,14 @@ app.get('/api/view/:token', async (req, res) => {
 });
 
 // 11) Limiteur pour les soumissions de formulaire
-const formLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 3,
-  message: { message: "Trop de soumissions. Réessaie dans 15 minutes." }
-});
-app.use('/api/response', formLimiter);
+if (process.env.DISABLE_RATE_LIMITING !== 'true') {
+  const formLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,  // 15 minutes
+    max: 3,
+    message: { message: "Trop de soumissions. Réessaie dans 15 minutes." }
+  });
+  app.use('/api/response', formLimiter);
+}
 
 // 12) API publiques
 app.use('/api/form', formRoutes);

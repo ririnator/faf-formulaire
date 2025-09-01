@@ -39,7 +39,7 @@ router.post(
             responses,
             month,
             isAdmin: true,
-            token: null,
+            // Don't set token for admin responses - let it be undefined for sparse index
             createdAt: new Date()
           }
         },

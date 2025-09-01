@@ -322,8 +322,8 @@ describe('Admin Duplicate Submission Scenarios', () => {
         name: 'admin',
         responses: [{ question: 'Direct DB', answer: 'Direct DB' }],
         month: currentMonth,
-        isAdmin: true,
-        token: null
+        isAdmin: true
+        // Don't set token - let it be undefined for sparse index
       });
       await firstAdmin.save();
 

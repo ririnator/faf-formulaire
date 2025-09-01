@@ -195,8 +195,8 @@ describe('Full Request/Response Cycle Integration Tests', () => {
           name: 'testadmin',
           responses: [{ question: 'Admin Q', answer: 'Admin A' }],
           month: '2024-01',
-          isAdmin: true,
-          token: null
+          isAdmin: true
+          // Don't set token - let it be undefined for sparse index
         }
       ]);
 
