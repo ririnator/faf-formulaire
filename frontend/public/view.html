@@ -20,6 +20,12 @@
   
   <div id="qa-container"></div>
 
+  <!-- Modal pour afficher les images en grand -->
+  <div id="imageModal" style="display:none; position:fixed; z-index:1000; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); cursor:pointer;">
+    <img id="modalImage" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); max-width:90%; max-height:90%; border-radius:8px; cursor:default;" onclick="event.stopPropagation()">
+    <span id="closeModal" style="position:absolute; top:20px; right:35px; color:#f1f1f1; font-size:40px; font-weight:bold; cursor:pointer;">&times;</span>
+  </div>
+
   <script>
     // Fonction pour décoder uniquement les entités HTML sûres (liste blanche)
     function unescapeHTML(text) {
@@ -168,22 +174,29 @@
           const img = document.createElement('img');
           img.src = answer;
           img.alt = 'Image partagée';
-          img.style.maxWidth = '300px';
-          img.style.maxHeight = '300px'; 
-          img.style.borderRadius = '8px';
-          img.style.margin = '10px 0';
-          img.style.display = 'block';
+          // Pas de styles inline pour permettre au CSS responsive de s'appliquer
+          img.className = 'response-image';
           
           // 🔒 SECURITY: Enhanced error handling without exposing URLs
           img.onerror = function() {
+            // Remplacer l'image par un message d'erreur
             const errorMsg = document.createElement('em');
             errorMsg.textContent = 'Image temporairement indisponible';
             errorMsg.style.color = '#888';
-            container.appendChild(errorMsg);
+            this.replaceWith(errorMsg);
           };
           
           // 🔒 SECURITY: Add CSP-friendly loading attribute
           img.loading = 'lazy';
+          
+          // Ajouter la fonctionnalité de clic pour voir en grand
+          img.style.cursor = 'pointer';
+          img.onclick = function() {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            modal.style.display = 'block';
+            modalImg.src = this.src;
+          };
           
           container.appendChild(img);
         } else {
@@ -269,6 +282,29 @@
         document.getElementById('qa-container').appendChild(groupBlock);
       });
     })();
+    
+    // Gérer la fermeture du modal
+    const modal = document.getElementById('imageModal');
+    const closeBtn = document.getElementById('closeModal');
+    
+    // Fermer en cliquant sur le fond
+    modal.onclick = function(e) {
+      if (e.target === modal || e.target === closeBtn) {
+        this.style.display = 'none';
+      }
+    };
+    
+    // Fermer en cliquant sur le X
+    closeBtn.onclick = function() {
+      modal.style.display = 'none';
+    };
+    
+    // Fermer avec la touche Escape
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape' && modal.style.display === 'block') {
+        modal.style.display = 'none';
+      }
+    });
   </script>
 </body>
 </html>

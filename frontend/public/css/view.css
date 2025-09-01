@@ -223,18 +223,22 @@ body {
 }
 
 /* Images dans le format 1vs1 */
-.answer-content img {
-  max-width: 200px;
-  max-height: 200px;
+.answer-content img,
+.response-image {
+  max-width: 100%;  /* Responsive - ne jamais dépasser le conteneur */
+  height: auto;     /* Maintenir le ratio */
+  max-height: 400px; /* Limite de hauteur raisonnable sur desktop */
   border-radius: 8px;
-  margin: 0;
+  margin: 10px 0;
   display: block;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   transition: transform 0.3s ease;
+  object-fit: contain; /* Assure que l'image reste dans ses limites */
 }
 
-.answer-content img:hover {
-  transform: scale(1.1);
+.answer-content img:hover,
+.response-image:hover {
+  transform: scale(1.05); /* Scale plus subtil pour éviter de déborder */
   cursor: pointer;
 }
 
@@ -292,8 +296,16 @@ body {
     padding: 15px;
   }
   
-  .answer-content img {
-    max-width: 150px;
-    max-height: 150px;
+  .answer-content img,
+  .response-image {
+    max-width: calc(100vw - 60px); /* Largeur de l'écran moins les marges */
+    max-height: 300px; /* Plus petit sur mobile */
+    margin: 10px auto; /* Centrer les images */
+  }
+  
+  /* Désactiver le zoom au survol sur mobile */
+  .answer-content img:hover,
+  .response-image:hover {
+    transform: none;
   }
 }
