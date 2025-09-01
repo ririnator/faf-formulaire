@@ -234,6 +234,10 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   transition: transform 0.3s ease;
   object-fit: contain; /* Assure que l'image reste dans ses limites */
+  
+  /* Optimisations performance mobile */
+  will-change: transform; /* Prépare la GPU pour les transformations */
+  backface-visibility: hidden; /* Évite les scintillements */
 }
 
 .answer-content img:hover,
@@ -279,8 +283,15 @@ body {
 }
 
 @media (max-width: 600px) {
+  /* Optimisations performance mobile */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
   .match-header {
     padding: 20px;
+    contain: layout style; /* Isoler les recalculs de layout */
   }
   
   .team-name {
@@ -294,6 +305,7 @@ body {
   .question-group {
     margin: 10px;
     padding: 15px;
+    contain: layout; /* Éviter les re-layouts en cascade */
   }
   
   .answer-content img,

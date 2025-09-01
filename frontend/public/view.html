@@ -118,6 +118,9 @@
         { name: "Connexion à la nature", questions: [9] } // Q10: Photo avec herbe/arbre
       ];
 
+      // Optimisation performance mobile : détecter mobile au début
+      const isMobile = window.innerWidth <= 600;
+
       // Fonction pour détecter et afficher une image sécurisée
       function createAnswerContent(answer) {
         const container = document.createElement('span');
@@ -189,6 +192,20 @@
           // 🔒 SECURITY: Add CSP-friendly loading attribute
           img.loading = 'lazy';
           
+          // Optimisation mobile : observer pour mesurer les performances
+          if (isMobile && 'IntersectionObserver' in window) {
+            const imgObserver = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                  // Image devient visible, on peut déclencher des optimisations si nécessaire
+                  entry.target.classList.add('visible');
+                  imgObserver.unobserve(entry.target);
+                }
+              });
+            });
+            imgObserver.observe(img);
+          }
+          
           // Ajouter la fonctionnalité de clic pour voir en grand
           img.style.cursor = 'pointer';
           img.onclick = function() {
@@ -207,9 +224,15 @@
       }
 
       // Affichage en format 1vs1 - Questions au centre, réponses de chaque côté
-      questionGroups.forEach(group => {
+      questionGroups.forEach((group, groupIndex) => {
         const groupBlock = document.createElement('div');
         groupBlock.className = 'question-group';
+        
+        // Mobile : ne charger que le premier groupe initialement
+        if (isMobile && groupIndex > 0) {
+          groupBlock.style.display = 'none';
+          groupBlock.dataset.loaded = 'false';
+        }
 
         const groupTitle = document.createElement('div');
         groupTitle.className = 'group-title';
@@ -282,6 +305,55 @@
         document.getElementById('qa-container').appendChild(groupBlock);
       });
     })();
+    
+    // Lazy loading des groupes sur mobile (utilise la même détection)
+    if (isMobile) {
+      let loadedGroups = 1; // Premier groupe déjà chargé
+      const allGroups = document.querySelectorAll('.question-group');
+      
+      function loadNextGroup() {
+        if (loadedGroups < allGroups.length) {
+          const nextGroup = allGroups[loadedGroups];
+          nextGroup.style.display = 'block';
+          nextGroup.dataset.loaded = 'true';
+          loadedGroups++;
+        }
+      }
+      
+      // Charger le groupe suivant quand on approche du bas
+      let loadingNext = false;
+      
+      // Vérifier immédiatement si la page est trop courte pour scroller
+      setTimeout(() => {
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // Si la page ne défile pas (hauteur insuffisante), charger tous les groupes
+        if (documentHeight <= windowHeight + 100) {
+          while (loadedGroups < allGroups.length) {
+            loadNextGroup();
+          }
+          return;
+        }
+      }, 200); // Laisser le temps au DOM de se mettre en place
+      
+      window.addEventListener('scroll', () => {
+        if (loadingNext) return;
+        
+        const scrollTop = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // Charger quand il reste 200px à faire défiler
+        if (scrollTop + windowHeight >= documentHeight - 200) {
+          loadingNext = true;
+          setTimeout(() => {
+            loadNextGroup();
+            loadingNext = false;
+          }, 100); // Petite pause pour éviter le spam
+        }
+      });
+    }
     
     // Gérer la fermeture du modal
     const modal = document.getElementById('imageModal');
