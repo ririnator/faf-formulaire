@@ -96,6 +96,9 @@
       return monthString;
     }
 
+    // Optimisation performance mobile : détecter mobile au début (globalement accessible)
+    const isMobile = window.innerWidth <= 600;
+    
     (async () => {
       const token = location.pathname.split('/').pop();
       const res = await fetch(`/api/view/${token}`);
@@ -117,9 +120,6 @@
         { name: "Appel à un ami", questions: [8] }, // Q9: Problème/opinions tierces
         { name: "Connexion à la nature", questions: [9] } // Q10: Photo avec herbe/arbre
       ];
-
-      // Optimisation performance mobile : détecter mobile au début
-      const isMobile = window.innerWidth <= 600;
 
       // Fonction pour détecter et afficher une image sécurisée
       function createAnswerContent(answer) {
@@ -324,58 +324,58 @@
 
         document.getElementById('qa-container').appendChild(groupBlock);
       });
+
+      // Lazy loading des groupes sur mobile (utilise la même détection)
+      if (isMobile) {
+        let loadedGroups = 1; // Premier groupe déjà chargé
+        const allGroups = document.querySelectorAll('.question-group');
+        
+        function loadNextGroup() {
+          if (loadedGroups < allGroups.length) {
+            const nextGroup = allGroups[loadedGroups];
+            nextGroup.style.display = 'block';
+            nextGroup.dataset.loaded = 'true';
+            loadedGroups++;
+          }
+        }
+        
+        // Charger le groupe suivant quand on approche du bas
+        let loadingNext = false;
+        
+        // Vérifier immédiatement si la page est trop courte pour scroller
+        setTimeout(() => {
+          const windowHeight = window.innerHeight;
+          const documentHeight = document.documentElement.scrollHeight;
+          
+          // Si la page ne défile pas (hauteur insuffisante), charger tous les groupes
+          if (documentHeight <= windowHeight + 100) {
+            while (loadedGroups < allGroups.length) {
+              loadNextGroup();
+            }
+            return;
+          }
+        }, 200); // Laisser le temps au DOM de se mettre en place
+        
+        window.addEventListener('scroll', () => {
+          if (loadingNext) return;
+          
+          const scrollTop = window.scrollY;
+          const windowHeight = window.innerHeight;
+          const documentHeight = document.documentElement.scrollHeight;
+          
+          // Charger quand il reste 200px à faire défiler
+          if (scrollTop + windowHeight >= documentHeight - 200) {
+            loadingNext = true;
+            setTimeout(() => {
+              loadNextGroup();
+              loadingNext = false;
+            }, 100); // Petite pause pour éviter le spam
+          }
+        });
+      }
     })();
     
-    // Lazy loading des groupes sur mobile (utilise la même détection)
-    if (isMobile) {
-      let loadedGroups = 1; // Premier groupe déjà chargé
-      const allGroups = document.querySelectorAll('.question-group');
-      
-      function loadNextGroup() {
-        if (loadedGroups < allGroups.length) {
-          const nextGroup = allGroups[loadedGroups];
-          nextGroup.style.display = 'block';
-          nextGroup.dataset.loaded = 'true';
-          loadedGroups++;
-        }
-      }
-      
-      // Charger le groupe suivant quand on approche du bas
-      let loadingNext = false;
-      
-      // Vérifier immédiatement si la page est trop courte pour scroller
-      setTimeout(() => {
-        const windowHeight = window.innerHeight;
-        const documentHeight = document.documentElement.scrollHeight;
-        
-        // Si la page ne défile pas (hauteur insuffisante), charger tous les groupes
-        if (documentHeight <= windowHeight + 100) {
-          while (loadedGroups < allGroups.length) {
-            loadNextGroup();
-          }
-          return;
-        }
-      }, 200); // Laisser le temps au DOM de se mettre en place
-      
-      window.addEventListener('scroll', () => {
-        if (loadingNext) return;
-        
-        const scrollTop = window.scrollY;
-        const windowHeight = window.innerHeight;
-        const documentHeight = document.documentElement.scrollHeight;
-        
-        // Charger quand il reste 200px à faire défiler
-        if (scrollTop + windowHeight >= documentHeight - 200) {
-          loadingNext = true;
-          setTimeout(() => {
-            loadNextGroup();
-            loadingNext = false;
-          }, 100); // Petite pause pour éviter le spam
-        }
-      });
-    }
-    
-    // Gérer la fermeture du modal (optimisé pour mobile)
+    // Gérer la fermeture du modal - version simplifiée et plus fiable
     const modal = document.getElementById('imageModal');
     const closeBtn = document.getElementById('closeModal');
     const modalImage = document.getElementById('modalImage');
@@ -388,57 +388,42 @@
       indicators.forEach(indicator => indicator.remove());
     }
     
-    // Fermer en cliquant sur le fond (améliorer la détection)
-    function handleModalClick(e) {
-      // Fermer si on clique sur le modal lui-même (pas sur l'image)
+    // Fermer en cliquant sur le bouton X
+    closeBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeModal();
+    });
+    
+    // Fermer en touchant le bouton X (mobile)
+    closeBtn.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeModal();
+    });
+    
+    // Fermer en cliquant sur le fond du modal
+    modal.addEventListener('click', function(e) {
       if (e.target === modal) {
         closeModal();
       }
-    }
+    });
     
-    // Support des événements tactiles avec prévention des doublons (approche simplifiée)
-    let lastTouchTime = 0;
-    
-    function handleModalInteraction(e, action) {
-      const now = Date.now();
-      const timeSinceTouch = now - lastTouchTime;
-      
-      if (e.type === 'touchend') {
-        lastTouchTime = now;
-        action();
-      } else if (e.type === 'click' && timeSinceTouch > 300) {
-        // Seulement exécuter le click si pas de touch récent
-        action();
+    // Fermer en touchant le fond du modal (mobile)
+    modal.addEventListener('touchstart', function(e) {
+      if (e.target === modal) {
+        closeModal();
       }
-    }
+    });
     
-    // Gestionnaires unifiés
-    modal.addEventListener('touchend', (e) => 
-      handleModalInteraction(e, () => handleModalClick(e))
-    );
-    modal.addEventListener('click', (e) => 
-      handleModalInteraction(e, () => handleModalClick(e))
-    );
+    // Empêcher la fermeture quand on clique sur l'image
+    modalImage.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
     
-    closeBtn.addEventListener('touchend', (e) => 
-      handleModalInteraction(e, () => {
-        e.stopPropagation();
-        closeModal();
-      })
-    );
-    closeBtn.addEventListener('click', (e) => 
-      handleModalInteraction(e, () => {
-        e.stopPropagation();
-        closeModal();
-      })
-    );
-    
-    modalImage.addEventListener('touchend', (e) => 
-      handleModalInteraction(e, () => e.stopPropagation())
-    );
-    modalImage.addEventListener('click', (e) => 
-      handleModalInteraction(e, () => e.stopPropagation())
-    );
+    modalImage.addEventListener('touchstart', function(e) {
+      e.stopPropagation();
+    });
     
     // Fermer avec la touche Escape
     document.addEventListener('keydown', function(event) {
