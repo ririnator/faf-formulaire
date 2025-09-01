@@ -262,6 +262,7 @@
       Envoyer le formulaire
     </button>
     <div id="submit-help" class="sr-only">
+      
       Soumettre vos réponses mensuelles. Un lien privé vous sera fourni pour consulter vos réponses.
     </div>
   </form>
@@ -452,8 +453,57 @@
         const inp = document.getElementById(id);
         const f = inp.files[0];
         if (!f) return null;
+        
+        // Compression d'image si > 2MB pour améliorer la vitesse d'upload
+        let fileToUpload = f;
+        if (f.size > 2 * 1024 * 1024 && f.type.startsWith('image/')) {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            await new Promise((resolve, reject) => {
+              img.onload = resolve;
+              img.onerror = reject;
+              img.src = URL.createObjectURL(f);
+            });
+            
+            // Redimensionner si trop grand (max 1920px)
+            const maxSize = 1920;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxSize || height > maxSize) {
+              if (width > height) {
+                height = (height * maxSize) / width;
+                width = maxSize;
+              } else {
+                width = (width * maxSize) / height;
+                height = maxSize;
+              }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convertir en blob avec compression
+            const blob = await new Promise(resolve => 
+              canvas.toBlob(resolve, 'image/jpeg', 0.85)
+            );
+            
+            // Préserver l'extension originale ou remplacer par .jpg pour HEIC
+            const newName = f.name.replace(/\.(heic|HEIC)$/i, '.jpg').replace(/\.[^.]+$/, '.jpg');
+            fileToUpload = new File([blob], newName, { type: 'image/jpeg' });
+            URL.revokeObjectURL(img.src);
+          } catch (e) {
+            // En cas d'erreur, utiliser le fichier original
+            console.warn('Compression failed, using original:', e);
+          }
+        }
+        
         const fd = new FormData();
-        fd.append('image', f);
+        fd.append('image', fileToUpload);
         const r = await fetch('/api/upload', {
           method: 'POST',
           credentials:'include',
@@ -465,10 +515,35 @@
       }
 
       try {
-        const q3  = await uploadFile('question3');
-        const q5  = await uploadFile('question5');
-        const q7  = await uploadFile('question7');
-        const q10 = await uploadFile('question10');
+        // Upload des 4 images en parallèle pour améliorer la performance
+        showLoading(true, 'Upload des images (0/4)...');
+        
+        const uploadPromises = [
+          uploadFile('question3'),
+          uploadFile('question5'),
+          uploadFile('question7'),
+          uploadFile('question10')
+        ];
+        
+        // Track progress - ne compter que les succès
+        let completedUploads = 0;
+        const trackProgress = (promise) => {
+          return promise.then(
+            result => {
+              completedUploads++;
+              showLoading(true, `Upload des images (${completedUploads}/4)...`);
+              return result;
+            },
+            error => {
+              // En cas d'erreur, on propage l'erreur sans incrémenter le compteur
+              throw error;
+            }
+          );
+        };
+        
+        const [q3, q5, q7, q10] = await Promise.all(
+          uploadPromises.map(trackProgress)
+        );
 
         const data = {
           name,
