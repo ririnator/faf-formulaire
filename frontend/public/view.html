@@ -22,8 +22,8 @@
 
   <!-- Modal pour afficher les images en grand -->
   <div id="imageModal" style="display:none; position:fixed; z-index:1000; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); cursor:pointer;">
-    <img id="modalImage" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); max-width:90%; max-height:90%; border-radius:8px; cursor:default;" onclick="event.stopPropagation()">
-    <span id="closeModal" style="position:absolute; top:20px; right:35px; color:#f1f1f1; font-size:40px; font-weight:bold; cursor:pointer;">&times;</span>
+    <img id="modalImage" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); max-width:90%; max-height:90%; border-radius:8px; cursor:default;">
+    <span id="closeModal" style="position:absolute; top:20px; right:35px; color:#f1f1f1; font-size:40px; font-weight:bold; cursor:pointer; background:rgba(0,0,0,0.5); border-radius:50%; width:50px; height:50px; display:flex; align-items:center; justify-content:center; user-select:none;">&times;</span>
   </div>
 
   <script>
@@ -213,6 +213,26 @@
             const modalImg = document.getElementById('modalImage');
             modal.style.display = 'block';
             modalImg.src = this.src;
+            
+            // Sur mobile, ajouter un indicateur temporaire (nettoyer les anciens d'abord)
+            if (isMobile) {
+              // Supprimer les anciens indicateurs
+              const oldIndicators = modal.querySelectorAll('.modal-indicator');
+              oldIndicators.forEach(indicator => indicator.remove());
+              
+              const indicator = document.createElement('div');
+              indicator.className = 'modal-indicator'; // Classe pour les identifier
+              indicator.textContent = 'Touchez en dehors pour fermer';
+              indicator.style.cssText = 'position:absolute; bottom:20px; left:50%; transform:translateX(-50%); color:#f1f1f1; font-size:14px; background:rgba(0,0,0,0.7); padding:8px 16px; border-radius:20px; pointer-events:none; z-index:1001;';
+              modal.appendChild(indicator);
+              
+              // Retirer l'indicateur après 3 secondes
+              setTimeout(() => {
+                if (indicator && indicator.parentNode) {
+                  indicator.remove();
+                }
+              }, 3000);
+            }
           };
           
           container.appendChild(img);
@@ -355,26 +375,75 @@
       });
     }
     
-    // Gérer la fermeture du modal
+    // Gérer la fermeture du modal (optimisé pour mobile)
     const modal = document.getElementById('imageModal');
     const closeBtn = document.getElementById('closeModal');
+    const modalImage = document.getElementById('modalImage');
     
-    // Fermer en cliquant sur le fond
-    modal.onclick = function(e) {
-      if (e.target === modal || e.target === closeBtn) {
-        this.style.display = 'none';
-      }
-    };
-    
-    // Fermer en cliquant sur le X
-    closeBtn.onclick = function() {
+    function closeModal() {
       modal.style.display = 'none';
-    };
+      
+      // Nettoyer les indicateurs quand le modal se ferme
+      const indicators = modal.querySelectorAll('.modal-indicator');
+      indicators.forEach(indicator => indicator.remove());
+    }
+    
+    // Fermer en cliquant sur le fond (améliorer la détection)
+    function handleModalClick(e) {
+      // Fermer si on clique sur le modal lui-même (pas sur l'image)
+      if (e.target === modal) {
+        closeModal();
+      }
+    }
+    
+    // Support des événements tactiles avec prévention des doublons (approche simplifiée)
+    let lastTouchTime = 0;
+    
+    function handleModalInteraction(e, action) {
+      const now = Date.now();
+      const timeSinceTouch = now - lastTouchTime;
+      
+      if (e.type === 'touchend') {
+        lastTouchTime = now;
+        action();
+      } else if (e.type === 'click' && timeSinceTouch > 300) {
+        // Seulement exécuter le click si pas de touch récent
+        action();
+      }
+    }
+    
+    // Gestionnaires unifiés
+    modal.addEventListener('touchend', (e) => 
+      handleModalInteraction(e, () => handleModalClick(e))
+    );
+    modal.addEventListener('click', (e) => 
+      handleModalInteraction(e, () => handleModalClick(e))
+    );
+    
+    closeBtn.addEventListener('touchend', (e) => 
+      handleModalInteraction(e, () => {
+        e.stopPropagation();
+        closeModal();
+      })
+    );
+    closeBtn.addEventListener('click', (e) => 
+      handleModalInteraction(e, () => {
+        e.stopPropagation();
+        closeModal();
+      })
+    );
+    
+    modalImage.addEventListener('touchend', (e) => 
+      handleModalInteraction(e, () => e.stopPropagation())
+    );
+    modalImage.addEventListener('click', (e) => 
+      handleModalInteraction(e, () => e.stopPropagation())
+    );
     
     // Fermer avec la touche Escape
     document.addEventListener('keydown', function(event) {
       if (event.key === 'Escape' && modal.style.display === 'block') {
-        modal.style.display = 'none';
+        closeModal();
       }
     });
   </script>
