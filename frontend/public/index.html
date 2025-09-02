@@ -256,6 +256,16 @@
       <input type="file" id="question10" name="question10" accept="image/*" required>
     </div>
 
+    <!-- Question 11 - Champ libre (optionnel) -->
+    <div class="form-group">
+      <label for="question11">Champ libre (optionnel) - Un truc à ajouter ? Une pensée ? Un message ? :</label>
+      <textarea id="question11" name="question11" rows="4" 
+                placeholder="Ce champ est optionnel. Exprimez-vous librement !"
+                aria-describedby="q11-help"
+                maxlength="10000"></textarea>
+      <small id="q11-help" class="text-gray-500">Facultatif - Jusqu'à 10000 caractères</small>
+    </div>
+
     <button type="submit" 
             aria-describedby="submit-help"
             class="btn-submit">
@@ -449,6 +459,9 @@
       const q10File = validateField('question10', 'Veuillez ajouter une photo pour la question 10', true);
       if (!q10File) return;
 
+      // Question 11 est optionnelle, donc pas de validation
+      const q11 = document.getElementById('question11').value.trim();
+
       async function uploadFile(id) {
         const inp = document.getElementById(id);
         const f = inp.files[0];
@@ -545,20 +558,30 @@
           uploadPromises.map(trackProgress)
         );
 
+        const responses = [
+          { question: 'En rapide, comment ça va ?', answer: q1 },
+          { question: 'Possibilité d\'ajouter un peu plus de détails à la question précédente :', answer: q2 },
+          { question: 'Le pulse check mensuel... montre une photo de toi ce mois-ci', answer: q3 },
+          { question: "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ?", answer: q4 },
+          { question: "C'est quoi la reaction pic que tu utilises le plus en ce moment ?", answer: q5 },
+          { question: "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ?", answer: q6 },
+          { question: "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement)", answer: q7 },
+          { question: "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ?", answer: q8 },
+          { question: "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.)", answer: q9 },
+          { question: "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre", answer: q10 }
+        ];
+
+        // Ajouter la question 11 seulement si elle a été remplie
+        if (q11) {
+          responses.push({ 
+            question: "Champ libre (optionnel) - Un truc à ajouter ? Une pensée ? Un message ?", 
+            answer: q11 
+          });
+        }
+
         const data = {
           name,
-          responses: [
-            { question: 'En rapide, comment ça va ?', answer: q1 },
-            { question: 'Possibilité d\'ajouter un peu plus de détails à la question précédente :', answer: q2 },
-            { question: 'Le pulse check mensuel... montre une photo de toi ce mois-ci', answer: q3 },
-            { question: "Est-ce que tu veux partager un truc cool que t'as fait ce mois-ci ?", answer: q4 },
-            { question: "C'est quoi la reaction pic que tu utilises le plus en ce moment ?", answer: q5 },
-            { question: "Est-ce que t'as eu une conversation intéressante avec quelqu'un récemment ? De quoi est-ce que ça parlait ?", answer: q6 },
-            { question: "Ta découverte culturelle du moment ? (film, série, resto, bar, zoo, belle femme, vêtement... une catégorie assez libre finalement)", answer: q7 },
-            { question: "Est-ce que t'as une habitude ou une nouvelle routine que t'essaies d'implémenter ces temps-ci ? Si oui... est-ce que ça fonctionne... si non... est-ce que y'a un truc que tu voudrais implémenter ?", answer: q8 },
-            { question: "Appel à un AMI : Est-ce que t'as un problème particulier pour lequel tu aurais besoin d'opinions tierces ? (exemple : poll pour ta prochaine teinture, recommandations de matelas, etc.)", answer: q9 },
-            { question: "Pour terminer : une photo de toi qui touche de l'herbe ou un arbre", answer: q10 }
-          ]
+          responses
         };
 
         // Mettre à jour le message de chargement
