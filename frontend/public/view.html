@@ -100,16 +100,54 @@
     const isMobile = window.innerWidth <= 600;
     
     (async () => {
-      const token = location.pathname.split('/').pop();
-      const res = await fetch(`/api/view/${token}`);
-      if (!res.ok) {
-        document.body.textContent = 'Lien invalide ou expiré.';
-        return;
-      }
-      const { user, admin, adminName } = await res.json();
-      document.getElementById('user-name').textContent = user.name;
-      document.getElementById('admin-name').textContent = adminName || 'Admin';
-      document.getElementById('month').textContent = formatMonth(user.month);
+      try {
+        const token = location.pathname.split('/').pop();
+        if (!token || token.length < 10) {
+          throw new Error('Token invalide dans l\'URL');
+        }
+        
+        const res = await fetch(`/api/view/${token}`);
+        
+        // Vérifier la réponse HTTP
+        if (!res.ok) {
+          if (res.status === 404) {
+            throw new Error('Lien invalide ou expiré');
+          } else if (res.status === 500) {
+            throw new Error('Erreur serveur. Veuillez réessayer plus tard.');
+          } else {
+            throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+          }
+        }
+        
+        // Parser le JSON avec gestion d'erreur
+        let data;
+        try {
+          data = await res.json();
+        } catch (jsonError) {
+          console.error('Erreur de parsing JSON:', jsonError);
+          throw new Error('Réponse invalide du serveur');
+        }
+        
+        // Valider la structure des données
+        if (!data || typeof data !== 'object') {
+          throw new Error('Format de données invalide');
+        }
+        
+        const { user, admin, adminName } = data;
+        
+        // Vérifier que l'utilisateur existe
+        if (!user || !user.responses || !Array.isArray(user.responses)) {
+          throw new Error('Données utilisateur manquantes ou invalides');
+        }
+        
+        // Mettre à jour l'interface de manière sécurisée
+        const userNameEl = document.getElementById('user-name');
+        const adminNameEl = document.getElementById('admin-name');
+        const monthEl = document.getElementById('month');
+        
+        if (userNameEl) userNameEl.textContent = user.name || 'Utilisateur';
+        if (adminNameEl) adminNameEl.textContent = adminName || 'Admin';
+        if (monthEl) monthEl.textContent = formatMonth(user.month);
 
       // Configuration du regroupement des questions
       const questionGroups = [
@@ -260,12 +298,13 @@
         groupBlock.appendChild(groupTitle);
 
         group.questions.forEach(questionIndex => {
-          if (questionIndex < user.responses.length) {
+          // Vérifier que l'index est valide et que la réponse existe
+          if (questionIndex >= 0 && questionIndex < user.responses.length && user.responses[questionIndex]) {
             const q = user.responses[questionIndex];
             
-            // Décoder les entités HTML de manière sécurisée
-            const question = unescapeHTML(q.question);
-            const answer = unescapeHTML(q.answer);
+            // Décoder les entités HTML de manière sécurisée avec validation
+            const question = q.question ? unescapeHTML(q.question) : 'Question non disponible';
+            const answer = q.answer ? unescapeHTML(q.answer) : '';
 
             // Container 1vs1 pour cette question
             const matchContainer = document.createElement('div');
@@ -302,7 +341,10 @@
             const adminAnswer = document.createElement('div');
             adminAnswer.className = 'answer-content';
             
-            if (admin && admin.responses[questionIndex]) {
+            // Vérifier soigneusement l'existence de admin et de ses propriétés
+            if (admin && admin.responses && Array.isArray(admin.responses) && 
+                questionIndex < admin.responses.length && admin.responses[questionIndex] &&
+                admin.responses[questionIndex].answer) {
               const adminAnswerText = unescapeHTML(admin.responses[questionIndex].answer);
               adminAnswer.appendChild(createAnswerContent(adminAnswerText));
             } else {
@@ -372,6 +414,34 @@
             }, 100); // Petite pause pour éviter le spam
           }
         });
+      }
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+        
+        // Afficher un message d'erreur détaillé à l'utilisateur
+        const errorContainer = document.createElement('div');
+        errorContainer.style.cssText = 'padding: 20px; text-align: center; color: #d32f2f; font-family: system-ui, -apple-system, sans-serif;';
+        
+        const errorTitle = document.createElement('h2');
+        errorTitle.textContent = '⚠️ Erreur de chargement';
+        errorTitle.style.marginBottom = '10px';
+        
+        const errorMessage = document.createElement('p');
+        errorMessage.textContent = error.message || 'Une erreur inattendue s\'est produite';
+        errorMessage.style.marginBottom = '20px';
+        
+        const retryButton = document.createElement('button');
+        retryButton.textContent = 'Réessayer';
+        retryButton.style.cssText = 'padding: 10px 20px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;';
+        retryButton.onclick = () => location.reload();
+        
+        errorContainer.appendChild(errorTitle);
+        errorContainer.appendChild(errorMessage);
+        errorContainer.appendChild(retryButton);
+        
+        // Nettoyer et afficher l'erreur
+        document.body.innerHTML = '';
+        document.body.appendChild(errorContainer);
       }
     })();
     
