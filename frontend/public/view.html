@@ -215,7 +215,7 @@
           }
         }
         
-        if (isTrustedImageUrl(answer)) {
+        if ((answer.startsWith('http://') || answer.startsWith('https://')) && isTrustedImageUrl(answer)) {
           const img = document.createElement('img');
           img.src = answer;
           img.alt = 'Image partagée';

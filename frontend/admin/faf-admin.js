@@ -348,7 +348,7 @@ export const Utils = {
         return validExtensions.some(ext => pathLower.includes(ext));
       }
     } catch (e) {
-      console.error('Erreur validation URL:', e);
+      // Silently return false for invalid URLs (expected for text content)
       return false;
     }
   }
@@ -611,7 +611,7 @@ export const Charts = {
       
       // Log uniquement si c'est une URL ou s'il y a eu un changement
       if (decodedAnswer.includes('http') || answer !== decodedAnswer) {
-        const isValidImage = decodedAnswer.includes('http') ? Utils.isTrustedImageUrl(decodedAnswer) : false;
+        const isValidImage = (decodedAnswer.startsWith('http://') || decodedAnswer.startsWith('https://')) ? Utils.isTrustedImageUrl(decodedAnswer) : false;
         console.log(`🔍 [${user}] URL:`, {
           original: answer.substring(0, 100) + (answer.length > 100 ? '...' : ''),
           decoded: decodedAnswer.substring(0, 100) + (decodedAnswer.length > 100 ? '...' : ''),
@@ -625,7 +625,7 @@ export const Charts = {
       }
       
       // La variable decodedAnswer est déjà définie par le debug ci-dessus
-      const isImage = decodedAnswer.includes('http') ? Utils.isTrustedImageUrl(decodedAnswer) : false;
+      const isImage = (decodedAnswer.startsWith('http://') || decodedAnswer.startsWith('https://')) ? Utils.isTrustedImageUrl(decodedAnswer) : false;
 
       if (isImage) {
         // Miniature cliquable avec corrections Safari
