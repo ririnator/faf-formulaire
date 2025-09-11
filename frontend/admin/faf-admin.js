@@ -319,6 +319,9 @@ export const Utils = {
   isTrustedImageUrl(url) {
     if (!url || typeof url !== 'string') return false;
     
+    // Vérifier d'abord si ça ressemble à une URL avant d'essayer de la parser
+    if (!url.startsWith('http://') && !url.startsWith('https://')) return false;
+    
     try {
       const urlObj = new URL(url);
       
@@ -608,7 +611,7 @@ export const Charts = {
       
       // Log uniquement si c'est une URL ou s'il y a eu un changement
       if (decodedAnswer.includes('http') || answer !== decodedAnswer) {
-        const isValidImage = Utils.isTrustedImageUrl(decodedAnswer);
+        const isValidImage = decodedAnswer.includes('http') ? Utils.isTrustedImageUrl(decodedAnswer) : false;
         console.log(`🔍 [${user}] URL:`, {
           original: answer.substring(0, 100) + (answer.length > 100 ? '...' : ''),
           decoded: decodedAnswer.substring(0, 100) + (decodedAnswer.length > 100 ? '...' : ''),
@@ -622,7 +625,7 @@ export const Charts = {
       }
       
       // La variable decodedAnswer est déjà définie par le debug ci-dessus
-      const isImage = Utils.isTrustedImageUrl(decodedAnswer);
+      const isImage = decodedAnswer.includes('http') ? Utils.isTrustedImageUrl(decodedAnswer) : false;
 
       if (isImage) {
         // Miniature cliquable avec corrections Safari

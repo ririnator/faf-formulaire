@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Liste de toutes les réponses</title>
+  <script>
+    // Suppress Tailwind CDN production warning
+    window.process = { env: { NODE_ENV: 'production' } };
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/admin/mobile-responsive.css">
   <script type="module" src="/admin/faf-admin.js"></script>

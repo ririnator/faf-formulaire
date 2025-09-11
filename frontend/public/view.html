@@ -176,6 +176,9 @@
         function isTrustedImageUrl(url) {
           if (!url || typeof url !== 'string') return false;
           
+          // Vérifier d'abord si ça ressemble à une URL avant d'essayer de la parser
+          if (!url.startsWith('http://') && !url.startsWith('https://')) return false;
+          
           try {
             const urlObj = new URL(url);
             
