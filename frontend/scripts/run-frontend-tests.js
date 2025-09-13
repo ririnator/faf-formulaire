@@ -16,9 +16,10 @@ const isCoverage = args.includes('--coverage');
 const testFiles = args.filter(arg => !arg.startsWith('--'));
 
 // Commande Jest avec configuration frontend
+const projectRoot = path.join(__dirname, '../..');
 const jestArgs = [
-  '--config', path.join(__dirname, 'frontend/tests/jest.config.js'),
-  '--rootDir', __dirname
+  '--config', path.join(__dirname, '../tests/jest.config.js'),
+  '--rootDir', projectRoot
 ];
 
 if (isWatch) {
@@ -40,10 +41,10 @@ if (testFiles.length > 0) {
 console.log('🧪 Lancement des tests frontend...\n');
 console.log(`Commande: npx jest ${jestArgs.join(' ')}\n`);
 
-// Lancer Jest depuis le répertoire racine
+// Lancer Jest depuis le répertoire racine du projet
 const jest = spawn('npx', ['jest', ...jestArgs], {
   stdio: 'inherit',
-  cwd: __dirname
+  cwd: projectRoot
 });
 
 jest.on('error', (error) => {
