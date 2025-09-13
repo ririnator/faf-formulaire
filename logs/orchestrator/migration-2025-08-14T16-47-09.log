@@ -1,0 +1,44 @@
+{"timestamp":"2025-08-14T16:47:09.410Z","level":"INFO","message":"FAF Ultimate Orchestrator initialized","phase":0,"command":0,"totalPhases":6,"totalCommands":23,"config":{"AUTOMATION_LEVEL":"MAX","VALIDATION_MODE":"STRICT","AUTO_ROLLBACK":true,"LIVE_MONITOR":true,"MAX_PARALLEL_AGENTS":8,"CHECKPOINT_INTERVAL":300000,"MAX_RETRIES":3,"ROLLBACK_TIMEOUT":30000}}
+{"timestamp":"2025-08-14T16:47:09.417Z","level":"DEBUG","message":"No previous state found, starting fresh","phase":0,"command":0}
+{"timestamp":"2025-08-14T16:47:09.482Z","level":"INFO","message":"Live monitoring started","phase":0,"command":0,"pid":21117}
+{"timestamp":"2025-08-14T16:47:09.515Z","level":"INFO","message":"🚀 Starting Phase 1: MODÈLES DATABASE & ARCHITECTURE","phase":1,"command":0}
+{"timestamp":"2025-08-14T16:47:09.617Z","level":"INFO","message":"🤖 Executing: faf-database-specialist","phase":1,"command":0,"task":"Crée les 4 nouveaux modèles MongoDB (Contact, Submission, Invitation, Handshake) avec contraintes un...","commandId":"1.1"}
+{"timestamp":"2025-08-14T16:47:14.665Z","level":"DEBUG","message":"Validating command: 4 files created in /backend/models/","phase":1,"command":0}
+{"timestamp":"2025-08-14T16:47:14.668Z","level":"SUCCESS","message":"✅ Command 1.1 completed","phase":1,"command":1,"duration":5051,"retries":0}
+{"timestamp":"2025-08-14T16:47:14.672Z","level":"INFO","message":"🤖 Executing: faf-project-supervisor","phase":1,"command":1,"task":"Valide l'architecture des nouveaux modèles, cohérence avec User/Response existants, contraintes méti...","commandId":"1.2"}
+{"timestamp":"2025-08-14T16:47:19.675Z","level":"DEBUG","message":"Validating command: Architecture validation passed","phase":1,"command":1}
+{"timestamp":"2025-08-14T16:47:19.677Z","level":"SUCCESS","message":"✅ Command 1.2 completed","phase":1,"command":2,"duration":5005,"retries":0}
+{"timestamp":"2025-08-14T16:47:19.678Z","level":"INFO","message":"🤖 Executing: faf-test-specialist","phase":1,"command":2,"task":"Tests unitaires complets pour les 4 nouveaux modèles : contraintes, relations, méthodes d'instance e...","commandId":"1.3"}
+{"timestamp":"2025-08-14T16:47:24.687Z","level":"DEBUG","message":"Validating command: npm test passes","phase":1,"command":2}
+{"timestamp":"2025-08-14T16:47:24.719Z","level":"SUCCESS","message":"✅ Command 1.3 completed","phase":1,"command":3,"duration":5041,"retries":0}
+{"timestamp":"2025-08-14T16:47:24.726Z","level":"INFO","message":"🔍 Validating Phase 1 checkpoint...","phase":1,"command":3}
+{"timestamp":"2025-08-14T16:47:24.730Z","level":"SUCCESS","message":"✅ Phase 1 checkpoint validation passed","phase":1,"command":3}
+{"timestamp":"2025-08-14T16:47:24.743Z","level":"SUCCESS","message":"✅ Phase 1 completed successfully","phase":1,"command":3,"duration":15129,"commandsExecuted":3}
+{"timestamp":"2025-08-14T16:47:24.750Z","level":"INFO","message":"🚀 Starting Phase 2: SERVICES MÉTIER","phase":2,"command":3}
+{"timestamp":"2025-08-14T16:47:24.751Z","level":"INFO","message":"🤖 Executing: faf-contact-management-specialist","phase":2,"command":3,"task":"ContactService complet : addContact, importCSV, getContactsWithStats, updateTracking, handshakes aut...","commandId":"2.1"}
+{"timestamp":"2025-08-14T16:47:24.752Z","level":"INFO","message":"🤖 Executing: faf-invitation-token-specialist","phase":2,"command":3,"task":"InvitationService : tokens sécurisés, expiration, codes anti-transfert, méthodes validation...","commandId":"2.2"}
+{"timestamp":"2025-08-14T16:47:24.752Z","level":"INFO","message":"🤖 Executing: faf-backend-architect","phase":2,"command":3,"task":"SubmissionService remplace ResponseService : 1-soumission-par-user-par-mois, comparaison 1-vs-1...","commandId":"2.3"}
+{"timestamp":"2025-08-14T16:47:29.757Z","level":"DEBUG","message":"Validating command: ContactService created and tested","phase":2,"command":3}
+{"timestamp":"2025-08-14T16:47:29.758Z","level":"DEBUG","message":"Validating command: InvitationService created and tested","phase":2,"command":3}
+{"timestamp":"2025-08-14T16:47:29.758Z","level":"DEBUG","message":"Validating command: SubmissionService created and tested","phase":2,"command":3}
+{"timestamp":"2025-08-14T16:47:29.759Z","level":"SUCCESS","message":"✅ Command 2.1 completed","phase":2,"command":4,"duration":5008,"retries":0}
+{"timestamp":"2025-08-14T16:47:29.759Z","level":"SUCCESS","message":"✅ Command 2.2 completed","phase":2,"command":5,"duration":5007,"retries":0}
+{"timestamp":"2025-08-14T16:47:29.759Z","level":"SUCCESS","message":"✅ Command 2.3 completed","phase":2,"command":6,"duration":5007,"retries":0}
+{"timestamp":"2025-08-14T16:47:29.759Z","level":"INFO","message":"🤖 Executing: faf-contact-management-specialist","phase":2,"command":6,"task":"HandshakeService : createMutual, accept, decline, checkPermission, gestion expiration...","commandId":"2.4"}
+{"timestamp":"2025-08-14T16:47:34.761Z","level":"DEBUG","message":"Validating command: HandshakeService created and tested","phase":2,"command":6}
+{"timestamp":"2025-08-14T16:47:34.762Z","level":"SUCCESS","message":"✅ Command 2.4 completed","phase":2,"command":7,"duration":5003,"retries":0}
+{"timestamp":"2025-08-14T16:47:34.763Z","level":"INFO","message":"🔍 Validating Phase 2 checkpoint...","phase":2,"command":7}
+{"timestamp":"2025-08-14T16:47:34.763Z","level":"SUCCESS","message":"✅ Phase 2 checkpoint validation passed","phase":2,"command":7}
+{"timestamp":"2025-08-14T16:47:34.763Z","level":"SUCCESS","message":"✅ Phase 2 completed successfully","phase":2,"command":7,"duration":10012,"commandsExecuted":4}
+{"timestamp":"2025-08-14T16:47:34.765Z","level":"INFO","message":"🚀 Starting Phase 3: APIs REST & BACKEND","phase":3,"command":7}
+{"timestamp":"2025-08-14T16:47:34.765Z","level":"INFO","message":"🤖 Executing: faf-contact-management-specialist","phase":3,"command":7,"task":"Routes /api/contacts/* : GET, POST, POST /import, PUT /:id, DELETE /:id avec validation et sécurité...","commandId":"3.1"}
+{"timestamp":"2025-08-14T16:47:39.767Z","level":"DEBUG","message":"Validating command: Contact routes created and secured","phase":3,"command":7}
+{"timestamp":"2025-08-14T16:47:39.768Z","level":"SUCCESS","message":"✅ Command 3.1 completed","phase":3,"command":8,"duration":5003,"retries":0}
+{"timestamp":"2025-08-14T16:47:39.769Z","level":"INFO","message":"🤖 Executing: faf-invitation-token-specialist","phase":3,"command":8,"task":"Routes /api/invitations/* et /api/invitations/public/:token pour accès externe avec tokens...","commandId":"3.2"}
+{"timestamp":"2025-08-14T16:47:44.771Z","level":"DEBUG","message":"Validating command: Invitation routes created and secured","phase":3,"command":8}
+{"timestamp":"2025-08-14T16:47:44.772Z","level":"SUCCESS","message":"✅ Command 3.2 completed","phase":3,"command":9,"duration":5003,"retries":0}
+{"timestamp":"2025-08-14T16:47:44.773Z","level":"INFO","message":"🤖 Executing: faf-backend-architect","phase":3,"command":9,"task":"Routes /api/submissions/* : GET /current, POST, GET /timeline/:contactId, GET /comparison/:contactId...","commandId":"3.3"}
+{"timestamp":"2025-08-14T16:47:49.775Z","level":"WARN","message":"⚠️  Command 3.3 failed (attempt 1/4)","phase":3,"command":9,"error":"Simulated failure for agent faf-backend-architect"}
+{"timestamp":"2025-08-14T16:47:56.808Z","level":"DEBUG","message":"Validating command: Submission routes created and secured","phase":3,"command":9}
+{"timestamp":"2025-08-14T16:47:56.813Z","level":"SUCCESS","message":"✅ Command 3.3 completed","phase":3,"command":10,"duration":12040,"retries":1}
+{"timestamp":"2025-08-14T16:47:56.814Z","level":"INFO","message":"🤖 Executing: faf-contact-management-specialist","phase":3,"command":10,"task":"Routes /api/handshakes/* : GET /received, GET /sent, POST /request, POST /:id/accept, POST /:id/decl...","commandId":"3.4"}

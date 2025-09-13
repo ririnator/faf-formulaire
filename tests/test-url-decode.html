@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test URL Decode</title>
+</head>
+<body>
+  <h1>Analyse de l'URL problématique</h1>
+  
+  <div id="analysis"></div>
+
+  <script>
+    const problematicURL = "https:&#x2F;&#x2F;res.cloudinary.com&#x2F;doyupygie&#x2F;image&#x2F;upload&#x2F;v1754587188&#x2F;faf-images&#x2F;1754587187639-Capture_d%C3%A2%C2%80%C2%99e%C3%8C%C2%81cran_2025-08-06_a%C3%8C%C2%80_12.50.58.png.png";
+    
+    console.log("URL originale:", problematicURL);
+    
+    // Étape 1: Décoder les slashes
+    let step1 = problematicURL.replace(/&#x2F;/g, '/');
+    console.log("Après décodage slashes:", step1);
+    
+    // Étape 2: Décoder les %XX encodings
+    let step2 = decodeURIComponent(step1);
+    console.log("Après decodeURIComponent:", step2);
+    
+    // Afficher l'analyse
+    const div = document.getElementById('analysis');
+    div.innerHTML = `
+      <h2>URL originale:</h2>
+      <p style="word-break: break-all; background: #f0f0f0; padding: 10px;">${problematicURL}</p>
+      
+      <h2>Après décodage des slashes (&#x2F; → /):</h2>
+      <p style="word-break: break-all; background: #e0ffe0; padding: 10px;">${step1}</p>
+      
+      <h2>Après decodeURIComponent:</h2>
+      <p style="word-break: break-all; background: #ffe0e0; padding: 10px;">${step2}</p>
+      
+      <h2>Test d'affichage de l'image:</h2>
+    `;
+    
+    // Tester l'image
+    const img = document.createElement('img');
+    img.src = step1; // URL avec slashes décodés
+    img.style.maxWidth = '300px';
+    img.style.border = '2px solid green';
+    img.onerror = () => {
+      const error = document.createElement('p');
+      error.textContent = '❌ Échec du chargement de l\'image';
+      error.style.color = 'red';
+      div.appendChild(error);
+    };
+    img.onload = () => {
+      const success = document.createElement('p');
+      success.textContent = '✅ Image chargée avec succès!';
+      success.style.color = 'green';
+      div.appendChild(success);
+    };
+    div.appendChild(img);
+    
+    // Afficher les caractères problématiques
+    const problemChars = document.createElement('div');
+    problemChars.innerHTML = `
+      <h2>Caractères problématiques détectés:</h2>
+      <ul>
+        <li>%C3%A2%C2%80%C2%99 = mauvais encodage de l'apostrophe (devrait être ')</li>
+        <li>%C3%8C%C2%81 = mauvais encodage de è</li>
+        <li>%C3%8C%C2%80 = mauvais encodage de à</li>
+      </ul>
+      <p>Ces encodages semblent être le résultat d'un double ou triple encodage UTF-8.</p>
+    `;
+    div.appendChild(problemChars);
+  </script>
+</body>
+</html>

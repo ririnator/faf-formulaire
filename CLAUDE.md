@@ -59,7 +59,6 @@ The frontend consists of static files served directly by Express from `frontend/
   - `authService.js` - Authentication business logic and bcrypt handling
   - `responseService.js` - Response CRUD operations and validation
   - `uploadService.js` - File upload processing and Cloudinary integration
-  - `serviceFactory.js` - Service layer dependency injection and factory pattern
 - `middleware/` - Modular security middleware architecture:
   - `auth.js` - Admin authentication with bcrypt and session management
   - `validation.js` - Smart XSS escaping with Cloudinary URL preservation + null/undefined edge case handling
