@@ -321,3 +321,22 @@ body {
     transform: none;
   }
 }
+
+/* ===== OPTIMISATIONS PANZOOM MOBILE ===== */
+
+/* Optimisations Panzoom mobile */
+#imageModal {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+#modalImage {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Body lock sans jump */
+body[style*="fixed"] {
+  width: 100%;
+}
