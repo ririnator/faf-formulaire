@@ -55,10 +55,7 @@ The frontend consists of static files served directly by Express from `frontend/
   - `database.js` - MongoDB connection and configuration
   - `environment.js` - Environment variable validation and setup
   - `session.js` - Session store and cookie configuration
-- `services/` - Business logic service layer:
-  - `authService.js` - Authentication business logic and bcrypt handling
-  - `responseService.js` - Response CRUD operations and validation
-  - `uploadService.js` - File upload processing and Cloudinary integration
+- `config/` - Configuration files (business logic moved directly to routes for simplicity)
 - `middleware/` - Modular security middleware architecture:
   - `auth.js` - Admin authentication with bcrypt and session management
   - `validation.js` - Smart XSS escaping with Cloudinary URL preservation + null/undefined edge case handling
@@ -66,10 +63,7 @@ The frontend consists of static files served directly by Express from `frontend/
     - `isCloudinaryUrl()` - Validates Cloudinary URLs with security checks for malicious content
   - `security.js` - CSP nonce generation + environment-adaptive session cookies
   - `bodyParser.js` - Optimized body limits per endpoint type (512KB/2MB/5MB)
-  - `rateLimiting.js` - Rate limiting configurations per endpoint
   - `csrf.js` - CSRF protection middleware
-  - `errorHandler.js` - Centralized error handling and logging
-  - `paramValidation.js` - URL parameter validation and sanitization
 - `tests/` - Comprehensive security test suites (100+ tests):
   - `validation.edge-cases.test.js` - Null/undefined/malformed input handling (30 tests)
   - `validation.boundary.test.js` - Exact boundary conditions + performance (32 tests)
@@ -82,11 +76,11 @@ The frontend consists of static files served directly by Express from `frontend/
   - `dynamic.option.integration.test.js` - Dynamic option validation and testing
   - `integration.full.test.js` - Full integration testing scenarios
   - `middleware.integration.test.js` - Middleware integration testing
-- `routes/` - API endpoints with layered security and optimized body parsing:
-  - `responseRoutes.js` - Public form submission (2MB body limit) with strict validation, XSS escaping, admin duplicate prevention
-  - `adminRoutes.js` - Admin dashboard APIs (1MB body limit) with pagination, summary, CRUD operations
+- `routes/` - API endpoints with layered security, optimized body parsing, and integrated business logic:
+  - `responseRoutes.js` - Public form submission (2MB body limit) with strict validation, XSS escaping, admin duplicate prevention, direct MongoDB operations
+  - `adminRoutes.js` - Admin dashboard APIs (1MB body limit) with pagination, summary, CRUD operations, integrated authentication logic
   - `formRoutes.js` - Form utilities with legacy compatibility and basic validation
-  - `upload.js` - Image upload handling (5MB limit) with MIME validation and Cloudinary integration
+  - `upload.js` - Image upload handling (5MB limit) with MIME validation, direct Cloudinary integration via multer
 
 ### Frontend Structure (`frontend/`)
 - `public/` - Public-facing pages:
@@ -112,7 +106,7 @@ The frontend consists of static files served directly by Express from `frontend/
 - **Comprehensive Input Validation** - 100+ tests covering null/undefined/boundary/XSS edge cases
 - **UTF-8 Encoding Support** - Global UTF-8 middleware, proper character encoding for French accented characters
 - **ES6 Module Architecture** - Unified faf-admin.js module with named exports, eliminating dual-file complexity
-- **Service Layer Architecture** - Separation of concerns with dedicated service classes for business logic
+- **Simplified Architecture** - Direct routes-to-models pattern eliminating service layer complexity
 - **Configuration Modularity** - Environment-specific configuration files for database, CORS, sessions
 - **Optimized Body Parser Limits** - 512KB standard, 2MB forms, 5MB images (80% memory reduction)
 - **Environment-adaptive Configuration** - Auto-detection dev/prod with appropriate security settings
@@ -247,9 +241,10 @@ The `Response` model contains:
 - **🧪 Frontend HTML Entity Decoding**: Enhanced `Utils.unescapeHTML()` in faf-admin.js with better entity handling and secure DOM creation
 
 **Code Quality & Architecture**:
-- **🧹 Code Cleanup**: Removed 18 duplicate/obsolete files (*.refactored.js, *.v2.js, test files)
+- **🧹 Code Cleanup**: Removed 26 duplicate/obsolete files (*.refactored.js, *.v2.js, test files, dead services)
 - **✅ Test Repairs**: Fixed session configuration tests and removed problematic upload mocks
 - **🔧 Architecture Refactor**: Replaced admin-utils.js + core-utils.js with unified faf-admin.js ES6 module
+- **🚮 Dead Code Elimination**: Removed unused services layer (ResponseService, AuthService, UploadService) and middleware (rateLimiting, paramValidation, errorHandler), simplifying to direct routes→models pattern
 
 **Dynamic Question Ordering Implementation**:
 - **✨ Zero-Maintenance Algorithm**: Eliminated hardcoded QUESTION_ORDER array (12 lines removed)

@@ -15,27 +15,20 @@ backend/
 │   ├── database.js          # Configuration MongoDB avec optimisations
 │   ├── environment.js       # Validation variables d'environnement
 │   └── session.js           # Configuration sessions et cookies adaptatifs
-├── services/                # Couche logique métier
-│   ├── authService.js       # Logique authentification bcrypt
-│   ├── responseService.js   # CRUD réponses avec validation
-│   ├── uploadService.js     # Traitement uploads Cloudinary
-│   └── serviceFactory.js    # Factory pattern et injection dépendances
+├── config/                  # Configuration modulaire sécurisée (services intégrés directement dans routes)
 ├── middleware/               # Middleware de sécurité modulaire avancé
 │   ├── auth.js              # Authentification admin avec bcrypt + sessions
 │   ├── validation.js        # Validation XSS + null/undefined + dual-level
 │   ├── security.js          # CSP nonce-based + session cookies adaptatifs
 │   ├── bodyParser.js        # Limites optimisées par endpoint (512KB-5MB)
-│   ├── rateLimiting.js      # Protection anti-spam intelligente
-│   ├── csrf.js              # Protection CSRF token-based
-│   ├── errorHandler.js      # Gestion d'erreurs centralisée sécurisée
-│   └── paramValidation.js   # Validation paramètres URL
+│   └── csrf.js              # Protection CSRF token-based
 ├── models/
 │   └── Response.js          # Schéma MongoDB avec indexes optimisés
-├── routes/                  # Endpoints avec sécurité layered
-│   ├── responseRoutes.js    # Validation stricte + XSS protection
-│   ├── adminRoutes.js       # Middleware admin + CRUD sécurisé
+├── routes/                  # Endpoints avec sécurité layered (logique métier intégrée)
+│   ├── responseRoutes.js    # Validation stricte + XSS protection + CRUD direct MongoDB
+│   ├── adminRoutes.js       # Middleware admin + CRUD sécurisé + logique métier
 │   ├── formRoutes.js        # Compatibilité legacy + validation basique
-│   └── upload.js            # Upload sécurisé Cloudinary + validation MIME
+│   └── upload.js            # Upload sécurisé Cloudinary + validation MIME + multer direct
 ├── tests/                   # Suite de tests sécurité complète (100+ tests)
 │   ├── validation.edge-cases.test.js    # 30 tests null/undefined/malformed
 │   ├── validation.boundary.test.js      # 32 tests limites exactes + performance  
@@ -219,7 +212,7 @@ npm test             # Validation complète
 
 Cette architecture v2.0 garantit **sécurité maximale** avec **performance optimisée**, **validation exhaustive**, et **compatibilité complète** ! 🔒🚀✨
 
-## Nouvelles Fonctionnalités v2.0
+## Architecture v2.1 - Simplifiée (2025)
 
 ### 🆕 **Ajouts Majeurs**
 - **CSP Nonce-based** : Sécurité renforcée, élimination unsafe-inline
@@ -228,9 +221,11 @@ Cette architecture v2.0 garantit **sécurité maximale** avec **performance opti
 - **Contraintes DB** : Index unique admin/mois au niveau base
 - **Configuration adaptative** : Détection automatique dev/prod
 - **Session cookies sécurisés** : HTTPS-aware avec sameSite dynamique
+- **🧹 Architecture simplifiée** : Suppression couche service intermédiaire, logique métier intégrée directement dans routes
 
-### 📈 **Métriques d'Amélioration**
+### 📈 **Métriques d'Amélioration v2.1**
 - **Tests** : 38 → 100+ (+163% couverture sécurité)
 - **Mémoire** : 10MB → 512KB-2MB (-80% par requête)
 - **Sécurité** : CSP strict + validation exhaustive
 - **Performance** : Validation <100ms, payload max <1sec
+- **🧹 Code base** : -8 fichiers dead code (-15KB), architecture directe routes→modèles
