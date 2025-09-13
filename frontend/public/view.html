@@ -100,54 +100,6 @@
     // Optimisation performance mobile : détecter mobile au début (globalement accessible)
     const isMobile = window.innerWidth <= 600;
     
-    // Gestion Panzoom et modal
-    let panzoomInstance = null, wheelHandler = null, tapTimeout = null, modalCleanup = null;
-    let openerEl = null, bodyScrollY = 0;
-
-    const modal = document.getElementById('imageModal');
-    const modalImg = document.getElementById('modalImage');
-    const closeBtn = document.getElementById('closeModal');
-
-    if (!modal || !modalImg || !closeBtn) {
-      console.error('Modal elements not found');
-    }
-    const qaContainer = document.getElementById('qa-container');
-    const hasTouchScreen = (navigator.maxTouchPoints || 0) > 0;
-    
-    // Lock/unlock body sans scroll jump
-    function lockBody(){
-      bodyScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-      document.body.style.cssText = `position:fixed;top:-${bodyScrollY}px;width:100%;`;
-    }
-
-    function unlockBody(){
-      document.body.style.cssText = '';
-      window.scrollTo(0, bodyScrollY);
-    }
-
-    // Optimisation Cloudinary mobile
-    function cldMobile(url){
-      if (!url || !url.includes('/upload/')) return url;
-      const hasW   = /(^|[,/?])w_\d+($|[,/?])/i.test(url);
-      const hasF   = /(^|[,/?])f_auto($|[,/?])/i.test(url);
-      const hasQ   = /(^|[,/?])q_auto($|[,/?])/i.test(url);
-      const hasDpr = /(^|[,/?])dpr_auto($|[,/?])/i.test(url);
-      if (hasW && hasF && hasQ && hasDpr) return url;
-      return url.replace('/upload/','/upload/f_auto,q_auto,w_1200,dpr_auto/');
-    }
-
-    // Chargement Panzoom dynamique
-    async function loadPanzoom(){
-      if (window.Panzoom) return window.Panzoom;
-      const s = document.createElement('script');
-      s.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
-      document.head.appendChild(s);
-      return new Promise(res=>{
-        s.onload = ()=>res(window.Panzoom);
-        s.onerror= ()=>{ console.error('Panzoom CDN failed'); res(null); };
-      });
-    }
-    
     (async () => {
       try {
         const token = location.pathname.split('/').pop();
@@ -473,192 +425,44 @@
         return; // Sortir si erreur
       }
 
-      // ===== GESTION DU MODAL D'IMAGE (après création du contenu) =====
-      setupImageModal();
-    })();
-    
-    // Fonction pour configurer le modal d'image
-    function setupImageModal() {
+      // ===== MODAL SIMPLE SANS PANZOOM =====
       const modal = document.getElementById('imageModal');
       const modalImg = document.getElementById('modalImage');
       const closeBtn = document.getElementById('closeModal');
       const qaContainer = document.getElementById('qa-container');
 
-      if (!modal || !modalImg || !closeBtn) {
-        console.error('Modal elements not found');
-        return;
-      }
-
-      if (!qaContainer) {
-        console.error('QA container not found');
-        return;
-      }
-
-      console.log('Setting up image modal...');
-
-      // Variables locales pour le modal
-      let panzoomInstance = null, wheelHandler = null, tapTimeout = null, modalCleanup = null;
-      let openerEl = null, bodyScrollY = 0;
-
-      // Lock/unlock body sans scroll jump
-      function lockBody(){
-        bodyScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-        document.body.style.cssText = `position:fixed;top:-${bodyScrollY}px;width:100%;`;
-      }
-
-      function unlockBody(){
-        document.body.style.cssText = '';
-        window.scrollTo(0, bodyScrollY);
-      }
-
-      // Fonction séparée pour initialiser Panzoom
-      async function initPanzoomAsync() {
-        try {
-          const Panzoom = await loadPanzoom();
-          
-          if (Panzoom && modal.style.display === 'block') {
-            // Clean up previous instance
-            try { panzoomInstance?.destroy?.(); } catch {}
-            
-            panzoomInstance = Panzoom(modalImg, {
-              maxScale: 4, 
-              minScale: 1, 
-              contain: 'outside', 
-              animate: true, 
-              duration: 200
-            });
-
-            // Wheel zoom
-            wheelHandler = (ev) => {
-              ev.preventDefault();
-              panzoomInstance?.zoomWithWheel(ev);
-            };
-            modal.addEventListener('wheel', wheelHandler);
-
-            // Double-tap zoom
-            const handleDblTap = (ev) => {
-              if (tapTimeout) {
-                clearTimeout(tapTimeout); 
-                tapTimeout = null;
-                const scale = panzoomInstance.getScale();
-                panzoomInstance.zoomToPoint(scale === 1 ? 2 : 1, ev);
-              } else {
-                tapTimeout = setTimeout(() => tapTimeout = null, 300);
-              }
-            };
-            modalImg.addEventListener('pointerup', handleDblTap);
-
-            // Cleanup function
-            modalCleanup = () => {
-              clearTimeout(tapTimeout); tapTimeout = null;
-              if (wheelHandler) { 
-                modal.removeEventListener('wheel', wheelHandler); 
-                wheelHandler = null; 
-              }
-              modalImg.removeEventListener('pointerup', handleDblTap);
-              try { panzoomInstance?.destroy?.(); } catch {}
-              panzoomInstance = null;
-            };
-
-            modalImg.style.cursor = 'move';
-            console.log('Panzoom initialized successfully');
-          }
-        } catch (err) {
-          console.error('Panzoom initialization failed:', err);
-          modalImg.style.cursor = 'default';
-        }
-      }
-
-      function closeModal(){
-        // Cleanup Panzoom et handlers
-        modalCleanup?.(); 
-        modalCleanup = null;
-
-        // Reset modal state
-        const loadingEl = document.getElementById('modalLoading');
-        if (loadingEl) {
-          loadingEl.style.display = 'none';
-          loadingEl.textContent = 'Chargement...';
-        }
-
-        // Fermer modal
-        modal.style.display = 'none';
-        modalImg.style.display = 'block';
-        modalImg.style.willChange = 'auto';
-        modalImg.style.cursor = 'default';
-        modalImg.removeAttribute('srcset');
-        modalImg.removeAttribute('sizes');
-        modalImg.onload = null;
-        modalImg.onerror = null;
-        modalImg.src = '';
-
-        // Nettoyer indicateurs
-        modal.querySelectorAll('.modal-indicator').forEach(n=>n.remove());
-
-        // Restaurer body scroll
-        unlockBody();
-        
-        // Rendre focus
-        openerEl?.focus?.(); 
-        openerEl = null;
-      }
-    
-      // Gestion d'ouverture du modal - version simplifiée et plus robuste
-      qaContainer.addEventListener('click', (e) => {
-        // Vérifier si c'est bien une image cliquée
-        const img = e.target;
-        if (!img || !img.classList || !img.classList.contains('response-image')) return;
-        if (!modal || !modalImg || !closeBtn) {
-          console.error('Modal elements missing');
-          return;
-        }
-
-        // Empêcher la propagation
-        e.preventDefault();
-        e.stopPropagation();
-
-        console.log('Opening modal for image:', img.src);
-
-        // Ouvrir le modal avec indicateur de chargement
-        openerEl = img;
-        lockBody();
+      function openModal(imageSrc) {
         modal.style.display = 'block';
-        
-        // Afficher loading pendant le chargement de l'image
-        const loadingEl = document.getElementById('modalLoading');
-        if (loadingEl) {
-          loadingEl.style.display = 'block';
-        }
-        modalImg.style.display = 'none';
+        modalImg.src = imageSrc;
+        document.body.style.overflow = 'hidden';
+      }
 
-        // Précharger l'image
-        const imgSrc = img.src || '';
-        modalImg.onload = () => {
-          if (loadingEl) loadingEl.style.display = 'none';
-          modalImg.style.display = 'block';
-          modalImg.style.cursor = 'default';
-        };
-        modalImg.onerror = () => {
-          if (loadingEl) {
-            loadingEl.textContent = 'Erreur de chargement de l\'image';
-            setTimeout(() => closeModal(), 2000);
+      function closeModal() {
+        modal.style.display = 'none';
+        modalImg.src = '';
+        document.body.style.overflow = '';
+      }
+
+      // Clic sur image = ouvrir modal
+      if (qaContainer) {
+        qaContainer.addEventListener('click', (e) => {
+          if (e.target.classList && e.target.classList.contains('response-image')) {
+            openModal(e.target.src);
           }
-        };
-        
-        // Définir l'image dans le modal
-        modalImg.src = imgSrc;
-        modalImg.alt = img.alt || 'Image';
+        });
+      }
 
-        // Initialiser Panzoom de manière asynchrone (non-bloquante)
-        initPanzoomAsync();
-
-      }, { passive: false }); // Non-passive pour pouvoir preventDefault
-      
-      // Event listeners de fermeture
-      closeBtn.addEventListener('click', closeModal, { passive: true });
-      modal.addEventListener('click', (e)=>{ if (e.target === modal) closeModal(); }, { passive: true });
-      document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape' && modal.style.display === 'block') closeModal(); });
-    }
+      // Fermer modal
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeModal();
+        });
+      }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'block') closeModal();
+      });
+    })();
   </script>
 </body>
 </html>
