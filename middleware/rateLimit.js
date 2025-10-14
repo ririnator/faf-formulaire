@@ -1,66 +1,119 @@
-const rateLimit = require('express-rate-limit');
+/**
+ * Middleware de rate limiting
+ *
+ * Limite le nombre de requêtes par IP dans une fenêtre de temps
+ * Implémentation en mémoire (pour Vercel serverless)
+ */
+
+// Store en mémoire pour tracking des IPs
+// Format: { ip: { count: number, resetTime: timestamp } }
+const requestStore = new Map();
+
+// Nettoyage automatique toutes les 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of requestStore.entries()) {
+    if (now > data.resetTime) {
+      requestStore.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
 
 /**
- * Rate limiter pour les tentatives de login/register
- * 5 tentatives par 15 minutes par IP
+ * Crée un middleware de rate limiting
+ *
+ * @param {Object} options - Options de configuration
+ * @param {number} options.windowMs - Fenêtre de temps en ms (défaut: 15 min)
+ * @param {number} options.max - Nombre max de requêtes (défaut: 3)
+ * @param {string} options.message - Message d'erreur personnalisé
+ * @returns {Function} Middleware Express/Vercel
  */
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requêtes max
-  message: {
-    error: 'Trop de tentatives. Réessayez dans 15 minutes.'
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  // Clé basée sur l'IP
-  keyGenerator: (req) => {
-    return req.ip || req.headers['x-forwarded-for'] || 'unknown';
-  },
-  // Handler personnalisé
-  handler: (req, res) => {
-    res.status(429).json({
-      error: 'Trop de tentatives. Réessayez dans 15 minutes.',
-      retryAfter: Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000)
-    });
-  }
-});
+function createRateLimiter(options = {}) {
+  const windowMs = options.windowMs || 15 * 60 * 1000; // 15 minutes par défaut
+  const max = options.max || 3; // 3 requêtes max par défaut
+  const message = options.message || 'Too many requests, please try again later';
+
+  return function rateLimitMiddleware(req, res, next) {
+    // Extraire l'IP (Vercel fournit x-forwarded-for ou x-real-ip)
+    const ip =
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.connection?.remoteAddress ||
+      'unknown';
+
+    const now = Date.now();
+
+    // Récupérer ou initialiser les données de l'IP
+    let ipData = requestStore.get(ip);
+
+    if (!ipData || now > ipData.resetTime) {
+      // Première requête ou fenêtre expirée
+      ipData = {
+        count: 1,
+        resetTime: now + windowMs
+      };
+      requestStore.set(ip, ipData);
+
+      // Ajouter les headers de rate limiting
+      res.setHeader('X-RateLimit-Limit', max);
+      res.setHeader('X-RateLimit-Remaining', max - 1);
+      res.setHeader('X-RateLimit-Reset', new Date(ipData.resetTime).toISOString());
+
+      return next ? next() : undefined;
+    }
+
+    // Incrémenter le compteur
+    ipData.count++;
+
+    // Vérifier si la limite est dépassée
+    if (ipData.count > max) {
+      const retryAfter = Math.ceil((ipData.resetTime - now) / 1000); // en secondes
+
+      res.setHeader('X-RateLimit-Limit', max);
+      res.setHeader('X-RateLimit-Remaining', 0);
+      res.setHeader('X-RateLimit-Reset', new Date(ipData.resetTime).toISOString());
+      res.setHeader('Retry-After', retryAfter);
+
+      return res.status(429).json({
+        success: false,
+        error: 'Rate limit exceeded',
+        message: message,
+        retryAfter: retryAfter
+      });
+    }
+
+    // Requête autorisée
+    res.setHeader('X-RateLimit-Limit', max);
+    res.setHeader('X-RateLimit-Remaining', max - ipData.count);
+    res.setHeader('X-RateLimit-Reset', new Date(ipData.resetTime).toISOString());
+
+    return next ? next() : undefined;
+  };
+}
 
 /**
- * Rate limiter pour les requêtes publiques
- * 100 requêtes par 15 minutes par IP
+ * Réinitialise le store (utile pour les tests)
  */
-const publicLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: {
-    error: 'Trop de requêtes. Réessayez plus tard.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => {
-    return req.ip || req.headers['x-forwarded-for'] || 'unknown';
-  }
-});
+function resetStore() {
+  requestStore.clear();
+}
 
 /**
- * Rate limiter strict pour les opérations sensibles
- * 3 tentatives par 15 minutes par IP
+ * Récupère les stats du store (utile pour debug)
  */
-const strictLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 3,
-  message: {
-    error: 'Limite dépassée. Réessayez dans 15 minutes.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => {
-    return req.ip || req.headers['x-forwarded-for'] || 'unknown';
-  }
-});
+function getStoreStats() {
+  return {
+    size: requestStore.size,
+    entries: Array.from(requestStore.entries()).map(([ip, data]) => ({
+      ip,
+      count: data.count,
+      resetTime: new Date(data.resetTime).toISOString()
+    }))
+  };
+}
 
 module.exports = {
-  authLimiter,
-  publicLimiter,
-  strictLimiter
+  createRateLimiter,
+  resetStore,
+  getStoreStats
 };
