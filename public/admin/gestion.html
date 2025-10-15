@@ -271,13 +271,6 @@
           actionsTd.appendChild(viewBtn);
         }
 
-        // Bouton Détails
-        const detailsBtn = document.createElement('button');
-        detailsBtn.className = 'bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors';
-        detailsBtn.innerHTML = '<i class="fas fa-info-circle mr-1"></i> Détails';
-        detailsBtn.addEventListener('click', () => showDetails(response));
-        actionsTd.appendChild(detailsBtn);
-
         // Bouton Supprimer
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors';
