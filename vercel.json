@@ -9,6 +9,14 @@
     {
       "source": "/form/:username",
       "destination": "/form/index.html"
+    },
+    {
+      "source": "/view/:token",
+      "destination": "/view/index.html"
+    },
+    {
+      "source": "/api/view/:token",
+      "destination": "/api/response/view/:token"
     }
   ],
   "headers": [
