@@ -178,7 +178,11 @@ async function handler(req, res) {
 
     // 17. Ajouter le lien privé (seulement pour les non-admins)
     if (!isOwner && token) {
-      const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
+      // Construire l'URL de base dynamiquement depuis la requête
+      const protocol = req.headers['x-forwarded-proto'] || 'https';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+
       response.link = `${baseUrl}/view/${token}`;
     }
 
