@@ -29,6 +29,18 @@ async function handler(req, res) {
   }
 
   try {
+    // Debug: Vérifier configuration Cloudinary
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error('⛔️ Variables Cloudinary manquantes');
+      return res.status(500).json({
+        success: false,
+        message: 'Configuration Cloudinary incomplète',
+        detail: 'Les variables d\'environnement Cloudinary ne sont pas configurées'
+      });
+    }
+
+    console.log('📝 Parsing formulaire multipart...');
+
     // 2. Parser le formulaire multipart avec formidable
     const form = formidable({
       maxFileSize: 5 * 1024 * 1024, // 5MB limit
@@ -37,35 +49,49 @@ async function handler(req, res) {
       allowEmptyFiles: false,
       filter: (part) => {
         // Only accept image mime types
-        return part.mimetype && part.mimetype.startsWith('image/');
+        const isImage = part.mimetype && part.mimetype.startsWith('image/');
+        console.log(`📎 Fichier détecté: ${part.name}, MIME: ${part.mimetype}, accepté: ${isImage}`);
+        return isImage;
       }
     });
 
     const [fields, files] = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
-        if (err) reject(err);
-        else resolve([fields, files]);
+        if (err) {
+          console.error('⛔️ Erreur parsing formidable:', err);
+          reject(err);
+        } else {
+          console.log('✅ Parsing réussi, fichiers:', Object.keys(files));
+          resolve([fields, files]);
+        }
       });
     });
 
     // 3. Vérifier qu'un fichier image a été uploadé
     if (!files.image || !files.image[0]) {
+      console.error('⛔️ Aucun fichier image trouvé dans:', Object.keys(files));
       return res.status(400).json({
         success: false,
-        message: 'Aucun fichier image reçu'
+        message: 'Aucun fichier image reçu',
+        debug: { receivedFields: Object.keys(fields), receivedFiles: Object.keys(files) }
       });
     }
 
     const file = files.image[0];
+    console.log(`📄 Fichier reçu: ${file.originalFilename}, taille: ${file.size} bytes, MIME: ${file.mimetype}`);
 
     // 4. Validation MIME type supplémentaire
-    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic'];
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
     if (!allowedMimeTypes.includes(file.mimetype)) {
+      console.error(`⛔️ Type MIME non autorisé: ${file.mimetype}`);
       return res.status(400).json({
         success: false,
-        message: 'Type de fichier non autorisé. Seules les images sont acceptées.'
+        message: 'Type de fichier non autorisé. Seules les images sont acceptées.',
+        detail: `Type reçu: ${file.mimetype}`
       });
     }
+
+    console.log(`☁️ Upload vers Cloudinary: ${file.filepath}`);
 
     // 5. Upload vers Cloudinary
     const uploadResult = await cloudinary.uploader.upload(file.filepath, {
