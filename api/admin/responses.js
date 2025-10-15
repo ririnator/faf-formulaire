@@ -60,7 +60,6 @@ async function handler(req, res) {
       .from('responses')
       .select('*', { count: 'exact' })
       .eq('owner_id', adminId)
-      .eq('is_owner', false) // Exclure les réponses de l'admin lui-même
       .order('created_at', { ascending: false });
 
     // Filtrer par mois si spécifié
