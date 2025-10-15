@@ -233,10 +233,16 @@
         const tr = document.createElement('tr');
         tr.className = 'border-b hover:bg-gray-50 transition-colors';
 
+        // Si c'est la réponse admin, on la surligne en rouge
+        if (response.is_owner) {
+          tr.classList.remove('hover:bg-gray-50');
+          tr.classList.add('bg-red-100', 'border-l-4', 'border-red-500');
+        }
+
         // Nom
         const nameTd = document.createElement('td');
         nameTd.className = 'px-6 py-4 text-gray-800 font-medium';
-        nameTd.textContent = response.name;
+        nameTd.textContent = response.name + (response.is_owner ? ' (Admin)' : '');
         tr.appendChild(nameTd);
 
         // Date
