@@ -155,17 +155,18 @@
       const card = document.createElement('div');
       card.className = "bg-white shadow rounded-lg p-6 mb-6";
 
-      // Titre de la question
+      // Titre de la question (décoder les entités HTML)
       const title = document.createElement('h2');
       title.className = "text-xl font-bold text-gray-800 mb-4";
-      title.textContent = question;
+      title.textContent = Utils.unescapeHTML(question);
       card.appendChild(title);
 
       // Si c'est la question du pie, afficher un graphique
       if (question === PIE_QUESTION) {
         const chartData = {};
         answers.forEach(a => {
-          chartData[a.answer] = (chartData[a.answer] || 0) + 1;
+          const decodedAnswer = Utils.unescapeHTML(a.answer);
+          chartData[decodedAnswer] = (chartData[decodedAnswer] || 0) + 1;
         });
 
         // Générer les couleurs selon les réponses (comme dans l'ancienne version)
@@ -227,7 +228,7 @@
             img.onclick = () => openLightbox(a.answer, a.name);
             answerSpan.appendChild(img);
           } else {
-            answerSpan.textContent = a.answer;
+            answerSpan.textContent = Utils.unescapeHTML(a.answer);
           }
 
           item.appendChild(nameSpan);
