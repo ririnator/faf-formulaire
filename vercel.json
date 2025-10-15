@@ -1,4 +1,10 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "multijoueurs": true,
+      "main": false
+    }
+  },
   "headers": [
     {
       "source": "/api/(.*)",
