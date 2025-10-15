@@ -1,0 +1,45 @@
+# Dépendances
+node_modules/
+
+# Variables d'environnement
+.env
+.env.*
+!.env.example
+
+# Backups MongoDB (données sensibles)
+backups/*.json
+!backups/README.md
+
+# Legacy backend mono-user
+backend_mono_user_legacy/
+
+# Tests
+tests/
+*.test.js
+coverage/
+
+# Scripts de migration
+scripts/backup-mongodb.js
+scripts/migrate-to-supabase.js
+scripts/validate-migration.js
+scripts/fix-missing-months.js
+scripts/test-migration.sh
+
+# Documentation de développement
+STEP_*.md
+PROMPT_DEVELOPMENT.md
+MULTITENANT_SPEC.md
+MIGRATION_QUICKSTART.md
+PROGRESS_STATUS.md
+STRUCTURE.md
+
+# Fichiers temporaires
+*.log
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore

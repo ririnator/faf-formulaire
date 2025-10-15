@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion - FAF</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-box">
+      <div class="auth-header">
+        <h1>Connexion</h1>
+        <p>Accédez à votre dashboard et vos réponses</p>
+      </div>
+
+      <form id="loginForm" class="auth-form">
+        <div class="form-group">
+          <label for="username">Nom d'utilisateur</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            required
+            placeholder="ex: sophie"
+            autocomplete="username"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            placeholder="••••••••"
+            autocomplete="current-password"
+          >
+        </div>
+
+        <!-- Honeypot anti-spam -->
+        <input
+          type="text"
+          name="website"
+          id="website"
+          style="display:none"
+          tabindex="-1"
+          autocomplete="off"
+        >
+
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+          Se connecter
+        </button>
+
+        <div id="feedback" class="feedback"></div>
+      </form>
+
+      <div class="auth-footer">
+        <p>Pas encore de compte ? <a href="/auth/register.html">Créer un compte</a></p>
+        <!-- Future: <a href="/auth/forgot-password.html">Mot de passe oublié ?</a> -->
+      </div>
+    </div>
+
+    <div class="auth-back">
+      <a href="/auth/landing.html" class="btn-back">&larr; Retour à l'accueil</a>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // Initialize login form
+    if (typeof initLoginForm === 'function') {
+      initLoginForm();
+    }
+  </script>
+</body>
+</html>

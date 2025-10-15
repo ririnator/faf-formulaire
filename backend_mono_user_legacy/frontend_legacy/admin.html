@@ -59,15 +59,41 @@
 <body class="bg-gray-50 p-4">
   <!-- Skip link for keyboard navigation -->
   <a href="#main-content" class="skip-link">Aller au contenu principal</a>
-  
-  <nav class="admin-nav flex justify-end mb-4" role="navigation" aria-label="Navigation administrateur">
-    <a href="/admin/gestion" class="text-blue-600 hover:underline" 
-       aria-describedby="gestion-help">Gestion avancée</a>
-    <div id="gestion-help" class="sr-only">Accéder à la liste détaillée des réponses</div>
-    <a href="/logout" class="text-red-600 hover:underline ml-4"
-       aria-describedby="logout-help">Déconnexion</a>
-    <div id="logout-help" class="sr-only">Se déconnecter de l'interface admin</div>
-  </nav>
+
+  <!-- Header avec info admin -->
+  <header class="bg-white shadow-md rounded-lg p-4 mb-6">
+    <div class="container mx-auto flex justify-between items-center flex-wrap gap-4">
+      <div class="flex items-center gap-2">
+        <h2 class="text-xl font-bold text-gray-800">
+          FAF Admin
+        </h2>
+        <span class="text-gray-600">|</span>
+        <span class="text-gray-700">
+          Bienvenue, <strong id="adminUsername" class="text-blue-600">...</strong>
+        </span>
+      </div>
+
+      <nav class="flex gap-3 items-center flex-wrap" role="navigation" aria-label="Navigation administrateur">
+        <button id="myFormBtn"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
+                aria-label="Copier le lien de mon formulaire">
+          📋 Mon formulaire
+        </button>
+        <a href="/admin/gestion"
+           class="text-blue-600 hover:underline"
+           aria-describedby="gestion-help">
+          Gestion avancée
+        </a>
+        <div id="gestion-help" class="sr-only">Accéder à la liste détaillée des réponses</div>
+        <button id="logoutBtn"
+                class="text-red-600 hover:text-red-800 font-semibold"
+                aria-describedby="logout-help">
+          🚪 Déconnexion
+        </button>
+        <div id="logout-help" class="sr-only">Se déconnecter de l'interface admin</div>
+      </nav>
+    </div>
+  </header>
 
   <main id="main-content" class="container mx-auto" role="main">
     <h1 class="text-3xl font-bold text-center mb-4">Résumé des réponses</h1>
@@ -193,15 +219,72 @@
       return card;
     }
 
-    // 4. Listeners + initialisation
+    // 4. Gestion du header admin
+    function initAdminHeader(admin) {
+      // Afficher le username
+      const usernameEl = document.getElementById('adminUsername');
+      if (usernameEl) {
+        usernameEl.textContent = admin.username;
+      }
+
+      // Bouton "Mon formulaire" - copie le lien
+      const myFormBtn = document.getElementById('myFormBtn');
+      if (myFormBtn) {
+        myFormBtn.addEventListener('click', () => {
+          const formLink = `${window.location.origin}/form/${admin.username}`;
+          navigator.clipboard.writeText(formLink)
+            .then(() => {
+              UI.showAlert('Lien copié dans le presse-papier ! 📋', 'success');
+            })
+            .catch((err) => {
+              console.error('Erreur copie:', err);
+              // Fallback pour les navigateurs anciens
+              const textarea = document.createElement('textarea');
+              textarea.value = formLink;
+              textarea.style.position = 'fixed';
+              textarea.style.opacity = '0';
+              document.body.appendChild(textarea);
+              textarea.select();
+              try {
+                document.execCommand('copy');
+                UI.showAlert('Lien copié dans le presse-papier ! 📋', 'success');
+              } catch (e) {
+                UI.showAlert('Impossible de copier le lien automatiquement', 'error');
+              }
+              document.body.removeChild(textarea);
+            });
+        });
+      }
+
+      // Bouton déconnexion
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          AdminAPI.logout();
+        });
+      }
+    }
+
+    // 5. Listeners + initialisation
     document.getElementById('monthFilter')
       .addEventListener('change', loadSummary);
 
     (async () => {
       try {
-        // Initialiser l'API FAF
+        // 1. Vérifier l'authentification JWT
+        const admin = await AdminAPI.checkAuth();
+        if (!admin) {
+          // La redirection est gérée par checkAuth()
+          return;
+        }
+
+        // 2. Initialiser le header avec les infos admin
+        initAdminHeader(admin);
+
+        // 3. Initialiser l'API FAF (CSRF token)
         await AdminAPI.init();
-        
+
+        // 4. Charger les mois et le résumé
         const months = await loadMonths();
         if (months.length) {
           document.getElementById('monthFilter').value = months[0].key;

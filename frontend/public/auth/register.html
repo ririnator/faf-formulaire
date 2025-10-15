@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Créer un compte - FAF</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-box">
+      <div class="auth-header">
+        <h1>Créer un compte</h1>
+        <p>Rejoignez FAF et créez votre formulaire personnalisé</p>
+      </div>
+
+      <form id="registerForm" class="auth-form">
+        <div class="form-group">
+          <label for="username">Nom d'utilisateur</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            required
+            pattern="[a-z0-9_-]{3,20}"
+            placeholder="ex: sophie"
+            autocomplete="username"
+          >
+          <small class="form-hint">3-20 caractères, lettres minuscules, chiffres, tirets</small>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            placeholder="sophie@example.com"
+            autocomplete="email"
+          >
+          <small class="form-hint">Pour récupérer votre mot de passe (futur)</small>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            minlength="8"
+            placeholder="••••••••"
+            autocomplete="new-password"
+          >
+          <small class="form-hint">Min 8 caractères, 1 majuscule, 1 chiffre</small>
+          <div id="passwordStrength" class="password-strength"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">Confirmer le mot de passe</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            name="confirmPassword"
+            required
+            minlength="8"
+            placeholder="••••••••"
+            autocomplete="new-password"
+          >
+        </div>
+
+        <!-- Honeypot anti-spam -->
+        <input
+          type="text"
+          name="website"
+          id="website"
+          style="display:none"
+          tabindex="-1"
+          autocomplete="off"
+        >
+
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+          Créer mon compte
+        </button>
+
+        <div id="feedback" class="feedback"></div>
+      </form>
+
+      <div class="auth-footer">
+        <p>Déjà un compte ? <a href="/auth/login.html">Se connecter</a></p>
+      </div>
+    </div>
+
+    <div class="auth-back">
+      <a href="/auth/landing.html" class="btn-back">&larr; Retour à l'accueil</a>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // Initialize register form
+    if (typeof initRegisterForm === 'function') {
+      initRegisterForm();
+    }
+  </script>
+</body>
+</html>

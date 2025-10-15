@@ -16,12 +16,37 @@
 <body class="bg-gray-50 p-6">
   <!-- Skip link for keyboard navigation -->
   <a href="#main-content" class="skip-link">Aller au contenu principal</a>
-  
+
   <div class="container mx-auto">
-    <nav class="admin-nav flex justify-between items-center mb-6" role="navigation" aria-label="Navigation administrateur">
-      <a href="/admin" class="text-blue-600 hover:underline">← Retour au résumé</a>
-      <a href="/logout" class="text-red-600 hover:underline">Déconnexion</a>
-    </nav>
+    <!-- Header avec info admin -->
+    <header class="bg-white shadow-md rounded-lg p-4 mb-6">
+      <div class="flex justify-between items-center flex-wrap gap-4">
+        <div class="flex items-center gap-2">
+          <h2 class="text-xl font-bold text-gray-800">
+            FAF Admin - Gestion
+          </h2>
+          <span class="text-gray-600">|</span>
+          <span class="text-gray-700">
+            Bienvenue, <strong id="adminUsername" class="text-blue-600">...</strong>
+          </span>
+        </div>
+
+        <nav class="flex gap-3 items-center flex-wrap" role="navigation" aria-label="Navigation administrateur">
+          <a href="/admin" class="text-blue-600 hover:underline">← Retour au résumé</a>
+          <button id="myFormBtn"
+                  class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
+                  aria-label="Copier le lien de mon formulaire">
+            📋 Mon formulaire
+          </button>
+          <button id="logoutBtn"
+                  class="text-red-600 hover:text-red-800 font-semibold"
+                  aria-describedby="logout-help">
+            🚪 Déconnexion
+          </button>
+          <div id="logout-help" class="sr-only">Se déconnecter de l'interface admin</div>
+        </nav>
+      </div>
+    </header>
     
     <main id="main-content" role="main">
       <h1 class="text-3xl font-bold text-center mb-6">Toutes les réponses reçues</h1>
@@ -268,13 +293,69 @@
       renderTable(sorted);
     });
 
+    // Gestion du header admin
+    function initAdminHeader(admin) {
+      // Afficher le username
+      const usernameEl = document.getElementById('adminUsername');
+      if (usernameEl) {
+        usernameEl.textContent = admin.username;
+      }
+
+      // Bouton "Mon formulaire" - copie le lien
+      const myFormBtn = document.getElementById('myFormBtn');
+      if (myFormBtn) {
+        myFormBtn.addEventListener('click', () => {
+          const formLink = `${window.location.origin}/form/${admin.username}`;
+          navigator.clipboard.writeText(formLink)
+            .then(() => {
+              UI.showAlert('Lien copié dans le presse-papier ! 📋', 'success');
+            })
+            .catch((err) => {
+              console.error('Erreur copie:', err);
+              // Fallback pour les navigateurs anciens
+              const textarea = document.createElement('textarea');
+              textarea.value = formLink;
+              textarea.style.position = 'fixed';
+              textarea.style.opacity = '0';
+              document.body.appendChild(textarea);
+              textarea.select();
+              try {
+                document.execCommand('copy');
+                UI.showAlert('Lien copié dans le presse-papier ! 📋', 'success');
+              } catch (e) {
+                UI.showAlert('Impossible de copier le lien automatiquement', 'error');
+              }
+              document.body.removeChild(textarea);
+            });
+        });
+      }
+
+      // Bouton déconnexion
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          AdminAPI.logout();
+        });
+      }
+    }
+
     // Initialisation avec chargement asynchrone des utilitaires
     (async () => {
       try {
-        // Charger admin-utils.js en premier
+        // 1. Vérifier l'authentification JWT
+        const admin = await AdminAPI.checkAuth();
+        if (!admin) {
+          // La redirection est gérée par checkAuth()
+          return;
+        }
+
+        // 2. Initialiser le header avec les infos admin
+        initAdminHeader(admin);
+
+        // 3. Initialiser l'API FAF (CSRF token)
         await AdminAPI.init();
-        
-        // Puis initialiser la page
+
+        // 4. Charger la première page
         await loadPage(1);
       } catch (err) {
         console.error('Initialisation admin_gestion.html :', err);

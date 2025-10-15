@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Réponses - FAF Admin</title>
+
+  <!-- Tailwind CSS -->
+  <script>
+    window.process = { env: { NODE_ENV: 'production' } };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" />
+</head>
+<body class="bg-gray-50">
+
+  <!-- Header -->
+  <header class="bg-white shadow-md mb-6">
+    <div class="container mx-auto px-6 py-4">
+      <div class="flex justify-between items-center flex-wrap gap-4">
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-gray-800">FAF Admin - Gestion</h1>
+          <span class="text-gray-400">|</span>
+          <span class="text-gray-700">
+            <strong id="adminUsername" class="text-blue-600">...</strong>
+          </span>
+        </div>
+
+        <nav class="flex gap-3 items-center flex-wrap">
+          <a href="/admin/dashboard.html"
+             class="text-blue-600 hover:underline font-medium">
+            ← Retour au dashboard
+          </a>
+          <button id="myFormBtn"
+                  class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors font-medium">
+            📋 Mon formulaire
+          </button>
+          <button id="logoutBtn"
+                  class="text-red-600 hover:text-red-800 font-semibold transition-colors">
+            🚪 Déconnexion
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-6 pb-8">
+
+    <!-- Alert Message -->
+    <div id="alertMessage" class="hidden mb-6 p-4 rounded-lg" role="alert"></div>
+
+    <h1 class="text-3xl font-bold text-center mb-6">Toutes les réponses reçues</h1>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-12">
+      <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+      <p class="mt-4 text-gray-600">Chargement des réponses...</p>
+    </div>
+
+    <!-- Content -->
+    <div id="contentArea" class="hidden">
+
+      <!-- Filters -->
+      <div class="mb-6 flex gap-4 flex-wrap">
+        <div class="flex-1 min-w-[250px]">
+          <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2">
+            Rechercher par nom
+          </label>
+          <input type="text" id="searchInput"
+                 placeholder="Rechercher..."
+                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label for="monthFilter" class="block text-sm font-medium text-gray-700 mb-2">
+            Filtrer par mois
+          </label>
+          <select id="monthFilter"
+                  class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="all">Tous les mois</option>
+            <!-- Autres options générées dynamiquement -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Nom</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mois</th>
+              <th class="px-6 py-3 text-right text-sm font-semibold text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="responsesTableBody">
+            <!-- Dynamiquement rempli -->
+          </tbody>
+        </table>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12 text-gray-500">
+          <i class="fas fa-inbox text-5xl mb-4"></i>
+          <p class="text-lg">Aucune réponse trouvée</p>
+        </div>
+
+        <!-- Pagination -->
+        <div class="border-t px-6 py-4 flex justify-between items-center">
+          <div class="text-sm text-gray-600">
+            Page <strong id="currentPage">1</strong> / <strong id="totalPages">1</strong>
+            <span class="ml-4">
+              Total : <strong id="totalResponses">0</strong> réponse(s)
+            </span>
+          </div>
+
+          <div class="flex gap-2">
+            <button id="prevBtn"
+                    class="px-4 py-2 border rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              ← Précédent
+            </button>
+            <button id="nextBtn"
+                    class="px-4 py-2 border rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              Suivant →
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal de détails -->
+  <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-gray-800">Détails de la réponse</h2>
+        <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-2xl">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div id="modalContent" class="p-6">
+        <!-- Dynamiquement rempli -->
+      </div>
+
+      <div class="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end gap-3">
+        <button id="deleteResponseBtn"
+                class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded transition-colors font-medium">
+          <i class="fas fa-trash mr-2"></i> Supprimer
+        </button>
+        <button id="closeModalBtn"
+                class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition-colors font-medium">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Module ES6 -->
+  <script type="module">
+    import { AdminAPI, Utils, UI } from '/admin/faf-admin.js';
+
+    // État global
+    let currentAdmin = null;
+    let currentPage = 1;
+    let currentMonth = 'all';
+    let currentSearch = '';
+    let totalPages = 1;
+    let selectedResponseId = null;
+    const limit = 20;
+
+    /**
+     * Charge la liste des réponses
+     */
+    async function loadResponses() {
+      // Construire l'URL avec les filtres
+      let url = `/api/admin/responses?page=${currentPage}&limit=${limit}`;
+
+      if (currentMonth !== 'all') {
+        url += `&month=${currentMonth}`;
+      }
+
+      if (currentSearch) {
+        url += `&search=${encodeURIComponent(currentSearch)}`;
+      }
+
+      // Appeler l'API
+      const data = await AdminAPI.request(url);
+
+      if (!data || !data.success) {
+        UI.showAlert('Erreur lors du chargement des réponses', 'error');
+        return;
+      }
+
+      // Masquer le loading
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('contentArea').classList.remove('hidden');
+
+      // Mettre à jour la pagination
+      updatePagination(data.pagination);
+
+      // Afficher les réponses
+      renderResponses(data.responses);
+    }
+
+    /**
+     * Affiche les réponses dans le tableau
+     */
+    function renderResponses(responses) {
+      const tbody = document.getElementById('responsesTableBody');
+      const emptyState = document.getElementById('emptyState');
+
+      tbody.innerHTML = '';
+
+      if (!responses || responses.length === 0) {
+        tbody.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      tbody.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+
+      responses.forEach(response => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b hover:bg-gray-50 transition-colors';
+
+        // Nom
+        const nameTd = document.createElement('td');
+        nameTd.className = 'px-6 py-4 text-gray-800 font-medium';
+        nameTd.textContent = response.name;
+        tr.appendChild(nameTd);
+
+        // Date
+        const dateTd = document.createElement('td');
+        dateTd.className = 'px-6 py-4 text-gray-600 text-sm';
+        dateTd.textContent = Utils.formatDate(response.created_at);
+        tr.appendChild(dateTd);
+
+        // Mois
+        const monthTd = document.createElement('td');
+        monthTd.className = 'px-6 py-4 text-gray-600 text-sm';
+        monthTd.textContent = Utils.formatMonth(response.month);
+        tr.appendChild(monthTd);
+
+        // Actions
+        const actionsTd = document.createElement('td');
+        actionsTd.className = 'px-6 py-4 text-right space-x-2';
+
+        // Bouton Voir
+        if (response.token) {
+          const viewBtn = document.createElement('a');
+          viewBtn.href = `/view/${response.token}`;
+          viewBtn.target = '_blank';
+          viewBtn.className = 'inline-block bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors';
+          viewBtn.innerHTML = '<i class="fas fa-eye mr-1"></i> Voir';
+          actionsTd.appendChild(viewBtn);
+        }
+
+        // Bouton Détails
+        const detailsBtn = document.createElement('button');
+        detailsBtn.className = 'bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors';
+        detailsBtn.innerHTML = '<i class="fas fa-info-circle mr-1"></i> Détails';
+        detailsBtn.addEventListener('click', () => showDetails(response));
+        actionsTd.appendChild(detailsBtn);
+
+        // Bouton Supprimer
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors';
+        deleteBtn.innerHTML = '<i class="fas fa-trash mr-1"></i> Supprimer';
+        deleteBtn.addEventListener('click', () => deleteResponse(response));
+        actionsTd.appendChild(deleteBtn);
+
+        tr.appendChild(actionsTd);
+        tbody.appendChild(tr);
+      });
+    }
+
+    /**
+     * Met à jour les contrôles de pagination
+     */
+    function updatePagination(pagination) {
+      currentPage = pagination.page;
+      totalPages = pagination.totalPages;
+
+      document.getElementById('currentPage').textContent = pagination.page;
+      document.getElementById('totalPages').textContent = pagination.totalPages;
+      document.getElementById('totalResponses').textContent = pagination.total;
+
+      document.getElementById('prevBtn').disabled = pagination.page <= 1;
+      document.getElementById('nextBtn').disabled = pagination.page >= pagination.totalPages;
+    }
+
+    /**
+     * Affiche les détails d'une réponse dans un modal
+     */
+    function showDetails(response) {
+      selectedResponseId = response.id;
+
+      const modal = document.getElementById('detailsModal');
+      const content = document.getElementById('modalContent');
+
+      content.innerHTML = '';
+
+      // Nom et date
+      const header = document.createElement('div');
+      header.className = 'mb-6';
+      header.innerHTML = `
+        <h3 class="text-xl font-bold text-gray-800">${response.name}</h3>
+        <p class="text-sm text-gray-600">${Utils.formatDate(response.created_at)} - ${Utils.formatMonth(response.month)}</p>
+      `;
+      content.appendChild(header);
+
+      // Questions/Réponses
+      if (response.responses && response.responses.length > 0) {
+        response.responses.forEach((qa, index) => {
+          const qaDiv = document.createElement('div');
+          qaDiv.className = 'mb-4 pb-4 border-b last:border-b-0';
+
+          const questionEl = document.createElement('p');
+          questionEl.className = 'font-semibold text-gray-800 mb-2';
+          questionEl.textContent = `${index + 1}. ${qa.question}`;
+
+          const answerEl = document.createElement('p');
+          answerEl.className = 'text-gray-700 pl-4';
+          answerEl.textContent = qa.answer || '(Pas de réponse)';
+
+          qaDiv.appendChild(questionEl);
+          qaDiv.appendChild(answerEl);
+          content.appendChild(qaDiv);
+        });
+      }
+
+      // Token
+      if (response.token) {
+        const tokenDiv = document.createElement('div');
+        tokenDiv.className = 'mt-6 p-4 bg-gray-100 rounded';
+        tokenDiv.innerHTML = `
+          <p class="text-sm text-gray-600 mb-2"><strong>Lien privé :</strong></p>
+          <a href="/view/${response.token}" target="_blank" class="text-blue-600 hover:underline break-all">
+            ${window.location.origin}/view/${response.token}
+          </a>
+        `;
+        content.appendChild(tokenDiv);
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    /**
+     * Ferme le modal
+     */
+    function closeModal() {
+      document.getElementById('detailsModal').classList.add('hidden');
+      selectedResponseId = null;
+    }
+
+    /**
+     * Supprime une réponse
+     */
+    async function deleteResponse(response) {
+      if (!confirm(`Êtes-vous sûr de vouloir supprimer la réponse de ${response.name} ?`)) {
+        return;
+      }
+
+      const data = await AdminAPI.request(`/api/admin/response/${response.id}`, {
+        method: 'DELETE'
+      });
+
+      if (data && data.success) {
+        UI.showAlert(`Réponse de ${response.name} supprimée avec succès`, 'success');
+        closeModal();
+
+        // Recharger la page courante
+        // Si c'était la dernière réponse de la page et qu'on n'est pas sur la page 1, aller à la page précédente
+        const tbody = document.getElementById('responsesTableBody');
+        if (tbody.children.length === 1 && currentPage > 1) {
+          currentPage--;
+        }
+
+        loadResponses();
+      }
+    }
+
+    /**
+     * Charge les mois disponibles pour le filtre
+     */
+    async function loadMonths() {
+      // On peut réutiliser l'API dashboard pour obtenir les mois
+      const data = await AdminAPI.request('/api/admin/dashboard');
+
+      if (data && data.success && data.months) {
+        const select = document.getElementById('monthFilter');
+
+        data.months.forEach(month => {
+          const option = document.createElement('option');
+          option.value = month;
+          option.textContent = Utils.formatMonth(month);
+          select.appendChild(option);
+        });
+      }
+    }
+
+    /**
+     * Initialisation
+     */
+    (async () => {
+      try {
+        // 1. Vérifier l'authentification
+        currentAdmin = await AdminAPI.checkAuth();
+        if (!currentAdmin) {
+          return;
+        }
+
+        // 2. Initialiser le header
+        UI.initAdminHeader(currentAdmin);
+
+        // 3. Charger les mois disponibles
+        await loadMonths();
+
+        // 4. Charger les réponses
+        await loadResponses();
+
+        // 5. Event listeners
+
+        // Pagination
+        document.getElementById('prevBtn').addEventListener('click', () => {
+          if (currentPage > 1) {
+            currentPage--;
+            loadResponses();
+          }
+        });
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+          if (currentPage < totalPages) {
+            currentPage++;
+            loadResponses();
+          }
+        });
+
+        // Recherche avec debounce
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => {
+            currentSearch = e.target.value.trim();
+            currentPage = 1; // Reset à la page 1
+            loadResponses();
+          }, 500);
+        });
+
+        // Filtre par mois
+        document.getElementById('monthFilter').addEventListener('change', (e) => {
+          currentMonth = e.target.value;
+          currentPage = 1; // Reset à la page 1
+          loadResponses();
+        });
+
+        // Modal
+        document.getElementById('closeModal').addEventListener('click', closeModal);
+        document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+        document.getElementById('deleteResponseBtn').addEventListener('click', async () => {
+          if (selectedResponseId) {
+            const responses = Array.from(document.getElementById('responsesTableBody').children);
+            const responseData = responses.find(tr => {
+              // On récupère la réponse correspondante
+              const nameCell = tr.children[0];
+              return nameCell && nameCell.textContent === document.querySelector('#modalContent h3').textContent;
+            });
+
+            if (responseData) {
+              await deleteResponse({ id: selectedResponseId, name: document.querySelector('#modalContent h3').textContent });
+            }
+          }
+        });
+
+        // Fermer le modal en cliquant à l'extérieur
+        document.getElementById('detailsModal').addEventListener('click', (e) => {
+          if (e.target.id === 'detailsModal') {
+            closeModal();
+          }
+        });
+
+      } catch (err) {
+        console.error('Erreur initialisation gestion.html:', err);
+        UI.showAlert('Erreur lors du chargement de la page', 'error');
+      }
+    })();
+  </script>
+
+</body>
+</html>
