@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin - FAF Multi-Tenant</title>
+
+  <!-- Tailwind CSS -->
+  <script>
+    window.process = { env: { NODE_ENV: 'production' } };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" />
+</head>
+<body class="bg-gray-50">
+
+  <!-- Header -->
+  <header class="bg-white shadow-md">
+    <div class="container mx-auto px-6 py-4">
+      <div class="flex justify-between items-center flex-wrap gap-4">
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-gray-800">FAF Admin</h1>
+          <span class="text-gray-400">|</span>
+          <span class="text-gray-700">
+            Bienvenue, <strong id="adminUsername" class="text-blue-600">...</strong>
+          </span>
+        </div>
+
+        <nav class="flex gap-3 items-center flex-wrap">
+          <button id="myFormBtn"
+                  class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors font-medium">
+            📋 Mon formulaire
+          </button>
+          <button id="logoutBtn"
+                  class="text-red-600 hover:text-red-800 font-semibold transition-colors">
+            🚪 Déconnexion
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-6 py-8">
+
+    <!-- Alert Message -->
+    <div id="alertMessage" class="hidden mb-6 p-4 rounded-lg" role="alert"></div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-12">
+      <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+      <p class="mt-4 text-gray-600">Chargement du dashboard...</p>
+    </div>
+
+    <!-- Dashboard Content (hidden par défaut) -->
+    <div id="dashboardContent" class="hidden">
+
+      <!-- Statistiques -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+        <!-- Total Réponses -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 bg-blue-100 rounded-full p-3">
+              <i class="fas fa-users text-blue-600 text-2xl"></i>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm text-gray-600 font-medium">Réponses reçues</p>
+              <p id="statTotalResponses" class="text-3xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mois actuel -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 bg-green-100 rounded-full p-3">
+              <i class="fas fa-calendar text-green-600 text-2xl"></i>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm text-gray-600 font-medium">Mois actuel</p>
+              <p id="statCurrentMonth" class="text-xl font-bold text-gray-900">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Taux d'évolution -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 bg-purple-100 rounded-full p-3">
+              <i class="fas fa-chart-line text-purple-600 text-2xl"></i>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm text-gray-600 font-medium">Évolution</p>
+              <p id="statResponseRate" class="text-2xl font-bold text-gray-900">-</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Graphique + Réponses récentes -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- Graphique Camembert -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Distribution des réponses</h2>
+          <p class="text-sm text-gray-600 mb-4">Question : <em id="pieChartQuestion">En rapide, comment ça va ?</em></p>
+
+          <div id="noPieDataMessage" class="hidden text-center py-8 text-gray-500">
+            <i class="fas fa-chart-pie text-4xl mb-2"></i>
+            <p>Aucune donnée pour le graphique</p>
+          </div>
+
+          <div id="pieChartContainer" class="relative h-64">
+            <canvas id="pieChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Réponses récentes -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Réponses récentes</h2>
+
+          <div id="noResponsesMessage" class="hidden text-center py-8 text-gray-500">
+            <i class="fas fa-inbox text-4xl mb-2"></i>
+            <p>Aucune réponse reçue pour le moment</p>
+          </div>
+
+          <ul id="recentResponsesList" class="space-y-3">
+            <!-- Dynamiquement rempli via JS -->
+          </ul>
+
+          <div class="mt-6 text-center">
+            <a href="/admin/gestion.html"
+               class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition-colors font-medium">
+              Voir toutes les réponses →
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Filtre par mois -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Filtrer par mois</h2>
+
+        <div class="flex flex-wrap gap-2" id="monthFilters">
+          <button class="month-filter-btn active px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                  data-month="all">
+            Tous les mois
+          </button>
+          <!-- Autres boutons générés dynamiquement -->
+        </div>
+      </div>
+
+      <!-- État admin -->
+      <div id="adminStatusAlert" class="mt-6 hidden p-4 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-lg">
+        <i class="fas fa-info-circle mr-2"></i>
+        <strong>Note :</strong> Vous n'avez pas encore rempli votre propre formulaire pour ce mois.
+        <a href="#" id="fillFormLink" class="underline ml-2">Remplir maintenant</a>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Module ES6 -->
+  <script type="module">
+    import { AdminAPI, Utils, UI, Charts } from '/admin/faf-admin.js';
+
+    // État global
+    let currentAdmin = null;
+    let currentMonth = 'all';
+    let dashboardData = null;
+    let pieChartInstance = null;
+
+    /**
+     * Charge les données du dashboard
+     * @param {string} month - Mois à filtrer (ex: "2025-10") ou "all"
+     */
+    async function loadDashboard(month = 'all') {
+      // Construire l'URL
+      const endpoint = month === 'all'
+        ? '/api/admin/dashboard'
+        : `/api/admin/dashboard?month=${month}`;
+
+      // Appeler l'API
+      const data = await AdminAPI.request(endpoint);
+
+      if (!data || !data.success) {
+        UI.showAlert('Erreur lors du chargement du dashboard', 'error');
+        return;
+      }
+
+      dashboardData = data;
+      currentMonth = month;
+
+      // Afficher le contenu
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('dashboardContent').classList.remove('hidden');
+
+      // Mettre à jour les stats
+      updateStats(data.stats);
+
+      // Mettre à jour le graphique
+      updatePieChart(data.stats.question1Distribution);
+
+      // Mettre à jour les réponses récentes
+      updateRecentResponses(data.responses);
+
+      // Mettre à jour les filtres de mois
+      updateMonthFilters(data.months);
+
+      // Afficher l'alerte si l'admin n'a pas rempli
+      updateAdminStatus(data.adminHasFilled);
+    }
+
+    /**
+     * Met à jour les statistiques
+     */
+    function updateStats(stats) {
+      document.getElementById('statTotalResponses').textContent = stats.totalResponses || 0;
+      document.getElementById('statCurrentMonth').textContent = Utils.formatMonth(stats.currentMonth || '');
+
+      const rateEl = document.getElementById('statResponseRate');
+      const rate = stats.responseRate || '-';
+      rateEl.textContent = rate;
+
+      // Coloration selon le taux
+      if (rate.startsWith('+')) {
+        rateEl.classList.remove('text-red-600');
+        rateEl.classList.add('text-green-600');
+      } else if (rate.startsWith('-')) {
+        rateEl.classList.remove('text-green-600');
+        rateEl.classList.add('text-red-600');
+      } else {
+        rateEl.classList.remove('text-green-600', 'text-red-600');
+      }
+    }
+
+    /**
+     * Met à jour le graphique camembert
+     */
+    function updatePieChart(distribution) {
+      const hasData = distribution && Object.keys(distribution).length > 0;
+
+      if (!hasData) {
+        document.getElementById('pieChartContainer').classList.add('hidden');
+        document.getElementById('noPieDataMessage').classList.remove('hidden');
+
+        // Détruire le graphique existant
+        if (pieChartInstance) {
+          pieChartInstance.destroy();
+          pieChartInstance = null;
+        }
+        return;
+      }
+
+      // Afficher le container
+      document.getElementById('pieChartContainer').classList.remove('hidden');
+      document.getElementById('noPieDataMessage').classList.add('hidden');
+
+      // Détruire l'ancien graphique si existant
+      if (pieChartInstance) {
+        pieChartInstance.destroy();
+      }
+
+      // Créer le nouveau graphique
+      pieChartInstance = Charts.createPieChart('pieChart', distribution);
+    }
+
+    /**
+     * Met à jour la liste des réponses récentes
+     */
+    function updateRecentResponses(responses) {
+      const listEl = document.getElementById('recentResponsesList');
+      const noDataEl = document.getElementById('noResponsesMessage');
+
+      if (!responses || responses.length === 0) {
+        listEl.classList.add('hidden');
+        noDataEl.classList.remove('hidden');
+        return;
+      }
+
+      listEl.classList.remove('hidden');
+      noDataEl.classList.add('hidden');
+
+      // Vider la liste
+      listEl.innerHTML = '';
+
+      // Afficher max 5 réponses
+      const displayResponses = responses.slice(0, 5);
+
+      displayResponses.forEach(response => {
+        const li = document.createElement('li');
+        li.className = 'border-l-4 border-blue-500 pl-4 py-2 hover:bg-gray-50 transition-colors';
+
+        const nameEl = document.createElement('p');
+        nameEl.className = 'font-semibold text-gray-800';
+        nameEl.textContent = response.name;
+
+        const dateEl = document.createElement('p');
+        dateEl.className = 'text-sm text-gray-600';
+        dateEl.textContent = Utils.formatDate(response.createdAt);
+
+        const previewEl = document.createElement('p');
+        previewEl.className = 'text-sm text-gray-500 italic mt-1';
+        previewEl.textContent = Utils.truncate(response.preview, 60);
+
+        li.appendChild(nameEl);
+        li.appendChild(dateEl);
+        li.appendChild(previewEl);
+        listEl.appendChild(li);
+      });
+    }
+
+    /**
+     * Met à jour les filtres de mois
+     */
+    function updateMonthFilters(months) {
+      const container = document.getElementById('monthFilters');
+
+      // Garder le bouton "Tous les mois"
+      const allBtn = container.querySelector('[data-month="all"]');
+      container.innerHTML = '';
+      container.appendChild(allBtn);
+
+      // Ajouter les autres mois
+      if (months && months.length > 0) {
+        months.forEach(month => {
+          const btn = document.createElement('button');
+          btn.className = 'month-filter-btn px-4 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors';
+          btn.dataset.month = month;
+          btn.textContent = Utils.formatMonth(month);
+
+          btn.addEventListener('click', () => {
+            // Retirer la classe active de tous les boutons
+            container.querySelectorAll('.month-filter-btn').forEach(b => {
+              b.classList.remove('active', 'bg-blue-500', 'text-white');
+              b.classList.add('bg-gray-200', 'text-gray-800');
+            });
+
+            // Ajouter la classe active au bouton cliqué
+            btn.classList.add('active', 'bg-blue-500', 'text-white');
+            btn.classList.remove('bg-gray-200', 'text-gray-800');
+
+            // Recharger le dashboard
+            loadDashboard(month);
+          });
+
+          container.appendChild(btn);
+        });
+      }
+
+      // Réappliquer la classe active au bon bouton
+      const activeBtn = container.querySelector(`[data-month="${currentMonth}"]`);
+      if (activeBtn) {
+        activeBtn.classList.add('active', 'bg-blue-500', 'text-white');
+        activeBtn.classList.remove('bg-gray-200', 'text-gray-800');
+      }
+    }
+
+    /**
+     * Met à jour l'alerte si l'admin n'a pas rempli
+     */
+    function updateAdminStatus(adminHasFilled) {
+      const alertEl = document.getElementById('adminStatusAlert');
+      const linkEl = document.getElementById('fillFormLink');
+
+      if (!adminHasFilled) {
+        alertEl.classList.remove('hidden');
+        linkEl.href = `/form/${currentAdmin.username}`;
+      } else {
+        alertEl.classList.add('hidden');
+      }
+    }
+
+    /**
+     * Initialisation au chargement de la page
+     */
+    (async () => {
+      try {
+        // 1. Vérifier l'authentification JWT
+        currentAdmin = await AdminAPI.checkAuth();
+        if (!currentAdmin) {
+          // La redirection est gérée par checkAuth()
+          return;
+        }
+
+        // 2. Initialiser le header avec les infos admin
+        UI.initAdminHeader(currentAdmin);
+
+        // 3. Charger le dashboard
+        await loadDashboard('all');
+
+        // 4. Event listener pour le bouton "Tous les mois"
+        document.querySelector('[data-month="all"]').addEventListener('click', () => {
+          // Retirer la classe active de tous les boutons
+          document.querySelectorAll('.month-filter-btn').forEach(b => {
+            b.classList.remove('active', 'bg-blue-500', 'text-white');
+            b.classList.add('bg-gray-200', 'text-gray-800');
+          });
+
+          // Ajouter la classe active au bouton cliqué
+          const btn = document.querySelector('[data-month="all"]');
+          btn.classList.add('active', 'bg-blue-500', 'text-white');
+          btn.classList.remove('bg-gray-200', 'text-gray-800');
+
+          // Recharger le dashboard
+          loadDashboard('all');
+        });
+
+      } catch (err) {
+        console.error('Erreur initialisation dashboard:', err);
+        UI.showAlert('Erreur lors du chargement du dashboard. Veuillez recharger la page.', 'error');
+      }
+    })();
+  </script>
+
+</body>
+</html>

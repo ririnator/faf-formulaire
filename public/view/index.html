@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Vos réponses</title>
+  <link rel="stylesheet" href="/css/view.css">
+</head>
+<body>
+  <div class="match-header">
+    <div class="team team-left">
+      <div class="team-name" id="user-name"></div>
+    </div>
+    <div class="vs-section">
+      <div class="match-info" id="month"></div>
+    </div>
+    <div class="team team-right">
+      <div class="team-name" id="admin-name"></div>
+    </div>
+  </div>
+  
+  <div id="qa-container"></div>
+
+  <!-- Modal pour afficher les images en grand -->
+  <div id="imageModal" style="display:none; position:fixed; z-index:1000; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); cursor:pointer; overflow:hidden;">
+    <img id="modalImage" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); max-width:90%; max-height:90%; border-radius:8px; cursor:default; transition: all 0.3s ease;">
+    <span id="closeModal" style="position:absolute; top:20px; right:35px; color:#f1f1f1; font-size:40px; font-weight:bold; cursor:pointer; background:rgba(0,0,0,0.5); border-radius:50%; width:50px; height:50px; display:flex; align-items:center; justify-content:center; user-select:none; z-index:1002;">&times;</span>
+    <div id="modalLoading" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#f1f1f1; font-size:18px; display:none;">Chargement...</div>
+  </div>
+
+  <script>
+    // Fonction pour décoder uniquement les entités HTML sûres (liste blanche)
+    function unescapeHTML(text) {
+      if (!text || typeof text !== 'string') return text || '';
+      
+      // Approche liste blanche : décoder uniquement les entités communes et sûres
+      const safeEntityMap = {
+        '&#x27;': "'",
+        '&#39;': "'",
+        '&apos;': "'",
+        '&quot;': '"',
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&nbsp;': ' ',
+        '&eacute;': 'é',
+        '&egrave;': 'è',
+        '&ecirc;': 'ê',
+        '&agrave;': 'à',
+        '&acirc;': 'â',
+        '&ugrave;': 'ù',
+        '&ucirc;': 'û',
+        '&icirc;': 'î',
+        '&ocirc;': 'ô',
+        '&ccedil;': 'ç'
+      };
+      
+      let result = text;
+      for (const [entity, char] of Object.entries(safeEntityMap)) {
+        result = result.replace(new RegExp(entity, 'g'), char);
+      }
+      
+      return result;
+    }
+
+    // Fonction pour formater le mois en français
+    function formatMonth(monthString) {
+      if (!monthString || typeof monthString !== 'string') return monthString || '';
+      
+      const monthNames = {
+        '01': 'Janvier',
+        '02': 'Février', 
+        '03': 'Mars',
+        '04': 'Avril',
+        '05': 'Mai',
+        '06': 'Juin',
+        '07': 'Juillet',
+        '08': 'Août',
+        '09': 'Septembre',
+        '10': 'Octobre',
+        '11': 'Novembre',
+        '12': 'Décembre'
+      };
+      
+      // Format attendu: "YYYY-MM" -> "Mois YYYY"
+      const parts = monthString.split('-');
+      if (parts.length === 2) {
+        const year = parts[0];
+        const month = parts[1];
+        const monthName = monthNames[month];
+        
+        if (monthName) {
+          return `${monthName} ${year}`;
+        }
+      }
+      
+      // Si le format n'est pas reconnu, retourner tel quel
+      return monthString;
+    }
+
+    // Optimisation performance mobile : détecter mobile au début (globalement accessible)
+    const isMobile = window.innerWidth <= 600;
+    
+    (async () => {
+      try {
+        const token = location.pathname.split('/').pop();
+        if (!token || token.length < 10) {
+          throw new Error('Token invalide dans l\'URL');
+        }
+        
+        const res = await fetch(`/api/view/${token}`);
+        
+        // Vérifier la réponse HTTP
+        if (!res.ok) {
+          if (res.status === 404) {
+            throw new Error('Lien invalide ou expiré');
+          } else if (res.status === 500) {
+            throw new Error('Erreur serveur. Veuillez réessayer plus tard.');
+          } else {
+            throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+          }
+        }
+        
+        // Parser le JSON avec gestion d'erreur
+        let data;
+        try {
+          data = await res.json();
+        } catch (jsonError) {
+          console.error('Erreur de parsing JSON:', jsonError);
+          throw new Error('Réponse invalide du serveur');
+        }
+        
+        // Valider la structure des données
+        if (!data || typeof data !== 'object') {
+          throw new Error('Format de données invalide');
+        }
+        
+        const { user, admin, adminName } = data;
+        
+        // Vérifier que l'utilisateur existe
+        if (!user || !user.responses || !Array.isArray(user.responses)) {
+          throw new Error('Données utilisateur manquantes ou invalides');
+        }
+        
+        // Mettre à jour l'interface de manière sécurisée
+        const userNameEl = document.getElementById('user-name');
+        const adminNameEl = document.getElementById('admin-name');
+        const monthEl = document.getElementById('month');
+        
+        if (userNameEl) userNameEl.textContent = user.name || 'Utilisateur';
+        if (adminNameEl) adminNameEl.textContent = adminName || 'Admin';
+        if (monthEl) monthEl.textContent = formatMonth(user.month);
+
+      // Configuration du regroupement des questions
+      const questionGroups = [
+        { name: "Audit mental", questions: [0, 1] }, // Q1-Q2: Comment ça va + détails
+        { name: "Check personnel", questions: [2] }, // Q3: Photo de toi
+        { name: "Culture & flex", questions: [3, 4, 6] }, // Q4: Truc cool, Q5: Reaction pic, Q7: Découverte culturelle  
+        { name: "Réflexions & conversations", questions: [5, 7] }, // Q6: Conversation intéressante, Q8: Habitudes/routines
+        { name: "Appel à un ami", questions: [8] }, // Q9: Problème/opinions tierces
+        { name: "Connexion à la nature", questions: [9] }, // Q10: Photo avec herbe/arbre
+        { name: "Champ libre", questions: [10] } // Q11: Champ libre (optionnel)
+      ];
+
+      // Fonction pour détecter et afficher une image sécurisée
+      function createAnswerContent(answer) {
+        const container = document.createElement('span');
+        
+        // 🔒 SECURITY: Only allow trusted image domains (whitelist approach)
+        const TRUSTED_IMAGE_DOMAINS = [
+          'res.cloudinary.com',           // Cloudinary CDN (notre service upload)
+          'images.unsplash.com',          // Unsplash (si utilisé pour placeholder)
+          'via.placeholder.com',          // Placeholder service (si nécessaire)
+          // Ajouter d'autres domaines de confiance si nécessaire
+        ];
+        
+        // Strict validation: URL must be HTTPS and from trusted domain
+        function isTrustedImageUrl(url) {
+          if (!url || typeof url !== 'string') return false;
+          
+          // Vérifier d'abord si ça ressemble à une URL avant d'essayer de la parser
+          if (!url.startsWith('http://') && !url.startsWith('https://')) return false;
+          
+          try {
+            const urlObj = new URL(url);
+            
+            // 1. Force HTTPS only
+            if (urlObj.protocol !== 'https:') return false;
+            
+            // 2. Check if domain is in whitelist
+            const hostname = urlObj.hostname.toLowerCase();
+            const isTrustedDomain = TRUSTED_IMAGE_DOMAINS.some(domain => 
+              hostname === domain || hostname.endsWith('.' + domain)
+            );
+            if (!isTrustedDomain) return false;
+            
+            // 3. Special handling for Cloudinary URLs (don't always have extensions)
+            const pathname = urlObj.pathname;
+            if (hostname === 'res.cloudinary.com' || hostname.endsWith('.cloudinary.com')) {
+              // Cloudinary URLs follow pattern: /cloud_name/image/upload/...
+              // They're trusted if they match the domain, regardless of extension
+              if (!pathname.includes('/image/upload/')) return false;
+            } else {
+              // For other domains, verify file extension for images (case insensitive)
+              const pathLower = pathname.toLowerCase();
+              const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+              const hasValidExtension = validExtensions.some(ext => 
+                pathLower.includes(ext)
+              );
+              if (!hasValidExtension) return false;
+            }
+            
+            return true;
+          } catch (e) {
+            // Invalid URL format
+            return false;
+          }
+        }
+        
+        if ((answer.startsWith('http://') || answer.startsWith('https://')) && isTrustedImageUrl(answer)) {
+          const img = document.createElement('img');
+          img.src = answer;
+          img.alt = 'Image partagée';
+          // Pas de styles inline pour permettre au CSS responsive de s'appliquer
+          img.className = 'response-image';
+          
+          // 🔒 SECURITY: Enhanced error handling without exposing URLs
+          img.onerror = function() {
+            // Remplacer l'image par un message d'erreur
+            const errorMsg = document.createElement('em');
+            errorMsg.textContent = 'Image temporairement indisponible';
+            errorMsg.style.color = '#888';
+            this.replaceWith(errorMsg);
+          };
+          
+          // 🔒 SECURITY: Add CSP-friendly loading attribute
+          img.loading = 'lazy';
+          
+          // Optimisation mobile : observer pour mesurer les performances
+          if (isMobile && 'IntersectionObserver' in window) {
+            const imgObserver = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                  // Image devient visible, on peut déclencher des optimisations si nécessaire
+                  entry.target.classList.add('visible');
+                  imgObserver.unobserve(entry.target);
+                }
+              });
+            });
+            imgObserver.observe(img);
+          }
+          
+          // Ajouter la classe pour la délégation d'événement
+          img.className = 'response-image';
+          img.style.cursor = 'pointer';
+          
+          container.appendChild(img);
+        } else {
+          container.textContent = answer;
+        }
+        
+        return container;
+      }
+
+      // Affichage en format 1vs1 - Questions au centre, réponses de chaque côté
+      questionGroups.forEach((group, groupIndex) => {
+        const groupBlock = document.createElement('div');
+        groupBlock.className = 'question-group';
+        
+        // Mobile : ne charger que le premier groupe initialement
+        if (isMobile && groupIndex > 0) {
+          groupBlock.style.display = 'none';
+          groupBlock.dataset.loaded = 'false';
+        }
+
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'group-title';
+        groupTitle.textContent = group.name;
+        groupBlock.appendChild(groupTitle);
+
+        group.questions.forEach(questionIndex => {
+          // Vérifier que l'index est valide et que la réponse existe
+          if (questionIndex >= 0 && questionIndex < user.responses.length && user.responses[questionIndex]) {
+            const q = user.responses[questionIndex];
+            
+            // Décoder les entités HTML de manière sécurisée avec validation
+            const question = q.question ? unescapeHTML(q.question) : 'Question non disponible';
+            const answer = q.answer ? unescapeHTML(q.answer) : '';
+
+            // Container 1vs1 pour cette question
+            const matchContainer = document.createElement('div');
+            matchContainer.className = 'match-container';
+
+            // Réponse utilisateur (gauche)
+            const userSide = document.createElement('div');
+            userSide.className = 'player-side user-side';
+            
+            const userAnswer = document.createElement('div');
+            userAnswer.className = 'answer-content';
+            userAnswer.appendChild(createAnswerContent(answer));
+            userSide.appendChild(userAnswer);
+
+            // Question au centre
+            const questionCenter = document.createElement('div');
+            questionCenter.className = 'question-center';
+            
+            const questionNumber = document.createElement('div');
+            questionNumber.className = 'question-number';
+            questionNumber.textContent = `Q${questionIndex+1}`;
+            
+            const questionText = document.createElement('div');
+            questionText.className = 'question-text';
+            questionText.textContent = question;
+            
+            questionCenter.appendChild(questionNumber);
+            questionCenter.appendChild(questionText);
+
+            // Réponse admin (droite)
+            const adminSide = document.createElement('div');
+            adminSide.className = 'player-side admin-side';
+            
+            const adminAnswer = document.createElement('div');
+            adminAnswer.className = 'answer-content';
+            
+            // Vérifier soigneusement l'existence de admin et de ses propriétés
+            if (admin && admin.responses && Array.isArray(admin.responses) && 
+                questionIndex < admin.responses.length && admin.responses[questionIndex] &&
+                admin.responses[questionIndex].answer) {
+              const adminAnswerText = unescapeHTML(admin.responses[questionIndex].answer);
+              adminAnswer.appendChild(createAnswerContent(adminAnswerText));
+            } else {
+              const emElement = document.createElement('em');
+              emElement.textContent = 'Pas encore répondu';
+              emElement.className = 'no-answer';
+              adminAnswer.appendChild(emElement);
+            }
+            adminSide.appendChild(adminAnswer);
+
+            // Assemblage du match
+            matchContainer.appendChild(userSide);
+            matchContainer.appendChild(questionCenter);
+            matchContainer.appendChild(adminSide);
+            
+            groupBlock.appendChild(matchContainer);
+          }
+        });
+
+        document.getElementById('qa-container').appendChild(groupBlock);
+      });
+
+      // Lazy loading des groupes sur mobile (utilise la même détection)
+      if (isMobile) {
+        let loadedGroups = 1; // Premier groupe déjà chargé
+        const allGroups = document.querySelectorAll('.question-group');
+        
+        function loadNextGroup() {
+          if (loadedGroups < allGroups.length) {
+            const nextGroup = allGroups[loadedGroups];
+            nextGroup.style.display = 'block';
+            nextGroup.dataset.loaded = 'true';
+            loadedGroups++;
+          }
+        }
+        
+        // Charger le groupe suivant quand on approche du bas
+        let loadingNext = false;
+        
+        // Vérifier immédiatement si la page est trop courte pour scroller
+        setTimeout(() => {
+          const windowHeight = window.innerHeight;
+          const documentHeight = document.documentElement.scrollHeight;
+          
+          // Si la page ne défile pas (hauteur insuffisante), charger tous les groupes
+          if (documentHeight <= windowHeight + 100) {
+            while (loadedGroups < allGroups.length) {
+              loadNextGroup();
+            }
+            return;
+          }
+        }, 200); // Laisser le temps au DOM de se mettre en place
+        
+        window.addEventListener('scroll', () => {
+          if (loadingNext) return;
+          
+          const scrollTop = window.scrollY;
+          const windowHeight = window.innerHeight;
+          const documentHeight = document.documentElement.scrollHeight;
+          
+          // Charger quand il reste 200px à faire défiler
+          if (scrollTop + windowHeight >= documentHeight - 200) {
+            loadingNext = true;
+            setTimeout(() => {
+              loadNextGroup();
+              loadingNext = false;
+            }, 100); // Petite pause pour éviter le spam
+          }
+        });
+      }
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+        
+        // Afficher un message d'erreur détaillé à l'utilisateur
+        const errorContainer = document.createElement('div');
+        errorContainer.style.cssText = 'padding: 20px; text-align: center; color: #d32f2f; font-family: system-ui, -apple-system, sans-serif;';
+        
+        const errorTitle = document.createElement('h2');
+        errorTitle.textContent = '⚠️ Erreur de chargement';
+        errorTitle.style.marginBottom = '10px';
+        
+        const errorMessage = document.createElement('p');
+        errorMessage.textContent = error.message || 'Une erreur inattendue s\'est produite';
+        errorMessage.style.marginBottom = '20px';
+        
+        const retryButton = document.createElement('button');
+        retryButton.textContent = 'Réessayer';
+        retryButton.style.cssText = 'padding: 10px 20px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;';
+        retryButton.onclick = () => location.reload();
+        
+        errorContainer.appendChild(errorTitle);
+        errorContainer.appendChild(errorMessage);
+        errorContainer.appendChild(retryButton);
+        
+        // Nettoyer et afficher l'erreur
+        document.body.innerHTML = '';
+        document.body.appendChild(errorContainer);
+        return; // Sortir si erreur
+      }
+
+      // ===== MODAL SIMPLE SANS PANZOOM =====
+      const modal = document.getElementById('imageModal');
+      const modalImg = document.getElementById('modalImage');
+      const closeBtn = document.getElementById('closeModal');
+      const qaContainer = document.getElementById('qa-container');
+
+      function openModal(imageSrc) {
+        modal.style.display = 'block';
+        modalImg.src = imageSrc;
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeModal() {
+        modal.style.display = 'none';
+        modalImg.src = '';
+        document.body.style.overflow = '';
+      }
+
+      // Clic sur image = ouvrir modal
+      if (qaContainer) {
+        qaContainer.addEventListener('click', (e) => {
+          if (e.target.classList && e.target.classList.contains('response-image')) {
+            openModal(e.target.src);
+          }
+        });
+      }
+
+      // Fermer modal
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeModal();
+        });
+      }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'block') closeModal();
+      });
+    })();
+  </script>
+</body>
+</html>

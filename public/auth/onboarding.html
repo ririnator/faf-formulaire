@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenue - FAF</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <div class="onboarding-container">
+    <div class="onboarding-box">
+      <div class="success-icon-large">✅</div>
+
+      <h1 class="onboarding-title">Félicitations, <span id="username"></span> !</h1>
+      <p class="onboarding-subtitle">Votre compte a été créé avec succès.</p>
+
+      <div class="form-link-box">
+        <h2>Votre formulaire unique</h2>
+        <p class="form-link-description">Partagez ce lien avec vos amis pour qu'ils puissent remplir votre formulaire mensuel</p>
+        <div class="link-display">
+          <input
+            type="text"
+            id="formLink"
+            readonly
+            value=""
+          >
+          <button id="copyBtn" class="btn btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+            </svg>
+            Copier
+          </button>
+        </div>
+        <p class="copy-feedback" id="copyFeedback" style="display:none">
+          ✓ Lien copié dans le presse-papiers !
+        </p>
+      </div>
+
+      <div class="instructions">
+        <h2>Prochaines étapes</h2>
+        <ol class="steps-list">
+          <li>
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h3>Remplissez votre formulaire</h3>
+              <p>Soyez le premier à répondre pour que vos amis puissent se comparer à vous.</p>
+              <a href="#" id="fillFormBtn" class="btn btn-primary">Remplir mon formulaire</a>
+            </div>
+          </li>
+          <li>
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h3>Partagez votre lien</h3>
+              <p>Envoyez le lien ci-dessus à vos amis via WhatsApp, email, SMS, etc.</p>
+            </div>
+          </li>
+          <li>
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h3>Consultez les réponses</h3>
+              <p>Dès que vos amis répondent, visualisez leurs réponses dans votre dashboard.</p>
+              <a href="/admin/dashboard.html" class="btn btn-secondary">Aller au dashboard</a>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get username from localStorage (set during registration)
+    const username = localStorage.getItem('faf_username');
+
+    if (!username) {
+      // Redirect to login if no username found
+      window.location.href = '/auth/login.html';
+    } else {
+      // Display username
+      document.getElementById('username').textContent = username;
+
+      // Set form link
+      const formLink = `${window.location.origin}/form/${username}`;
+      document.getElementById('formLink').value = formLink;
+      document.getElementById('fillFormBtn').href = `/form/${username}`;
+    }
+
+    // Copy to clipboard functionality
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      const input = document.getElementById('formLink');
+      input.select();
+      input.setSelectionRange(0, 99999); // For mobile devices
+
+      try {
+        // Modern API
+        navigator.clipboard.writeText(input.value).then(() => {
+          showCopyFeedback();
+        }).catch(() => {
+          // Fallback for older browsers
+          document.execCommand('copy');
+          showCopyFeedback();
+        });
+      } catch (err) {
+        // Fallback for very old browsers
+        document.execCommand('copy');
+        showCopyFeedback();
+      }
+    });
+
+    function showCopyFeedback() {
+      const feedback = document.getElementById('copyFeedback');
+      feedback.style.display = 'block';
+      setTimeout(() => {
+        feedback.style.display = 'none';
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
