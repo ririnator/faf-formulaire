@@ -204,36 +204,48 @@
           }
         });
       } else {
-        // Liste des réponses
-        const list = document.createElement('div');
-        list.className = "space-y-3";
+        // Liste des réponses (format legacy)
+        const list = document.createElement('ul');
+        list.className = "list-disc pl-5";
 
         answers.forEach(a => {
-          const item = document.createElement('div');
-          item.className = "flex items-start gap-3 border-b border-gray-100 pb-3";
+          const li = document.createElement('li');
 
-          const nameSpan = document.createElement('span');
-          nameSpan.className = "font-semibold text-black min-w-[120px]";
-          nameSpan.textContent = a.name + ':';
+          // Décoder la réponse
+          const decodedAnswer = Utils.unescapeHTML(a.answer);
 
-          const answerSpan = document.createElement('span');
-          answerSpan.className = "text-gray-700 flex-1";
+          // Vérifier si c'est une image Cloudinary
+          const isImage = (decodedAnswer.startsWith('http://') || decodedAnswer.startsWith('https://'))
+            && decodedAnswer.includes('res.cloudinary.com');
 
-          // Vérifier si c'est une image
-          if (typeof a.answer === 'string' && a.answer.includes('res.cloudinary.com')) {
+          if (isImage) {
+            // Miniature cliquable (style legacy)
             const img = document.createElement('img');
-            img.src = a.answer;
-            img.alt = 'Réponse image';
-            img.className = 'max-w-xs rounded shadow-md cursor-pointer hover:opacity-90 transition';
-            img.onclick = () => openLightbox(a.answer, a.name);
-            answerSpan.appendChild(img);
+            img.setAttribute('src', decodedAnswer);
+            img.setAttribute('alt', `Image de ${a.name}`);
+            img.className = 'w-32 h-32 object-cover inline-block mr-2 border cursor-pointer';
+            img.setAttribute('crossorigin', 'anonymous');
+            img.setAttribute('loading', 'eager');
+
+            // Gestion d'erreur
+            img.onerror = function() {
+              console.warn('Image failed to load:', decodedAnswer);
+              this.style.display = 'none';
+              const errorText = document.createTextNode(`${a.name} : [Image indisponible]`);
+              li.appendChild(errorText);
+            };
+
+            // Ouverture lightbox
+            img.onclick = () => openLightbox(decodedAnswer, a.name);
+
+            li.appendChild(img);
+            li.appendChild(document.createTextNode(` ${a.name}`));
           } else {
-            answerSpan.textContent = Utils.unescapeHTML(a.answer);
+            // Afficher le texte décodé
+            li.textContent = `${a.name} : ${decodedAnswer}`;
           }
 
-          item.appendChild(nameSpan);
-          item.appendChild(answerSpan);
-          list.appendChild(item);
+          list.appendChild(li);
         });
 
         card.appendChild(list);
