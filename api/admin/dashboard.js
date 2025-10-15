@@ -94,9 +94,14 @@ async function handler(req, res) {
     // 7b. Agréger toutes les réponses par question (nouveau)
     const questionsSummary = [];
     if (friendResponses.length > 0) {
-      // Extraire toutes les questions à partir de la première réponse
-      const firstResponse = friendResponses[0];
-      const questions = firstResponse.responses || [];
+      // Trouver la réponse avec le plus de questions (pour capturer toutes les questions)
+      const responseWithMostQuestions = friendResponses.reduce((max, r) => {
+        const rLength = (r.responses || []).length;
+        const maxLength = (max.responses || []).length;
+        return rLength > maxLength ? r : max;
+      }, friendResponses[0]);
+
+      const questions = responseWithMostQuestions.responses || [];
 
       questions.forEach((q, index) => {
         const allAnswersForQuestion = friendResponses
