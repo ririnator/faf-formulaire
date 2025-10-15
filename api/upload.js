@@ -9,10 +9,11 @@ const cloudinary = require('cloudinary').v2;
 const { formidable } = require('formidable');
 
 // Configuration Cloudinary depuis les variables d'environnement
+// Note: Trim les valeurs pour éviter les espaces parasites
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+  api_key: process.env.CLOUDINARY_API_KEY?.trim(),
+  api_secret: process.env.CLOUDINARY_API_SECRET?.trim()
 });
 
 /**
@@ -30,8 +31,21 @@ async function handler(req, res) {
 
   try {
     // Debug: Vérifier configuration Cloudinary
-    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-      console.error('⛔️ Variables Cloudinary manquantes');
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+    const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+    const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+
+    console.log('🔑 Cloudinary config check:', {
+      hasCloudName: !!cloudName,
+      hasApiKey: !!apiKey,
+      hasApiSecret: !!apiSecret,
+      cloudNameLength: cloudName?.length,
+      apiKeyLength: apiKey?.length,
+      apiSecretLength: apiSecret?.length
+    });
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      console.error('⛔️ Variables Cloudinary manquantes ou vides');
       return res.status(500).json({
         success: false,
         message: 'Configuration Cloudinary incomplète',
