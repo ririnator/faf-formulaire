@@ -164,14 +164,25 @@
       // Si c'est la question du pie, afficher un graphique
       if (question === PIE_QUESTION) {
         const chartData = {};
+        const userMap = {}; // Pour tracker qui a voté pour quoi
+
         answers.forEach(a => {
           const decodedAnswer = Utils.unescapeHTML(a.answer);
           chartData[decodedAnswer] = (chartData[decodedAnswer] || 0) + 1;
+
+          // Ajouter l'utilisateur à la map
+          if (!userMap[decodedAnswer]) {
+            userMap[decodedAnswer] = [];
+          }
+          userMap[decodedAnswer].push(a.name);
         });
 
-        // Générer les couleurs selon les réponses (comme dans l'ancienne version)
-        const labels = Object.keys(chartData);
-        const backgroundColor = labels.map(ans => {
+        // Générer les labels avec les noms des utilisateurs
+        const labels = Object.keys(chartData).map(ans => {
+          return `${ans} (${userMap[ans].join(', ')})`;
+        });
+
+        const backgroundColor = Object.keys(chartData).map(ans => {
           if (ans === "ça va") return "rgba(50, 101, 204, 1)";
           else if (ans === "WE'RE BARACK") return "rgba(13, 150, 24, 1)";
           else if (ans === "ITS JOEVER") return "rgba(220, 55, 17, 1)";
