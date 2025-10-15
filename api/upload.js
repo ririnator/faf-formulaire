@@ -2,12 +2,11 @@
  * API Route: POST /api/upload
  *
  * Upload d'image vers Cloudinary avec validation MIME et sécurité
- * Utilise multer + multer-storage-cloudinary pour gérer l'upload
+ * Utilise formidable pour Vercel serverless compatibility
  */
 
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
+const formidable = require('formidable');
 
 // Configuration Cloudinary depuis les variables d'environnement
 cloudinary.config({
@@ -16,38 +15,9 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Configuration du storage Cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'faf-images',
-    public_id: (req, file) =>
-      `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`,
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic']
-  }
-});
-
-// Parser Multer avec limites optimisées
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit for images
-    fieldSize: 1024 * 1024,    // 1MB limit for form fields
-    files: 1                   // Only 1 file per upload
-  },
-  fileFilter: (req, file, cb) => {
-    // Only allow images
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Seuls les fichiers image sont autorisés'), false);
-    }
-  }
-});
-
 /**
  * Handler principal de la route
- * Note: Vercel nécessite une approche spéciale pour multer
+ * Compatible avec Vercel serverless functions
  */
 async function handler(req, res) {
   // 1. Vérifier la méthode HTTP
@@ -58,27 +28,55 @@ async function handler(req, res) {
     });
   }
 
-  // 2. Traiter l'upload avec multer
-  upload.single('image')(req, res, (err) => {
-    if (err) {
-      console.error('⛔️ Erreur pendant l\'upload:', err);
-      return res.status(500).json({
-        success: false,
-        message: 'Erreur upload',
-        detail: err.message
-      });
-    }
+  try {
+    // 2. Parser le formulaire multipart avec formidable
+    const form = formidable({
+      maxFileSize: 5 * 1024 * 1024, // 5MB limit
+      maxFields: 10,
+      maxFieldsSize: 1024 * 1024,
+      allowEmptyFiles: false,
+      filter: (part) => {
+        // Only accept image mime types
+        return part.mimetype && part.mimetype.startsWith('image/');
+      }
+    });
 
-    // 3. Vérifier qu'un fichier a été uploadé
-    if (!req.file || !req.file.path) {
+    const [fields, files] = await new Promise((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err);
+        else resolve([fields, files]);
+      });
+    });
+
+    // 3. Vérifier qu'un fichier image a été uploadé
+    if (!files.image || !files.image[0]) {
       return res.status(400).json({
         success: false,
-        message: 'Aucun fichier reçu'
+        message: 'Aucun fichier image reçu'
       });
     }
 
-    // 4. Validation de sécurité: vérifier que l'URL retournée est bien de Cloudinary
-    const uploadedUrl = req.file.path;
+    const file = files.image[0];
+
+    // 4. Validation MIME type supplémentaire
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Type de fichier non autorisé. Seules les images sont acceptées.'
+      });
+    }
+
+    // 5. Upload vers Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(file.filepath, {
+      folder: 'faf-images',
+      public_id: `${Date.now()}-${file.originalFilename.replace(/\s+/g, '_')}`,
+      resource_type: 'image',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic']
+    });
+
+    // 6. Validation de sécurité: vérifier que l'URL retournée est bien de Cloudinary
+    const uploadedUrl = uploadResult.secure_url;
     const trustedCloudinaryPattern = /^https:\/\/res\.cloudinary\.com\/[a-zA-Z0-9_-]+\/image\/upload\/.+$/;
 
     if (!trustedCloudinaryPattern.test(uploadedUrl)) {
@@ -90,19 +88,27 @@ async function handler(req, res) {
       });
     }
 
-    // 5. Retourner l'URL sécurisée
+    // 7. Retourner l'URL sécurisée
     console.log('✅ Upload sécurisé réussi:', uploadedUrl);
     return res.status(200).json({
       success: true,
       url: uploadedUrl
     });
-  });
+
+  } catch (error) {
+    console.error('⛔️ Erreur pendant l\'upload:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur lors de l\'upload',
+      detail: error.message
+    });
+  }
 }
 
-// Configuration Vercel pour multer (body parser doit être désactivé)
+// Configuration Vercel pour formidable (body parser doit être désactivé)
 module.exports = handler;
 module.exports.config = {
   api: {
-    bodyParser: false // Nécessaire pour que multer puisse traiter les fichiers
+    bodyParser: false // Nécessaire pour que formidable puisse traiter les fichiers
   }
 };
