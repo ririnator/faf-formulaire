@@ -5,6 +5,12 @@
       "main": false
     }
   },
+  "rewrites": [
+    {
+      "source": "/form/:username",
+      "destination": "/form/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
