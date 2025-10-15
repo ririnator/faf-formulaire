@@ -4,8 +4,45 @@
   <meta charset="UTF-8">
   <title>Vos réponses</title>
   <link rel="stylesheet" href="/css/view.css">
+  <style>
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    #loading-screen .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #ddd;
+      border-top-color: #4A90E2;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #loading-screen p {
+      margin-top: 20px;
+      color: #666;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
+  <!-- Loading screen -->
+  <div id="loading-screen">
+    <div class="spinner"></div>
+    <p>Chargement de la comparaison...</p>
+  </div>
+
   <div class="match-header">
     <div class="team team-left">
       <div class="team-name" id="user-name"></div>
@@ -17,7 +54,7 @@
       <div class="team-name" id="admin-name"></div>
     </div>
   </div>
-  
+
   <div id="qa-container"></div>
 
   <!-- Modal pour afficher les images en grand -->
@@ -134,7 +171,7 @@
           throw new Error('Format de données invalide');
         }
         
-        const { user, admin, adminName } = data;
+        const { user, admin, adminUsername, monthName } = data;
         
         // Vérifier que l'utilisateur existe
         if (!user || !user.responses || !Array.isArray(user.responses)) {
@@ -147,8 +184,8 @@
         const monthEl = document.getElementById('month');
         
         if (userNameEl) userNameEl.textContent = user.name || 'Utilisateur';
-        if (adminNameEl) adminNameEl.textContent = adminName || 'Admin';
-        if (monthEl) monthEl.textContent = formatMonth(user.month);
+        if (adminNameEl) adminNameEl.textContent = admin.name || adminUsername || 'Admin';
+        if (monthEl) monthEl.textContent = monthName || formatMonth(user.month);
 
       // Configuration du regroupement des questions
       const questionGroups = [
@@ -395,17 +432,29 @@
           }
         });
       }
+        // Masquer le loader et afficher le contenu
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.style.display = 'none';
+        }
+
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
-        
+
+        // Masquer le loader
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.style.display = 'none';
+        }
+
         // Afficher un message d'erreur détaillé à l'utilisateur
         const errorContainer = document.createElement('div');
         errorContainer.style.cssText = 'padding: 20px; text-align: center; color: #d32f2f; font-family: system-ui, -apple-system, sans-serif;';
-        
+
         const errorTitle = document.createElement('h2');
         errorTitle.textContent = '⚠️ Erreur de chargement';
         errorTitle.style.marginBottom = '10px';
-        
+
         const errorMessage = document.createElement('p');
         errorMessage.textContent = error.message || 'Une erreur inattendue s\'est produite';
         errorMessage.style.marginBottom = '20px';
