@@ -149,15 +149,28 @@
       </div>
 
       <!-- Filtre par mois -->
-      <div class="bg-white rounded-lg shadow p-6">
+      <div class="bg-white rounded-lg shadow p-6 mb-8">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Filtrer par mois</h2>
 
         <div class="flex flex-wrap gap-2" id="monthFilters">
-          <button class="month-filter-btn active px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+          <button class="month-filter-btn px-4 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"
                   data-month="all">
             Tous les mois
           </button>
           <!-- Autres boutons générés dynamiquement -->
+        </div>
+      </div>
+
+      <!-- Résumé des réponses par question -->
+      <div id="questionsSummarySection" class="hidden mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-6">
+            <i class="fas fa-list-ul mr-2"></i>
+            Toutes les réponses du mois
+          </h2>
+          <div id="questionsSummaryContainer" class="space-y-6">
+            <!-- Dynamiquement rempli via JS -->
+          </div>
         </div>
       </div>
 
@@ -221,6 +234,13 @@
 
       // Afficher l'alerte si l'admin n'a pas rempli
       updateAdminStatus(data.adminHasFilled);
+
+      // Afficher le résumé des questions (uniquement si un mois est sélectionné)
+      if (month !== 'all' && data.questionsSummary) {
+        updateQuestionsSummary(data.questionsSummary);
+      } else {
+        document.getElementById('questionsSummarySection').classList.add('hidden');
+      }
     }
 
     /**
@@ -384,6 +404,66 @@
     }
 
     /**
+     * Affiche le résumé de toutes les questions
+     */
+    function updateQuestionsSummary(questionsSummary) {
+      const section = document.getElementById('questionsSummarySection');
+      const container = document.getElementById('questionsSummaryContainer');
+
+      if (!questionsSummary || questionsSummary.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      container.innerHTML = '';
+
+      questionsSummary.forEach((q, index) => {
+        const questionBlock = document.createElement('div');
+        questionBlock.className = 'border-l-4 border-blue-500 pl-4 py-3';
+
+        const questionTitle = document.createElement('h3');
+        questionTitle.className = 'font-semibold text-gray-800 mb-3';
+        questionTitle.textContent = `${index + 1}. ${q.question}`;
+
+        const answersList = document.createElement('div');
+        answersList.className = 'space-y-2';
+
+        q.answers.forEach(a => {
+          const answerItem = document.createElement('div');
+          answerItem.className = 'flex items-start gap-3 text-sm';
+
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'font-medium text-blue-600 min-w-[100px]';
+          nameSpan.textContent = a.name + ':';
+
+          const answerSpan = document.createElement('span');
+          answerSpan.className = 'text-gray-700 flex-1';
+
+          // Vérifier si c'est une image (URL Cloudinary)
+          if (typeof a.answer === 'string' && a.answer.includes('res.cloudinary.com')) {
+            const img = document.createElement('img');
+            img.src = a.answer;
+            img.alt = 'Réponse image';
+            img.className = 'max-w-xs rounded shadow-md cursor-pointer hover:opacity-90 transition';
+            img.onclick = () => window.open(a.answer, '_blank');
+            answerSpan.appendChild(img);
+          } else {
+            answerSpan.textContent = a.answer;
+          }
+
+          answerItem.appendChild(nameSpan);
+          answerItem.appendChild(answerSpan);
+          answersList.appendChild(answerItem);
+        });
+
+        questionBlock.appendChild(questionTitle);
+        questionBlock.appendChild(answersList);
+        container.appendChild(questionBlock);
+      });
+    }
+
+    /**
      * Initialisation au chargement de la page
      */
     (async () => {
@@ -398,8 +478,9 @@
         // 2. Initialiser le header avec les infos admin
         UI.initAdminHeader(currentAdmin);
 
-        // 3. Charger le dashboard
-        await loadDashboard('all');
+        // 3. Charger le dashboard avec le mois actuel par défaut
+        const currentMonth = new Date().toISOString().slice(0, 7); // Format YYYY-MM
+        await loadDashboard(currentMonth);
 
         // 4. Event listener pour le bouton "Tous les mois"
         document.querySelector('[data-month="all"]').addEventListener('click', () => {

@@ -91,6 +91,31 @@ async function handler(req, res) {
       });
     }
 
+    // 7b. Agréger toutes les réponses par question (nouveau)
+    const questionsSummary = [];
+    if (friendResponses.length > 0) {
+      // Extraire toutes les questions à partir de la première réponse
+      const firstResponse = friendResponses[0];
+      const questions = firstResponse.responses || [];
+
+      questions.forEach((q, index) => {
+        const allAnswersForQuestion = friendResponses
+          .map(r => {
+            const response = (r.responses || [])[index];
+            return response ? {
+              name: r.name,
+              answer: response.answer
+            } : null;
+          })
+          .filter(a => a !== null);
+
+        questionsSummary.push({
+          question: q.question,
+          answers: allAnswersForQuestion
+        });
+      });
+    }
+
     // Calculer le taux d'évolution (comparer avec le mois précédent)
     if (month) {
       const [year, monthNum] = month.split('-').map(Number);
@@ -140,7 +165,8 @@ async function handler(req, res) {
       stats,
       responses,
       months,
-      adminHasFilled: adminResponses.length > 0
+      adminHasFilled: adminResponses.length > 0,
+      questionsSummary // Nouveau champ avec toutes les questions/réponses
     });
 
   } catch (error) {
