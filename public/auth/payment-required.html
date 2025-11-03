@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paiement requis - Form-a-Friend</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 100%;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #333;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 16px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .price {
+      font-size: 48px;
+      font-weight: bold;
+      color: #667eea;
+      margin: 24px 0;
+    }
+
+    .price span {
+      font-size: 24px;
+      color: #999;
+    }
+
+    .features {
+      text-align: left;
+      margin: 32px 0;
+      padding: 24px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .features ul {
+      list-style: none;
+    }
+
+    .features li {
+      padding: 12px 0;
+      color: #333;
+      font-size: 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .features li:last-child {
+      border-bottom: none;
+    }
+
+    .features li:before {
+      content: "✓ ";
+      color: #667eea;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px 48px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 16px;
+      width: 100%;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .feedback {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .feedback-error {
+      background: #fee;
+      color: #c33;
+      border: 1px solid #fcc;
+    }
+
+    .feedback-success {
+      background: #efe;
+      color: #3c3;
+      border: 1px solid #cfc;
+    }
+
+    .secondary-link {
+      margin-top: 24px;
+      font-size: 14px;
+      color: #999;
+    }
+
+    .secondary-link a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    .secondary-link a:hover {
+      text-decoration: underline;
+    }
+
+    .cancelled-banner {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="cancelled-banner" id="cancelledBanner">
+      ⚠️ Le paiement a été annulé. Vous pouvez réessayer ci-dessous.
+    </div>
+
+    <div class="icon">💳</div>
+    <h1>Abonnement requis</h1>
+    <p>
+      Pour créer votre propre formulaire Form-a-Friend et collecter les réponses
+      de vos amis chaque mois, vous devez souscrire à l'abonnement admin.
+    </p>
+
+    <div class="price">
+      12€ <span>/mois</span>
+    </div>
+
+    <div class="features">
+      <ul>
+        <li>Créez votre formulaire personnalisé</li>
+        <li>Recevez les réponses de vos amis chaque mois</li>
+        <li>Tableau de bord avec statistiques</li>
+        <li>Accès illimité pour vos amis (gratuit pour eux)</li>
+        <li>Exportation des données</li>
+      </ul>
+    </div>
+
+    <button id="subscribeBtn" class="btn">
+      Payer 12€/mois et commencer
+    </button>
+
+    <div id="feedback" class="feedback"></div>
+
+    <div class="secondary-link">
+      Déjà payé ? <a href="#" id="checkStatusLink">Vérifier mon statut</a>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL = window.location.origin;
+
+    // Check if payment was cancelled
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('cancelled') === 'true') {
+      document.getElementById('cancelledBanner').style.display = 'block';
+    }
+
+    // Show feedback
+    function showFeedback(message, type = 'error') {
+      const feedback = document.getElementById('feedback');
+      feedback.textContent = message;
+      feedback.className = `feedback feedback-${type}`;
+      feedback.style.display = 'block';
+    }
+
+    // Subscribe button handler
+    document.getElementById('subscribeBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('subscribeBtn');
+      const token = localStorage.getItem('faf_token');
+
+      if (!token) {
+        showFeedback('Vous devez être connecté pour vous abonner', 'error');
+        setTimeout(() => {
+          window.location.href = '/auth/login.html';
+        }, 2000);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Création de la session...';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/payment/create-checkout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.sessionUrl) {
+          btn.textContent = 'Redirection vers Stripe...';
+          window.location.href = data.sessionUrl;
+        } else if (data.already_paid) {
+          showFeedback('Vous avez déjà un abonnement actif !', 'success');
+          setTimeout(() => {
+            window.location.href = '/admin/dashboard.html';
+          }, 2000);
+        } else {
+          showFeedback(data.error || 'Erreur lors de la création de la session', 'error');
+          btn.disabled = false;
+          btn.textContent = 'Payer 12€/mois et commencer';
+        }
+      } catch (err) {
+        console.error('Checkout error:', err);
+        showFeedback('Erreur réseau. Veuillez réessayer.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Payer 12€/mois et commencer';
+      }
+    });
+
+    // Check status link handler
+    document.getElementById('checkStatusLink').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const token = localStorage.getItem('faf_token');
+
+      if (!token) {
+        showFeedback('Vous devez être connecté', 'error');
+        return;
+      }
+
+      showFeedback('Vérification en cours...', 'success');
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/payment/status`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.has_access) {
+          showFeedback('Votre paiement est actif ! Redirection...', 'success');
+          setTimeout(() => {
+            window.location.href = '/admin/dashboard.html';
+          }, 1500);
+        } else {
+          showFeedback('Aucun abonnement actif trouvé', 'error');
+        }
+      } catch (err) {
+        console.error('Status check error:', err);
+        showFeedback('Erreur lors de la vérification', 'error');
+      }
+    });
+
+    // Auto-check status on load if coming from Stripe
+    if (urlParams.get('session_id')) {
+      setTimeout(async () => {
+        const token = localStorage.getItem('faf_token');
+        if (token) {
+          const response = await fetch(`${API_BASE_URL}/api/payment/status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await response.json();
+          if (data.has_access) {
+            window.location.href = '/admin/dashboard.html';
+          }
+        }
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

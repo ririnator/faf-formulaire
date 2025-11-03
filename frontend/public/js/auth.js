@@ -138,16 +138,38 @@ function initRegisterForm() {
       const data = await response.json();
 
       if (response.ok) {
-        // Success: Store token and redirect
+        // Success: Store token and redirect to payment
         localStorage.setItem('faf_token', data.token);
         localStorage.setItem('faf_username', data.admin.username);
         localStorage.setItem('faf_admin_id', data.admin.id);
 
-        showFeedback('feedback', 'Compte créé avec succès ! Redirection...', 'success');
+        showFeedback('feedback', 'Compte créé ! Redirection vers le paiement...', 'success');
 
-        // Redirect to onboarding
-        setTimeout(() => {
-          window.location.href = '/auth/onboarding.html';
+        // Redirect to payment checkout
+        setTimeout(async () => {
+          try {
+            // Create Stripe checkout session
+            const checkoutResponse = await fetch(`${API_BASE_URL}/api/payment/create-checkout`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${data.token}`
+              }
+            });
+
+            const checkoutData = await checkoutResponse.json();
+
+            if (checkoutResponse.ok && checkoutData.sessionUrl) {
+              // Redirect to Stripe Checkout
+              window.location.href = checkoutData.sessionUrl;
+            } else {
+              // Fallback to payment required page
+              window.location.href = '/auth/payment-required.html';
+            }
+          } catch (err) {
+            console.error('Checkout creation error:', err);
+            window.location.href = '/auth/payment-required.html';
+          }
         }, 1500);
       } else {
         // Error from server
