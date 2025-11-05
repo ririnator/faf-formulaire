@@ -2,12 +2,12 @@
  * GET /api/admin/responses
  *
  * Liste paginée des réponses d'un admin
- * Authentifié via JWT
+ * Authentifié via JWT + Paywall protection
  * Filtrage optionnel par mois
  * Pagination configurable
  */
 
-const { verifyToken } = require('../../utils/jwt');
+const { withPaymentRequired } = require('../../middleware/payment');
 const { supabaseAdmin } = require('../../utils/supabase');
 
 async function handler(req, res) {
@@ -17,21 +17,8 @@ async function handler(req, res) {
   }
 
   try {
-    // 2. Vérifier le JWT
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Unauthorized - Missing token' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
-
-    if (!decoded || !decoded.sub) {
-      return res.status(401).json({ error: 'Unauthorized - Invalid or expired token' });
-    }
-
-    const adminId = decoded.sub;
+    // 2. adminId est déjà disponible via withPaymentRequired middleware
+    const adminId = req.adminId;
 
     // 3. Extraire les paramètres de query
     const { month, page = '1', limit = '50', search } = req.query;
@@ -105,4 +92,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = handler;
+module.exports = withPaymentRequired(handler);

@@ -6,31 +6,18 @@
  * - PATCH: Modifier une réponse
  * - DELETE: Supprimer une réponse
  *
- * Authentifié via JWT
+ * Authentifié via JWT + Paywall protection
  * RLS de Supabase vérifie automatiquement owner_id
  */
 
-const { verifyToken } = require('../../../utils/jwt');
+const { withPaymentRequired } = require('../../../middleware/payment');
 const { supabaseAdmin } = require('../../../utils/supabase');
 const { escapeHtml, validateResponses, isCloudinaryUrl } = require('../../../utils/validation');
 
 async function handler(req, res) {
   try {
-    // 1. Vérifier le JWT
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Unauthorized - Missing token' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
-
-    if (!decoded || !decoded.sub) {
-      return res.status(401).json({ error: 'Unauthorized - Invalid or expired token' });
-    }
-
-    const adminId = decoded.sub;
+    // 1. adminId est déjà disponible via withPaymentRequired middleware
+    const adminId = req.adminId;
 
     // 2. Extraire l'ID de la réponse depuis l'URL
     const { id } = req.query;
@@ -193,4 +180,4 @@ async function handleDelete(supabase, adminId, responseId, res) {
   });
 }
 
-module.exports = handler;
+module.exports = withPaymentRequired(handler);
