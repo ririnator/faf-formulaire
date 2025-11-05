@@ -37,7 +37,8 @@ export const AdminAPI = {
   },
 
   /**
-   * Vérifie l'authentification JWT
+   * Vérifie l'authentification JWT (client-side)
+   * Décode le JWT pour extraire les infos admin
    * Redirige vers /auth/login.html si invalide
    * @returns {Promise<Object|null>} - { id, username, email } ou null
    */
@@ -51,27 +52,23 @@ export const AdminAPI = {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/auth/verify`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Décoder le JWT côté client (sans vérifier la signature, sera vérifiée côté serveur)
+      const payload = JSON.parse(atob(token.split('.')[1]));
 
-      if (!response.ok) {
-        throw new Error('Token invalide ou expiré');
+      // Vérifier l'expiration
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        throw new Error('Token expiré');
       }
 
-      const data = await response.json();
-
-      if (!data.success || !data.admin) {
-        throw new Error('Réponse invalide du serveur');
-      }
-
-      return data.admin; // { id, username, email }
+      // Retourner les infos depuis le payload
+      return {
+        id: payload.sub,
+        username: payload.username,
+        email: payload.email
+      };
 
     } catch (error) {
-      console.error('Erreur vérification JWT:', error);
+      console.error('Erreur décodage JWT:', error);
       this.clearJWT();
       window.location.href = '/auth/login.html';
       return null;

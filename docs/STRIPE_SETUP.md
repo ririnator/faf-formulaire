@@ -20,7 +20,7 @@ Ce guide explique comment configurer Stripe pour le système de paywall (€12/m
 
 ## 🔧 Prérequis
 
-- Compte Stripe (https://dashboard.stripe.com/register)
+- Compte Stripe register(https://dashboard.stripe.com/)
 - Accès au Dashboard Supabase
 - Accès aux variables d'environnement Vercel
 - Stripe CLI installé (pour tests locaux) : https://stripe.com/docs/stripe-cli
