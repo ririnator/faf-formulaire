@@ -41,7 +41,7 @@ module.exports = async function handler(req, res) {
     // 3. Récupérer le statut de paiement
     const { data: admin, error } = await supabaseAdmin
       .from('admins')
-      .select('id, username, payment_status, subscription_end_date, stripe_customer_id, stripe_subscription_id')
+      .select('id, username, payment_status, subscription_end_date, stripe_customer_id, stripe_subscription_id, is_grandfathered')
       .eq('id', adminId)
       .single();
 
@@ -54,7 +54,8 @@ module.exports = async function handler(req, res) {
     const now = new Date();
     const endDate = admin.subscription_end_date ? new Date(admin.subscription_end_date) : null;
 
-    const hasAccess = admin.payment_status === 'active' ||
+    const hasAccess = admin.is_grandfathered === true ||
+                      admin.payment_status === 'active' ||
                       (endDate !== null && endDate > now);
 
     // 5. Retourner le statut

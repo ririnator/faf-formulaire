@@ -49,7 +49,7 @@ async function requirePayment(req) {
     // 3. Récupérer le statut de paiement
     const { data: admin, error } = await supabaseAdmin
       .from('admins')
-      .select('id, username, payment_status, subscription_end_date')
+      .select('id, username, payment_status, subscription_end_date, is_grandfathered')
       .eq('id', adminId)
       .single();
 
@@ -67,9 +67,11 @@ async function requirePayment(req) {
     const endDate = admin.subscription_end_date ? new Date(admin.subscription_end_date) : null;
 
     // Accès actif si:
+    // - is_grandfathered = true (accès gratuit permanent) OU
     // - payment_status = 'active' OU
     // - subscription_end_date est dans le futur (période de grâce)
-    const hasAccess = admin.payment_status === 'active' ||
+    const hasAccess = admin.is_grandfathered === true ||
+                      admin.payment_status === 'active' ||
                       (endDate !== null && endDate > now);
 
     return {
