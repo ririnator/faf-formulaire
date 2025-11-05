@@ -68,20 +68,68 @@
   </div>
 
   <script>
-    // Get username from localStorage (set during registration)
+    // Get username and token from localStorage
     const username = localStorage.getItem('faf_username');
+    const token = localStorage.getItem('faf_token');
 
-    if (!username) {
-      // Redirect to login if no username found
+    if (!username || !token) {
+      // Redirect to login if no auth found
       window.location.href = '/auth/login.html';
     } else {
-      // Display username
-      document.getElementById('username').textContent = username;
+      // Check payment status first
+      checkPaymentStatus();
+    }
 
-      // Set form link
-      const formLink = `${window.location.origin}/form/${username}`;
-      document.getElementById('formLink').value = formLink;
-      document.getElementById('fillFormBtn').href = `/form/${username}`;
+    async function checkPaymentStatus() {
+      try {
+        const response = await fetch(`${window.location.origin}/api/payment/status`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.has_access) {
+          // Payment is active, show onboarding
+          document.getElementById('username').textContent = username;
+          const formLink = `${window.location.origin}/form/${username}`;
+          document.getElementById('formLink').value = formLink;
+          document.getElementById('fillFormBtn').href = `/form/${username}`;
+        } else {
+          // No payment, redirect to Stripe checkout
+          redirectToCheckout();
+        }
+      } catch (error) {
+        console.error('Error checking payment:', error);
+        // On error, try to redirect to checkout
+        redirectToCheckout();
+      }
+    }
+
+    async function redirectToCheckout() {
+      try {
+        const response = await fetch(`${window.location.origin}/api/payment/create-checkout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.sessionUrl) {
+          // Redirect to Stripe
+          window.location.href = data.sessionUrl;
+        } else {
+          // Fallback to payment-required page
+          window.location.href = '/auth/payment-required.html';
+        }
+      } catch (error) {
+        console.error('Error creating checkout session:', error);
+        window.location.href = '/auth/payment-required.html';
+      }
     }
 
     // Copy to clipboard functionality

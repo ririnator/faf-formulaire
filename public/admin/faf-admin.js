@@ -121,6 +121,13 @@ export const AdminAPI = {
         return null;
       }
 
+      // Si 402, rediriger vers page de paiement
+      if (response.status === 402) {
+        console.warn('Paiement requis, redirection...');
+        window.location.href = '/auth/payment-required.html';
+        return null;
+      }
+
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Erreur réseau' }));
         throw new Error(error.error || `Erreur ${response.status}`);
