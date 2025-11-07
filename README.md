@@ -6,7 +6,7 @@
 ![Vercel](https://img.shields.io/badge/vercel-serverless-black.svg)
 ![Supabase](https://img.shields.io/badge/supabase-postgresql-green.svg)
 ![Security](https://img.shields.io/badge/security-JWT+RLS-red.svg)
-![Tests](https://img.shields.io/badge/tests-117+-brightgreen.svg)
+![Payment](https://img.shields.io/badge/stripe-subscription-blueviolet.svg)
 
 ---
 
@@ -18,6 +18,7 @@
 - ✅ **Son formulaire unique** accessible via `/form/{username}`
 - ✅ **Ses données isolées** grâce au Row Level Security (Supabase)
 - ✅ **Son dashboard privé** avec statistiques et graphiques
+- ✅ **Abonnement Stripe** (€12/mois) ou grandfathered (gratuit à vie)
 
 ---
 
@@ -26,7 +27,8 @@
 ### Prérequis
 - **Node.js** v18+
 - **Compte Supabase** (gratuit)
-- **Compte Cloudinary** (optionnel pour uploads d'images)
+- **Compte Cloudinary** (pour uploads d'images)
+- **Compte Stripe** (pour système de paiement)
 
 ### Setup Initial
 
@@ -80,22 +82,24 @@ PIE_CHART_QUESTION=En rapide, comment ça va ?
 
 ```
 FAF/
-├── api/                        # Vercel Serverless Functions
+├── api/                        # Vercel Serverless Functions (12 max)
 │   ├── auth/                   # Authentification JWT
 │   │   ├── register.js         # POST - Inscription admin
-│   │   ├── login.js            # POST - Connexion JWT
-│   │   └── verify.js           # GET - Vérification token
+│   │   └── login.js            # POST - Connexion JWT
 │   ├── form/
 │   │   └── [username].js       # GET - Formulaire dynamique
 │   ├── response/
 │   │   ├── submit.js           # POST - Soumission formulaire
 │   │   └── view/[token].js     # GET - Consultation privée
-│   └── admin/                  # Dashboard admin (JWT requis)
-│       ├── dashboard.js        # GET - Stats et réponses
-│       ├── responses.js        # GET - Liste paginée
-│       ├── months.js           # GET - Liste des mois
-│       ├── summary.js          # GET - Résumé par question
-│       └── response/[id].js    # GET/PATCH/DELETE - CRUD
+│   ├── admin/                  # Dashboard admin (JWT + Payment requis)
+│   │   ├── dashboard.js        # GET - Stats et réponses
+│   │   ├── responses.js        # GET - Liste paginée
+│   │   └── response/[id].js    # GET/PATCH/DELETE - CRUD
+│   ├── payment/                # Système Stripe
+│   │   ├── create-checkout.js  # POST - Créer checkout Stripe
+│   │   ├── status.js           # GET - Vérifier statut paiement
+│   │   └── webhook.js          # POST - Webhook Stripe
+│   └── upload.js               # POST - Upload images Cloudinary
 ├── frontend/                   # Pages statiques
 │   ├── public/                 # Pages publiques
 │   │   ├── auth/               # Landing + Register + Login
@@ -105,16 +109,28 @@ FAF/
 │       ├── admin.html          # Résumé + graphiques
 │       ├── admin_gestion.html  # Gestion réponses
 │       └── faf-admin.js        # Module ES6 JWT
-├── middleware/                 # Middleware JWT
-│   └── auth.js                 # verifyJWT()
+├── middleware/                 # Middleware serverless
+│   ├── auth.js                 # verifyJWT(), optionalAuth()
+│   ├── payment.js              # requirePayment() - Stripe check
+│   └── rateLimit.js            # Rate limiting (3/15min)
 ├── utils/                      # Utilitaires
 │   ├── supabase.js             # Client Supabase
 │   ├── jwt.js                  # Génération/vérification JWT
-│   └── tokens.js               # Tokens de consultation
+│   ├── tokens.js               # Tokens de consultation
+│   ├── validation.js           # Validation inputs + XSS prevention
+│   └── questions.js            # Normalisation questions
 ├── tests/                      # Tests automatisés
-│   └── api/                    # Tests des routes
-└── sql/                        # Schema Supabase
-    └── schema.sql              # Tables + RLS policies
+│   ├── auth.test.js            # Tests authentification JWT
+│   ├── integration/            # Tests end-to-end
+│   ├── performance/            # Tests de charge
+│   └── security/               # Tests XSS, CSRF, rate limiting
+├── sql/                        # Schema Supabase
+│   ├── 001_initial_schema.sql  # Tables de base
+│   ├── 002_rls_policies.sql    # Row Level Security
+│   ├── 003_payment_columns.sql # Colonnes Stripe
+│   ├── 004_grandfathered.sql   # Comptes grandfathered
+│   └── 005_cleanup_test_data.sql # Nettoyage production
+└── backend_mono_user_legacy/   # ⚠️ ARCHIVE - Ancien Express/MongoDB
 ```
 
 ### Technologies Utilisées
@@ -171,53 +187,42 @@ Chaque admin ne voit **QUE** ses propres données, même s'il manipule les requ�
 
 - ✅ **JWT** - Authentification stateless (7 jours)
 - ✅ **RLS** - Isolation données au niveau DB
+- ✅ **Stripe** - Abonnement €12/mois + webhook validation
 - ✅ **Rate Limiting** - 3 soumissions/15min
-- ✅ **XSS Prevention** - HTML escaping + CSP
-- ✅ **CSRF** - Tokens pour mutations
-- ✅ **Input Validation** - Limites strictes
+- ✅ **XSS Prevention** - HTML escaping + validation inputs
+- ✅ **Input Validation** - Limites strictes (XSS, SQL injection)
 
 ---
 
 ## 🧪 Tests
 
-### Tests Backend (117 tests ✅)
+### Tests Backend
 
 ```bash
-# Étape 1 - Supabase Setup (13 tests)
-npm test tests/api/supabase.test.js
+# Tests authentification
+npm test tests/auth.test.js
 
-# Étape 2 - Authentification (18 tests)
-npm test tests/api/auth-register.test.js
-npm test tests/api/auth-login.test.js
-npm test tests/api/auth-verify.test.js
+# Tests intégration complète
+npm test tests/integration/full-flow.test.js
 
-# Étape 3 - API Form (15 tests)
-npm test tests/api/form-username.test.js
+# Tests sécurité (XSS, CSRF, rate limiting)
+npm test tests/security/xss-csrf-ratelimit.test.js
 
-# Étape 4 - Soumission (13 tests)
-npm test tests/api/submit.test.js
-
-# Étape 5 - Consultation (16 tests)
-npm test tests/api/view-token.test.js
-
-# Étape 6 - Dashboard Admin (42 tests)
-npm test tests/api/admin-dashboard.test.js
-npm test tests/api/admin-responses.test.js
-npm test tests/api/admin-response-id.test.js
+# Tests performance
+npm test tests/performance/load.test.js
 
 # Tous les tests
 npm test
 ```
 
-### Couverture
+### Architecture de Tests
 
-```
-✅ 117 tests backend passent (100%)
-✅ Authentification JWT complète
-✅ Isolation RLS validée
-✅ CRUD admin sécurisé
-✅ Upload images testé
-```
+- **Unit tests**: Fonctions individuelles
+- **Integration tests**: Flux complets (inscription → paiement → dashboard)
+- **Security tests**: XSS, CSRF, rate limiting, injection SQL
+- **Performance tests**: Load testing, temps de réponse
+
+**Note**: Tests legacy dans `backend_mono_user_legacy/backend/tests/` (non utilisés)
 
 ---
 
@@ -287,10 +292,12 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=eyJhbGci...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 JWT_SECRET=your-super-secret-key-min-32-chars
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID=price_...
 CLOUDINARY_CLOUD_NAME=your-cloud
 CLOUDINARY_API_KEY=your-key
 CLOUDINARY_API_SECRET=your-secret
-PIE_CHART_QUESTION=En rapide, comment ça va ?
 ```
 
 ### 3. Configuration Supabase
@@ -305,27 +312,25 @@ PIE_CHART_QUESTION=En rapide, comment ça va ?
 
 ### Guides par Étape
 
-- ✅ **[STEP_1_COMPLETED.md](STEP_1_COMPLETED.md)** - Setup Supabase + Infrastructure
-- ✅ **[STEP_2_COMPLETED.md](STEP_2_COMPLETED.md)** - API d'authentification JWT
-- ✅ **[STEP_3_COMPLETED.md](STEP_3_COMPLETED.md)** - API Formulaire dynamique
-- ✅ **[STEP_4_COMPLETED.md](STEP_4_COMPLETED.md)** - API Soumission
-- ✅ **[STEP_5_COMPLETED.md](STEP_5_COMPLETED.md)** - API Consultation privée
-- ✅ **[STEP_6_COMPLETED.md](STEP_6_COMPLETED.md)** - API Dashboard admin
-- ✅ **[STEP_7_COMPLETED.md](STEP_7_COMPLETED.md)** - Frontend Landing + Auth
-- ✅ **[STEP_8_COMPLETED.md](STEP_8_COMPLETED.md)** - Frontend Formulaire dynamique
-- ✅ **[STEP_9_COMPLETED.md](STEP_9_COMPLETED.md)** - Frontend Dashboard admin JWT
+- ✅ **[Steps 1-9](docs/steps/)** - Développement initial multi-tenant (2025-10)
+- ✅ **[STEP_10_COMPLETED.md](docs/steps/STEP_10_COMPLETED.md)** - Migration MongoDB → Supabase
+- ✅ **[STEP_11_COMPLETED.md](docs/steps/STEP_11_COMPLETED.md)** - Configuration Vercel
+- ✅ **[STEP_12_COMPLETED.md](docs/steps/STEP_12_COMPLETED.md)** - Tests & Déploiement (130+ tests)
 
 ### Spécifications
 
-- 📐 **[MULTITENANT_SPEC.md](MULTITENANT_SPEC.md)** - Spécifications complètes
-- 📝 **[PROMPT_DEVELOPMENT.md](PROMPT_DEVELOPMENT.md)** - Plan de développement
+- 📐 **[MULTITENANT_SPEC.md](docs/architecture/MULTITENANT_SPEC.md)** - Spécifications complètes
+- 💳 **[STRIPE_SETUP.md](docs/STRIPE_SETUP.md)** - Configuration paiement Stripe
 - 🤖 **[CLAUDE.md](CLAUDE.md)** - Guide pour Claude Code
+- 📝 **[SESSION_03_NOV_2025.md](docs/SESSION_03_NOV_2025.md)** - Notes session (déploiement production)
 
 ---
 
 ## 🔄 Migration depuis Mono-User
 
 L'ancienne version mono-utilisateur (Express + MongoDB + Sessions) a été archivée dans `backend_mono_user_legacy/`.
+
+**⚠️ IMPORTANT**: Cette archive est conservée **uniquement pour référence historique**. Ne pas l'utiliser pour le développement.
 
 ### Différences Clés
 
@@ -343,22 +348,26 @@ L'ancienne version mono-utilisateur (Express + MongoDB + Sessions) a été archi
 
 ## 🎯 Roadmap
 
-### ✅ Version 2.0 (Actuelle)
+### ✅ Version 2.0 (Actuelle - Production)
 
-- [x] Architecture serverless (Vercel)
-- [x] Multi-tenancy avec RLS
-- [x] Authentification JWT
-- [x] Dashboard admin par compte
-- [x] Formulaires dynamiques
-- [x] 117 tests automatisés
+- [x] Architecture serverless (Vercel) - **12 fonctions max**
+- [x] Multi-tenancy avec RLS (Supabase PostgreSQL)
+- [x] Authentification JWT (7 jours expiry)
+- [x] **Système de paiement Stripe** (€12/mois + grandfathered)
+- [x] Dashboard admin avec graphiques (Chart.js)
+- [x] Formulaires dynamiques par username
+- [x] Upload images (Cloudinary)
+- [x] Tests sécurité (XSS, CSRF, rate limiting)
+- [x] **Déploiement production**: https://faf-multijoueur.vercel.app
 
 ### 🔮 Version 2.1 (Futur)
 
-- [ ] Refresh tokens (auto-renewal)
-- [ ] Notifications email (réponses reçues)
+- [ ] Refresh tokens (auto-renewal JWT)
+- [ ] Notifications email (réponses reçues via Resend)
 - [ ] Export CSV/PDF des réponses
 - [ ] Thèmes personnalisés par admin
-- [ ] API REST publique (webhooks)
+- [ ] Statistiques avancées (tendances mensuelles)
+- [ ] Gestion factures Stripe dans l'interface
 
 ---
 
@@ -379,8 +388,11 @@ MIT License - Voir LICENSE.md pour détails.
 
 <div align="center">
 
-**🔒 Multi-tenant sécurisé • 🚀 Serverless scalable • 🧪 117 tests validés**
+**🔒 Multi-tenant sécurisé • 🚀 Serverless scalable • 💳 Stripe payment • 🌐 Production live**
 
-**Version actuelle** : Multi-Tenant v2.0 (Étapes 1-9 complétées)
+**Version actuelle** : Multi-Tenant v2.0 (Production)
+**URL Production** : https://faf-multijoueur.vercel.app
+**Architecture** : 12 Vercel Functions + Supabase PostgreSQL + Stripe
+**Last Updated** : November 7, 2025
 
 </div>

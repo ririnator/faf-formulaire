@@ -4,254 +4,491 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FAF (Form-a-Friend) is a monthly form application that allows friends to submit responses and view each other's answers. The application consists of:
+FAF (Form-a-Friend) is a **multi-tenant serverless application** that allows admins to create monthly forms and collect responses from friends. The application uses:
 
-- **Backend**: Node.js/Express server with MongoDB database
-- **Frontend**: Static HTML/CSS/JS files served by the backend
+- **Architecture**: Vercel Serverless Functions (12 functions on Hobby plan limit)
+- **Database**: Supabase PostgreSQL with Row Level Security (RLS)
+- **Authentication**: JWT-based (stateless, 7-day expiry)
+- **Payment**: Stripe subscription (€12/month with grandfathered accounts)
+- **Frontend**: Static HTML/CSS/JS served by Vercel
+- **Deployment**: Production at https://faf-multijoueur.vercel.app
 
 ## Development Commands
 
-### Backend Development
+### Serverless Development
 ```bash
-cd backend
-npm install          # Install dependencies (includes helmet for security)
-npm start           # Start production server (node app.js)
-npm run dev         # Start development server with nodemon
-npm test            # Run all backend tests
-npm run test:watch  # Run tests in watch mode
-npm run test:coverage # Run tests with coverage report
-npm run test:dynamic # Run dynamic option integration tests
-npm run test:frontend # Run frontend tests
-npm run test:frontend:watch # Run frontend tests in watch mode
-npm run test:frontend:coverage # Run frontend tests with coverage
-npm run test:form   # Test form locally
-npm run test:all    # Run all backend and frontend tests
-npm run test:all:coverage # Run all tests with coverage
+# Development server (Vercel local emulation)
+vercel dev
+
+# Run tests
+npm test
+
+# Deploy to production
+vercel --prod
+
+# View logs
+vercel logs
 ```
 
+### Testing
+```bash
+npm test                    # Run all tests
+npm test -- tests/auth.test.js  # Run specific test file
+```
 
-### No Frontend Build Process
-The frontend consists of static files served directly by Express from `frontend/public/` and `frontend/admin/`.
-
-### Development vs Production Configuration
-- **Development** (`NODE_ENV=development` or unset): 
-  - Session cookies: `sameSite: 'lax'`, `secure: false` (works with HTTP localhost)
-  - Request body parsing: 10MB limit with Express native parsers
-  - Suitable for local development without HTTPS certificates
-- **Production** (`NODE_ENV=production`):
-  - Session cookies: `sameSite: 'none'`, `secure: true` (requires HTTPS)
-  - Enhanced security headers via Helmet.js with strict CSP
-  - Optimized for cross-origin requests and secure deployment
-- **Testing**: Environment-agnostic with 38+ security tests covering all scenarios
+**Note**: Legacy Express/MongoDB code is archived in `backend_mono_user_legacy/` and should NOT be used for development.
 
 ## Architecture
 
-### Backend Structure (`backend/`)
-- `app.js` - Main Express server with nonce-based CSP, optimized body parsers (512KB-5MB), environment-adaptive sessions, and database constraints
-- `models/Response.js` - MongoDB schema with unique admin constraint per month and optimized indexes
-- `config/` - Modular configuration architecture:
-  - `cloudinary.js` - Cloudinary upload service configuration
-  - `cors.js` - Cross-Origin Resource Sharing configuration
-  - `database.js` - MongoDB connection and configuration
-  - `environment.js` - Environment variable validation and setup
-  - `session.js` - Session store and cookie configuration
-- `config/` - Configuration files (business logic moved directly to routes for simplicity)
-- `middleware/` - Modular security middleware architecture:
-  - `auth.js` - Admin authentication with bcrypt and session management
-  - `validation.js` - Smart XSS escaping with Cloudinary URL preservation + null/undefined edge case handling
-    - `smartEscape()` - Intelligent escaping that preserves valid Cloudinary URLs while protecting against XSS
-    - `isCloudinaryUrl()` - Validates Cloudinary URLs with security checks for malicious content
-  - `security.js` - CSP nonce generation + environment-adaptive session cookies
-  - `bodyParser.js` - Optimized body limits per endpoint type (512KB/2MB/5MB)
-  - `csrf.js` - CSRF protection middleware
-- `tests/` - Comprehensive security test suites (100+ tests):
-  - `validation.edge-cases.test.js` - Null/undefined/malformed input handling (30 tests)
-  - `validation.boundary.test.js` - Exact boundary conditions + performance (32 tests)
-  - `validation.security.test.js` - XSS protection + HTML escaping (22 tests)
-  - `validation.smart-escape.test.js` - Smart escape function with Cloudinary URL handling (44 tests)
-  - `security.enhanced.test.js` - CSP nonce generation + session configs (19 tests)
-  - `bodyParser.limits.test.js` - Optimized body parser limits per endpoint (16 tests)
-  - `constraint.unit.test.js` - Database constraint validation (14 tests)
-  - `session.config.test.js` - Environment-adaptive cookie settings (12 tests)
-  - `dynamic.option.integration.test.js` - Dynamic option validation and testing
-  - `integration.full.test.js` - Full integration testing scenarios
-  - `middleware.integration.test.js` - Middleware integration testing
-- `routes/` - API endpoints with layered security, optimized body parsing, and integrated business logic:
-  - `responseRoutes.js` - Public form submission (2MB body limit) with strict validation, XSS escaping, admin duplicate prevention, direct MongoDB operations
-  - `adminRoutes.js` - Admin dashboard APIs (1MB body limit) with pagination, summary, CRUD operations, integrated authentication logic
-  - `formRoutes.js` - Form utilities with legacy compatibility and basic validation
-  - `upload.js` - Image upload handling (5MB limit) with MIME validation, direct Cloudinary integration via multer
+### Serverless Functions (`api/`)
+
+The application uses **12 Vercel Serverless Functions** (Hobby plan limit):
+
+```
+api/
+├── auth/
+│   ├── login.js            # POST - JWT authentication (username + password)
+│   └── register.js         # POST - New admin registration
+├── form/
+│   └── [username].js       # GET - Dynamic form by username (public)
+├── response/
+│   ├── submit.js           # POST - Submit form response (public)
+│   └── view/
+│       └── [token].js      # GET - View private comparison (token-based)
+├── admin/
+│   ├── dashboard.js        # GET - Admin dashboard data (JWT + Payment required)
+│   ├── responses.js        # GET - Paginated responses (JWT + Payment required)
+│   └── response/
+│       └── [id].js         # GET/PATCH/DELETE - CRUD operations (JWT + Payment required)
+├── payment/
+│   ├── create-checkout.js  # POST - Create Stripe checkout (JWT required)
+│   ├── status.js           # GET - Check payment status (JWT required)
+│   └── webhook.js          # POST - Stripe webhook handler (public with signature verification)
+└── upload.js               # POST - Cloudinary image upload (public with rate limiting)
+```
+
+### Database (Supabase PostgreSQL)
+
+**Schema Location**: `sql/` directory
+
+#### Main Tables
+
+```sql
+-- Admins table
+admins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  payment_status TEXT CHECK (payment_status IN ('active', 'trialing', 'past_due', 'canceled', 'unpaid')),
+  subscription_end_date TIMESTAMPTZ,
+  is_grandfathered BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+)
+
+-- Responses table
+responses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id UUID REFERENCES admins(id) NOT NULL,
+  name TEXT NOT NULL,
+  responses JSONB NOT NULL,
+  month TEXT NOT NULL,
+  is_owner BOOLEAN DEFAULT FALSE,
+  token TEXT UNIQUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+)
+```
+
+#### Row Level Security (RLS)
+
+All tables have RLS policies enforcing data isolation:
+- Admins can only see/modify **their own** responses (`owner_id = auth.uid()`)
+- Public routes use service role key with application-level validation
+- Admin routes use authenticated user context
 
 ### Frontend Structure (`frontend/`)
-- `public/` - Public-facing pages:
-  - `index.html` - Main form page
-  - `view.html` - Private response viewing page with secure HTML entity decoding
-  - `login.html` - Admin login
-- `admin/` - Admin dashboard:
-  - `admin.html` - Main admin interface using ES6 module imports
-  - `admin_gestion.html` - Response management using ES6 module imports
-  - `faf-admin.js` - Unified ES6 module with named exports (AdminAPI, Utils, UI, Charts)
-- `tests/` - Frontend testing infrastructure:
-  - `dynamic-option.test.js` - Dynamic form option testing
-  - `form-integration.test.js` - Form integration testing
-  - `form-submission.test.js` - Form submission validation testing
-  - `real-form-submission.test.js` - Real-world form submission scenarios
-  - `jest.config.js` - Frontend-specific Jest configuration
-  - `setup.js` - Test environment setup and utilities
 
-### Key Features
-- **Nonce-based CSP Security** - Dynamic nonces per request, eliminates unsafe-inline completely
-- **Smart XSS Prevention** - Intelligent escaping that preserves Cloudinary image URLs while protecting against XSS attacks
-- **XSS Prevention Architecture** - Secure DOM element creation, whitelist-based HTML entity decoding, no innerHTML with user content
-- **Comprehensive Input Validation** - 100+ tests covering null/undefined/boundary/XSS edge cases
-- **UTF-8 Encoding Support** - Global UTF-8 middleware, proper character encoding for French accented characters
-- **ES6 Module Architecture** - Unified faf-admin.js module with named exports, eliminating dual-file complexity
-- **Simplified Architecture** - Direct routes-to-models pattern eliminating service layer complexity
-- **Configuration Modularity** - Environment-specific configuration files for database, CORS, sessions
-- **Optimized Body Parser Limits** - 512KB standard, 2MB forms, 5MB images (80% memory reduction)
-- **Environment-adaptive Configuration** - Auto-detection dev/prod with appropriate security settings
-- **Database Constraint Enforcement** - Unique index preventing admin duplicates per month at DB level
-- **Advanced Session Management** - Secure cookies (sameSite/secure) adapting to HTTPS availability
-- **Multi-layer XSS Protection** - HTML escaping + CSP headers + input sanitization + secure rendering
-- **Enhanced Error Handling** - Hierarchical fallback system + centralized error middleware
-- **CSRF Protection** - Token-based CSRF protection middleware
-- **Parameter Validation** - URL parameter validation and sanitization middleware
-- **Dynamic Question Ordering** - Zero-maintenance algorithm using first submission's natural order (replaces hardcoded arrays)
-- **Intelligent Caching System** - 10-minute TTL with memory leak prevention, pre-warming, and automatic cleanup
-- **Structured Logging** - Context-aware debugging with performance metrics and error resilience
-- **Frontend Testing Infrastructure** - Dedicated frontend test suite with Jest configuration
-- **Dynamic Option Testing** - Integration testing for dynamic form options
-- **Session-based admin authentication** with bcrypt password hashing and session store
-- **Monthly response system** where each user can submit once per month with token-based private viewing
-- **Admin responses** stored without tokens, accessible only through authenticated admin interface
-- **Intelligent rate limiting** -3 submissions per 15 minutes with IP-based tracking
-- **Advanced spam protection** - Honeypot fields + request validation + pattern detection
-- **Performance optimized** - Indexes on createdAt, admin constraints, efficient memory usage, asset caching
+```
+frontend/
+├── public/
+│   ├── auth/
+│   │   ├── landing.html        # Landing page (public)
+│   │   ├── register.html       # Registration form (public)
+│   │   └── login.html          # Login form (public)
+│   ├── form/
+│   │   └── index.html          # Dynamic form page (public)
+│   ├── view/
+│   │   └── index.html          # Private comparison view (token-based)
+│   ├── css/
+│   │   └── main.css            # Global styles
+│   └── js/
+│       ├── auth.js             # Authentication utilities (JWT)
+│       └── form.js             # Form submission logic
+└── admin/
+    ├── admin.html              # Dashboard (JWT + Payment required)
+    ├── admin_gestion.html      # Response management (JWT + Payment required)
+    └── faf-admin.js            # ES6 module (AdminAPI, Utils, UI, Charts)
+```
 
-### Environment Variables Required
-- `NODE_ENV` - Environment mode (`production` for secure HTTPS cookies + sameSite='none', `development`/unset for HTTP compatibility + sameSite='lax')
-- `HTTPS` - Optional override to enable secure cookies in development (set to 'true')
-- `COOKIE_DOMAIN` - Optional domain scope for production cookies (e.g., '.example.com' for subdomains)
-- `MONGODB_URI` - MongoDB connection string
-- `SESSION_SECRET` - Session encryption key for secure authentication
-- `LOGIN_ADMIN_USER` - Admin username for web interface login
-- `LOGIN_ADMIN_PASS` - Admin password for web interface (hashed with bcrypt)
-- `FORM_ADMIN_NAME` - Name of the person who fills forms as admin (e.g., "riri")
-- `APP_BASE_URL` - Base URL for generating private links and CORS
-- `FRONTEND_URL` - Frontend domain URL for CORS configuration (optional secondary origin)
-- `CLOUDINARY_*` - Cloudinary configuration for file uploads
+### Middleware (`middleware/`)
 
-### Database Schema
-The `Response` model contains:
-- `name` - User's name (admin detection via `FORM_ADMIN_NAME` env var)
-- `responses[]` - Array of question/answer pairs
-- `month` - YYYY-MM format for monthly grouping
-- `isAdmin` - Boolean flag for admin responses
-- `token` - Unique token for private viewing (null for admin)
-- `createdAt` - Timestamp with index
+```
+middleware/
+├── auth.js           # JWT verification (verifyJWT, optionalAuth)
+├── payment.js        # Payment status check (requirePayment)
+└── rateLimit.js      # Rate limiting (IP-based, 3 submissions/15min)
+```
+
+### Utilities (`utils/`)
+
+```
+utils/
+├── supabase.js       # Supabase client configuration
+├── jwt.js            # JWT generation/verification (7-day expiry)
+├── validation.js     # Input validation (XSS prevention, length checks)
+├── questions.js      # Question normalization
+└── tokens.js         # View token generation (UUIDs)
+```
+
+### SQL Migrations (`sql/`)
+
+```
+sql/
+├── 001_initial_schema.sql      # Base tables (admins, responses)
+├── 002_rls_policies.sql        # Row Level Security policies
+├── 003_payment_columns.sql     # Stripe integration
+├── 004_grandfathered.sql       # Grandfathered accounts feature
+└── 005_cleanup_test_data.sql   # Production cleanup
+```
+
+### Tests (`tests/`)
+
+```
+tests/
+├── auth.test.js                # JWT authentication tests
+├── integration/
+│   └── full-flow.test.js       # End-to-end integration tests
+├── performance/
+│   └── load.test.js            # Load testing
+└── security/
+    └── xss-csrf-ratelimit.test.js  # Security validation tests
+```
+
+**Note**: Legacy tests in `backend_mono_user_legacy/backend/tests/` are for the old Express/MongoDB architecture and are not used.
+
+## Authentication & Security
+
+### JWT Authentication Flow
+
+```
+1. Registration (POST /api/auth/register)
+   → Create admin in Supabase (bcrypt password hash)
+   → Generate JWT (7-day expiry, HS256)
+   → Return JWT to client
+
+2. Login (POST /api/auth/login)
+   → Verify username + password (bcrypt compare)
+   → Generate JWT
+   → Return JWT to client
+
+3. Protected Routes
+   → Client sends: Authorization: Bearer <token>
+   → middleware/auth.js verifies JWT signature
+   → Extracts userId from token payload
+   → Attaches userId to request
+
+4. Payment-Protected Routes
+   → middleware/payment.js checks payment_status
+   → Allows: 'active', 'trialing', is_grandfathered=true
+   → Blocks: 'past_due', 'canceled', 'unpaid', or missing payment info
+```
+
+### Payment System (Stripe)
+
+**Features**:
+- Monthly subscription: €12/month
+- 7-day free trial for new admins
+- Grandfathered accounts: Lifetime free access (is_grandfathered=true)
+- Webhook-driven status updates (payment.succeeded, subscription.updated)
+
+**Middleware Protection**:
+```javascript
+// api/admin/dashboard.js
+export default verifyJWT(requirePayment(async (req, res) => {
+  // Only accessible if JWT valid AND payment active/grandfathered
+}))
+```
+
+**Stripe Webhook**:
+- Endpoint: `/api/payment/webhook`
+- Validates signature (STRIPE_WEBHOOK_SECRET)
+- Updates admin payment_status and subscription_end_date
 
 ### Security Features
-- **Helmet.js security headers** with Content Security Policy (CSP) protecting against XSS, clickjacking, and MIME sniffing
-- **CORS configuration** supporting multiple origins (`APP_BASE_URL` and `FRONTEND_URL`) with credentials
-- **Modular authentication middleware** (`middleware/auth.js`) with bcrypt comparison and session management
-- **Multi-tier input validation** (`middleware/validation.js`):
-  - **Strict validation** (`validateResponseStrict`) for main endpoints with XSS escaping
-  - **Compatible validation** (`validateResponse`) for legacy endpoints
-  - **Character limits**: Names (2-100), Questions (≤500), Answers (≤10k), Max 20 responses
-- **Rate limiting** (3 submissions per 15 minutes) with memory-based tracking
-- **Honeypot spam protection** with hidden 'website' field validation
-- **Admin duplicate prevention** with case-insensitive detection and monthly constraints
-- **Environment-aware session configuration**:
-  - **Development**: `sameSite: 'lax'`, `secure: false` (HTTP compatible)
-  - **Production**: `sameSite: 'none'`, `secure: true` (HTTPS required)
-  - **MongoDB store** with 1-hour cookie expiry and 14-day session TTL
-- **Request body size limits** (10MB) using Express native parsers (optimized from 50MB)
-- **XSS Protection**: All HTML entities escaped (`<`, `>`, `&`, `"`, `'` → HTML entities)
-- **Secure HTML Entity Handling**: Whitelist-based decoding with `SAFE_HTML_ENTITIES` constant
-- **UTF-8 Encoding Middleware**: Global charset support for French characters (éàçùûîôêâ)
 
-### Frontend Security Architecture
-- **XSS Prevention**: Secure DOM element creation, no `innerHTML` with user content
-- **HTML Entity Decoding**: Whitelist approach supporting only known-safe entities with `SAFE_HTML_ENTITIES`
-- **ES6 Module Structure**: Clean imports with `AdminAPI`, `Utils`, `UI`, and `Charts` namespaces
-- **Unified Error Handling**: Centralized alert system through `UI.showAlert()`
-- **CSRF Integration**: Automatic token management through `AdminAPI.request()`
-- **Content Security Policy**: Strict CSP with nonces preventing injection attacks
+- **JWT Authentication** - Stateless, 7-day expiry, HS256 signing
+- **Row Level Security (RLS)** - Database-level isolation by owner_id
+- **XSS Prevention** - Input validation + HTML escaping in `utils/validation.js`
+- **Rate Limiting** - 3 submissions per 15 minutes per IP (`middleware/rateLimit.js`)
+- **CORS** - Configured in `vercel.json` for allowed origins
+- **Payment Enforcement** - Admin routes require active subscription or grandfathered status
+- **Cloudinary Signed Uploads** - Secure image uploads with signature verification
 
-### Dynamic Question Ordering System
-**Algorithm Overview**: Zero-maintenance question ordering that eliminates hardcoded arrays
+## Environment Variables
 
-**Problem Solved**: Previously used a 12-line hardcoded `QUESTION_ORDER` array that required manual updates whenever form questions changed, risking desync between form and backend.
+### Required Variables
 
-**Solution**: Dynamic ordering based on natural form submission order with intelligent caching.
+```bash
+# Supabase
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_ANON_KEY=eyJhbGci...
+SUPABASE_SERVICE_KEY=eyJhbGci...
 
-**Implementation Steps**:
-1. **Cache Check** - 10-minute TTL with month-specific keys (`"YYYY-MM"` or `"all"`)
-2. **First Response Discovery** - Find oldest response for the time period using `createdAt` index  
-3. **Natural Order Extraction** - Use that response's question sequence as canonical ordering
-4. **PIE_Q Prioritization** - Always place pie chart question first regardless of original position
-5. **Question Normalization** - Group similar questions using `normalizeQuestion()` for French accents/spacing
-6. **Fallback Strategy** - Use `textSummary` order if no valid first response found
-7. **Cache Population** - Store result with metadata (source, performance metrics, response ID)
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-min-32-characters
 
-**Cache Optimizations**:
-- **Memory Leak Prevention** - MAX_CACHE_SIZE (50 entries) with LRU eviction
-- **Automatic Cleanup** - Removes expired entries every 5 minutes
-- **Pre-warming** - Current month cached on startup and monthly refresh
-- **Error Resilience** - Falls back to expired cache if DB errors occur
+# Stripe
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID=price_...
 
-**Performance Benefits**:
-- **Eliminates DB queries** for repeated requests (10-minute cache)
-- **Pre-warmed cache** ensures fast initial response times
-- **Structured logging** tracks hit/miss ratios and performance metrics
+# Cloudinary (optional for image uploads)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=123456789012345
+CLOUDINARY_API_SECRET=abcdefghijklmnopqrstuvwxyz
 
-**Test Coverage**:
-- **15 comprehensive tests** in `admin.question-order.test.js`
-- **Edge cases**: corrupted data, empty datasets, normalization failures
-- **Performance tests**: large datasets, consistency across concurrent requests
-- **Fallback validation**: textSummary ordering when primary method fails
+# Application
+NODE_ENV=production
+APP_BASE_URL=https://faf-multijoueur.vercel.app
+```
 
-### Testing Infrastructure
-- **Backend**: Jest + Supertest + MongoDB Memory Server for comprehensive testing
-- **Security Test Coverage**:
-  - **XSS injection attempts** - Script tags, HTML entities, JavaScript events, complex payloads (22 tests)
-  - **Boundary testing** - Character limits (2-100 name, 500 question, 10k answer, 20 responses max)
-  - **Admin duplicate scenarios** - Case-insensitive detection, monthly constraints, race conditions
-  - **Session configuration** - Environment-aware cookie settings (development vs production)
-  - **Body size limits** - 10MB Express parser configuration validation (reduced from 50MB)
-  - **Honeypot protection** - Spam field detection and rejection
-  - **Input sanitization** - Null/undefined handling, whitespace trimming, Unicode support
-  - **Dynamic question ordering** - 15 tests covering natural order, caching, edge cases, performance
-- **Test Commands**: `npm test`, `npm run test:watch`, `npm run test:coverage`
-- **Test Results**: 257+ tests pass (January 2025), comprehensive security validation
-- **Performance Testing**: Large payload handling, concurrent request processing, validation speed
-- **Architecture Validation**: Middleware modularity, Express parser optimization, environment adaptation
+### Configuration in Vercel
 
-### Recent Architecture Improvements (January 2025)
-**Security & XSS Fixes**:
-- **🚨 CRITICAL XSS Fix**: Replaced `innerHTML` with secure `textContent` in view.html:51
-- **🔧 Session Cookie Fix**: Corrected cookie name from `connect.sid` to `faf-session` in logout
-- **🛡️ Complete innerHTML Audit**: Replaced all unsafe `innerHTML` usage with `createElement()` and `textContent`
-- **🔒 Production Debug Lock**: Debug endpoints now disabled in production environment
+Add environment variables in Vercel Dashboard:
+1. Project Settings → Environment Variables
+2. Add each variable for Production, Preview, and Development
+3. Redeploy after adding variables
 
-**UI/UX & Display Fixes**:
-- **🔧 French Character Display**: Fixed apostrophe display in admin.html (&#x27; → ') by removing overly aggressive .escape() from express-validator
-- **✨ Natural Language Support**: Questions now display with proper French apostrophes and accents without compromising XSS security
-- **🎯 Smart Escaping Strategy**: Preserved `escapeQuestion()` function that protects against dangerous characters while allowing natural French text
-- **🧪 Frontend HTML Entity Decoding**: Enhanced `Utils.unescapeHTML()` in faf-admin.js with better entity handling and secure DOM creation
+## Database Queries
 
-**Code Quality & Architecture**:
-- **🧹 Code Cleanup**: Removed 39+ obsolete files (*.refactored.js, *.v2.js, test files, dead services, debug artifacts)
-- **✅ Test Repairs**: Fixed session configuration tests and removed problematic upload mocks
-- **🔧 Architecture Refactor**: Replaced admin-utils.js + core-utils.js with unified faf-admin.js ES6 module
-- **🚮 Dead Code Elimination**: Removed unused services layer (ResponseService, AuthService, UploadService) and middleware (rateLimiting, paramValidation, errorHandler), simplifying to direct routes→models pattern
-- **📱 Image Modal Simplification**: Replaced complex Panzoom implementation with simple, reliable modal (25 lines vs 221 lines)
-- **🗑️ Debug File Cleanup**: Removed temporary scripts, migration files, Safari/Cloudinary debug tests, and duplicate directories
+### Common Patterns
 
-**Dynamic Question Ordering Implementation**:
-- **✨ Zero-Maintenance Algorithm**: Eliminated hardcoded QUESTION_ORDER array (12 lines removed)
-- **🚀 Intelligent Caching**: 10-minute TTL with memory leak prevention and pre-warming
-- **📊 Structured Logging**: Context-aware debugging with performance metrics and error resilience
-- **🛡️ Robust Fallback**: Multiple fallback strategies for corrupted/missing data
-- **⚡ Performance Optimized**: Pre-warmed cache, LRU eviction, automatic cleanup
-- **✅ Comprehensive Testing**: 15 new tests covering edge cases, performance, and consistency
+```javascript
+// Get admin by username (public routes)
+const { data: admin } = await supabase
+  .from('admins')
+  .select('*')
+  .eq('username', username)
+  .single()
+
+// Get responses for authenticated admin (with RLS)
+const { data: responses } = await supabase
+  .from('responses')
+  .select('*')
+  .eq('owner_id', userId)
+  .order('created_at', { ascending: false })
+
+// Get response by token (public with token)
+const { data: response } = await supabase
+  .from('responses')
+  .select('*')
+  .eq('token', token)
+  .single()
+```
+
+### RLS Context
+
+- **Service Role Key** (`SUPABASE_SERVICE_KEY`): Bypasses RLS, used in public routes (`/api/response/submit`, `/api/form/[username]`)
+- **Authenticated Context**: Uses `userId` from JWT, enforces RLS policies in admin routes
+
+## Payment Integration
+
+### Grandfathered Accounts
+
+Admins with `is_grandfathered = true` have lifetime free access:
+
+```sql
+-- Grant grandfathered status
+UPDATE admins
+SET is_grandfathered = TRUE,
+    payment_status = 'active'
+WHERE username = 'riri';
+```
+
+### Payment Status Values
+
+- `active` - Subscription active
+- `trialing` - 7-day free trial
+- `past_due` - Payment failed, grace period
+- `canceled` - Subscription canceled
+- `unpaid` - Trial ended, no payment
+- `NULL` - New admin, no payment info yet
+
+### Middleware Logic
+
+```javascript
+// middleware/payment.js
+if (admin.is_grandfathered) {
+  return next() // Bypass payment check
+}
+
+if (!['active', 'trialing'].includes(admin.payment_status)) {
+  return res.status(402).json({ error: 'Payment required' })
+}
+```
+
+## Deployment
+
+### Production Deployment
+
+```bash
+# Deploy to production
+vercel --prod
+
+# View deployment status
+vercel ls
+
+# View logs
+vercel logs faf-multijoueur --production
+```
+
+### Vercel Configuration (`vercel.json`)
+
+- **Functions**: All files in `api/**/*.js` become serverless functions
+- **Routes**: Defined for `/form/*`, `/view/*`, `/admin/*`, `/api/*`
+- **Headers**: CORS headers for allowed origins
+- **Regions**: Auto (Vercel edge network)
+
+### Database Migrations
+
+Run SQL migrations in Supabase SQL Editor:
+1. Execute files in order: `001_initial_schema.sql` → `002_rls_policies.sql` → etc.
+2. Verify tables and policies created
+3. Test RLS with sample queries
+
+## Legacy Code (DO NOT USE)
+
+### Archived Express/MongoDB Architecture
+
+**Location**: `backend_mono_user_legacy/`
+
+This folder contains the **old mono-user architecture**:
+- Express.js monolith with `app.js`
+- MongoDB with Mongoose (`models/Response.js`)
+- Session-based authentication (express-session)
+- No payment system
+- No multi-tenancy
+
+**Status**: ⚠️ **ARCHIVED** - For reference only, do NOT use for development
+
+**Why archived**:
+- Migrated to Vercel serverless (scalability)
+- Migrated to Supabase PostgreSQL (RLS, reliability)
+- Migrated to JWT (stateless, multi-tenant)
+- Added Stripe payment system
+
+## Testing
+
+### Running Tests
+
+```bash
+# All tests
+npm test
+
+# Specific test file
+npm test -- tests/auth.test.js
+
+# Watch mode
+npm test -- --watch
+```
+
+### Test Structure
+
+- **Unit tests**: Individual function testing
+- **Integration tests**: Full API flow testing (`tests/integration/`)
+- **Security tests**: XSS, CSRF, rate limiting (`tests/security/`)
+- **Performance tests**: Load testing (`tests/performance/`)
+
+**Legacy tests**: Tests in `backend_mono_user_legacy/backend/tests/` are for the old Express architecture and will fail (they test non-existent code).
+
+## Common Tasks
+
+### Adding a New Serverless Function
+
+1. Create file in `api/` (e.g., `api/foo/bar.js`)
+2. Export default async handler:
+   ```javascript
+   export default async function handler(req, res) {
+     return res.status(200).json({ message: 'Hello' })
+   }
+   ```
+3. Deploy: `vercel --prod`
+
+**Note**: Hobby plan limited to 12 functions total.
+
+### Protecting a Route with JWT + Payment
+
+```javascript
+import { verifyJWT } from '../../middleware/auth.js'
+import { requirePayment } from '../../middleware/payment.js'
+
+export default verifyJWT(requirePayment(async (req, res) => {
+  const userId = req.userId // From verifyJWT
+  const admin = req.admin   // From requirePayment
+
+  // Your protected logic here
+}))
+```
+
+### Adding a SQL Migration
+
+1. Create file in `sql/` (e.g., `006_new_feature.sql`)
+2. Write SQL with comments
+3. Execute in Supabase SQL Editor
+4. Update CLAUDE.md with migration details
+
+## Documentation
+
+- **[README.md](README.md)** - User-facing project overview
+- **[CLAUDE.md](CLAUDE.md)** - Developer guidance (this file)
+- **[docs/STRIPE_SETUP.md](docs/STRIPE_SETUP.md)** - Stripe integration guide
+- **[docs/STRIPE_QUICKSTART.md](docs/STRIPE_QUICKSTART.md)** - Quick payment setup
+- **[docs/SESSION_03_NOV_2025.md](docs/SESSION_03_NOV_2025.md)** - Session notes (Nov 3, 2025)
+- **[docs/deployment/VERCEL_SETUP_GUIDE.md](docs/deployment/VERCEL_SETUP_GUIDE.md)** - Vercel deployment guide
+- **[docs/architecture/MULTITENANT_SPEC.md](docs/architecture/MULTITENANT_SPEC.md)** - Multi-tenant specifications
+
+## Important Reminders
+
+1. **Architecture**: This is a **serverless application** (Vercel), NOT an Express server
+2. **Database**: Uses **Supabase PostgreSQL**, NOT MongoDB
+3. **Auth**: Uses **JWT tokens**, NOT sessions
+4. **Payment**: **Stripe subscription** required for admin features (except grandfathered accounts)
+5. **Function Limit**: **12 functions max** on Vercel Hobby plan - carefully manage new endpoints
+6. **Legacy Code**: Files in `backend_mono_user_legacy/` are **ARCHIVED** - do NOT modify or reference
+7. **RLS Policies**: Always consider Row Level Security when writing Supabase queries
+8. **JWT Expiry**: Tokens expire after 7 days - users must re-login
+
+## Development Workflow
+
+1. **Local Development**: `vercel dev` (emulates serverless environment)
+2. **Make Changes**: Edit files in `api/`, `frontend/`, `middleware/`, `utils/`
+3. **Test**: `npm test` and manual testing at http://localhost:3000
+4. **Commit**: Follow conventional commits (e.g., "feat:", "fix:", "docs:")
+5. **Deploy**: `vercel --prod` (or push to GitHub for auto-deploy)
+6. **Monitor**: Check Vercel logs and Supabase dashboard
+
+## Support
+
+For questions or issues:
+- Check documentation in `docs/` folder
+- Review session notes: `docs/SESSION_03_NOV_2025.md`
+- Check Vercel logs: `vercel logs`
+- Check Supabase dashboard: https://app.supabase.com
+
+---
+
+**Last Updated**: November 7, 2025
+**Architecture Version**: Multi-Tenant v2.0 (Serverless)
+**Production URL**: https://faf-multijoueur.vercel.app
